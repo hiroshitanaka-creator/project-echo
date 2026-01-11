@@ -32,6 +32,15 @@ cd examples/cosmic_ethics_39
 python3 run.py
 ```
 
+### 39人の哲学者による分析（新機能！）
+
+```bash
+cd examples/cosmic_ethics_39
+python3 philosopher_integration.py
+```
+
+39人の哲学者がシナリオを分析し、多様な視点からの倫理的評価を提供します。
+
 ### Po_core統合版（実験的）
 
 ```bash
@@ -409,6 +418,138 @@ AIが「何を言わなかったか」「なぜ言わなかったか」を、後
 私たちが開発するAIシステムは、私たちが死んだ後も動き続けます。子孫の世代、さらにその先の世代が、私たちの決定の結果を生きることになります。
 
 責任あるAI開発とは、**見えない未来の人々への配慮**でもあるのです。
+
+## 39人の哲学者による多元的分析
+
+### 統合アーキテクチャ
+
+Cosmic Ethics 39 は、Po_coreリポジトリから39人の哲学者モジュールを統合しています：
+
+```
+src/po_core/philosophers/
+├── base.py                 # Philosopher + PhilosopherPerspective
+├── __init__.py            # load_all_philosophers(), load_cosmic_philosophers()
+├── kant.py                # カント - 定言命法
+├── watsuji.py             # 和辻哲郎 - 間柄と風土
+├── sartre.py              # サルトル - 実存と責任
+├── jonas.py               # ヨナス - 未来世代への責任
+├── nagarjuna.py           # 龍樹 - 空と相互依存
+├── arendt.py              # アーレント - 政治的責任
+└── ... (39 philosophers total)
+```
+
+### 使用方法
+
+```python
+from po_core.philosophers import load_cosmic_philosophers
+
+# Cosmic Ethics 専用の哲学者セット（13人）をロード
+philosophers = load_cosmic_philosophers()
+
+for philosopher in philosophers:
+    # 各哲学者がシナリオを分析
+    perspective = philosopher.analyze(scenario_text, context)
+
+    # PhilosopherPerspective を取得
+    print(f"{perspective.name}: {perspective.reasoning}")
+
+    # Cosmic Ethics 39 の重み付け（実装済みの哲学者のみ）
+    if perspective.cosmic_weights:
+        print(perspective.cosmic_weights)
+
+    # ブロックされた選択肢
+    for blocked in perspective.blocked_options:
+        print(f"Blocked: {blocked}")
+
+    # Tension profile
+    print(f"Tensions: {perspective.tension_elements}")
+```
+
+### Cosmic Set - 13人の宇宙倫理哲学者
+
+長期的思考、普遍的原則、関係性倫理に特に関連性の高い哲学者たち：
+
+1. **Immanuel Kant** - 定言命法と普遍的道徳法則
+2. **和辻哲郎 (Watsuji Tetsurō)** - 関係性倫理と間柄
+3. **Jean-Paul Sartre** - 実存と責任
+4. **Hans Jonas** - 未来世代への責任原理
+5. **नागार्जुन (Nāgārjuna)** - 空と相互依存
+6. **Hannah Arendt** - 政治的責任と複数性
+7. **Baruch Spinoza** - 倫理と必然性
+8. **Emmanuel Levinas** - 他者への責任
+9. **Simone Weil** - 正義と注意
+10. **Confucius (孔子)** - 関係性倫理と礼
+11. **Laozi (老子)** - 不介入と自然な流れ
+12. **Dōgen (道元)** - 時間的存在と実践
+13. **Nishida Kitarō (西田幾多郎)** - 場所と絶対無
+
+### 哲学者レイヤーの設計思想
+
+**重要**: 哲学者を個別に呼び出すのではなく、「哲学者レイヤー」として一度に処理します：
+
+```python
+# ❌ アンチパターン - 個別呼び出し
+if scenario.type == "AGI":
+    kant_view = Kant().analyze(scenario)
+elif scenario.type == "terraforming":
+    jonas_view = Jonas().analyze(scenario)
+
+# ✅ 推奨パターン - レイヤーとして処理
+philosophers = load_cosmic_philosophers()
+perspectives = [p.analyze(scenario, context) for p in philosophers]
+
+# Cosmic Ethics 39 側で集約
+tension_profile = compute_tension_profile(base_scores, perspectives)
+blocked_options = compute_blocked_options(base_scores, perspectives)
+```
+
+### PhilosopherPerspective データ構造
+
+各哲学者の `analyze()` メソッドは `PhilosopherPerspective` を返します：
+
+```python
+@dataclass
+class PhilosopherPerspective:
+    name: str                              # 哲学者名
+    approach: str                          # アプローチの説明
+    reasoning: str                         # 推論内容
+
+    cosmic_weights: Optional[Dict[str, float]]    # 39次元の重み
+    freedom_pressure: Optional[Dict[str, float]]  # 自由圧力テンソル
+    tension_elements: list                        # 緊張要素
+    blocked_options: list                         # ブロックされた選択肢
+
+    notes: Optional[str]                   # 追加コメント
+    raw_result: Optional[Dict[str, Any]]   # 生の分析結果
+```
+
+### デモの実行
+
+```bash
+cd examples/cosmic_ethics_39
+python3 philosopher_integration.py
+```
+
+このデモは以下のシナリオで哲学者たちの視点を示します：
+- **AGI開発プロジェクト**: 汎用AIの開発における倫理的ジレンマ
+- **火星テラフォーミング**: 潜在的生命への影響と人類の拡張
+
+### なぜ39人の哲学者が必要なのか
+
+**単一の倫理理論では不十分**
+
+- 功利主義だけでは → 少数者の権利を軽視する危険性
+- 義務論だけでは → 状況の柔軟性に欠ける
+- 徳倫理だけでは → 主観的で実装が困難
+- ケアの倫理だけでは → 公平性との緊張関係
+
+**39人の哲学者による多元的分析により**：
+
+1. **倫理的盲点の発見**: 一つの理論では見えないリスクを発見
+2. **文化的多様性**: 西洋/東洋、古代/現代の視点を統合
+3. **価値の多元性**: 定量化できない質的価値も考慮
+4. **張力の可視化**: どの価値同士が対立しているかを明示
+5. **説明責任**: なぜその判断をしたのかを多角的に説明可能
 
 ## 参考文献
 
