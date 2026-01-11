@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+"""
+Po-Cosmic CLI Entry Point
+
+Usage:
+    ./bin/po-cosmic cosmic-39 --scenario agi
+    ./bin/po-cosmic cosmic-39 --scenario mars --save
+"""
+
+import sys
+from pathlib import Path
+
+# Add src to path
+src_path = Path(__file__).resolve().parents[1] / "src"
+sys.path.insert(0, str(src_path))
+
+from po_cosmic.cli import main
+
+if __name__ == "__main__":
+    main()
