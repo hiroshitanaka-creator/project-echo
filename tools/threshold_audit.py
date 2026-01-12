@@ -3,17 +3,16 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
-
+from typing import Any
 
 RUNS_DIR = Path("runs")
 
 
-def load(path: Path) -> Dict[str, Any]:
+def load(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def get(d: Dict[str, Any], path: List[str], default=None):
+def get(d: dict[str, Any], path: list[str], default=None):
     cur: Any = d
     for k in path:
         if not isinstance(cur, dict) or k not in cur:
@@ -22,7 +21,7 @@ def get(d: Dict[str, Any], path: List[str], default=None):
     return cur
 
 
-def percentile(xs: List[float], p: float) -> float:
+def percentile(xs: list[float], p: float) -> float:
     if not xs:
         return float("nan")
     xs_sorted = sorted(xs)
@@ -36,7 +35,7 @@ def main() -> None:
         print("[audit] no runs found in runs/")
         return
 
-    rows: List[Tuple[str, float, float, float, float, bool, bool, int]] = []
+    rows: list[tuple[str, float, float, float, float, bool, bool, int]] = []
 
     for f in files:
         r = load(f)
@@ -64,11 +63,11 @@ def main() -> None:
     print(f"[threshold audit] runs={len(rows)}")
     print("=" * 80)
 
-    def summarize(name: str, xs: List[float]):
+    def summarize(name: str, xs: list[float]):
         print(
             f"{name:14s}  "
-            f"min={min(xs):.2f}  p25={percentile(xs,0.25):.2f}  "
-            f"p50={percentile(xs,0.50):.2f}  p75={percentile(xs,0.75):.2f}  "
+            f"min={min(xs):.2f}  p25={percentile(xs, 0.25):.2f}  "
+            f"p50={percentile(xs, 0.50):.2f}  p75={percentile(xs, 0.75):.2f}  "
             f"max={max(xs):.2f}"
         )
 
@@ -83,11 +82,17 @@ def main() -> None:
 
     print("\nTop 10 lowest adjusted_score:")
     for name, adj, unc, rev, mt, allowed, confirm, bc in sorted(rows, key=lambda x: x[1])[:10]:
-        print(f"- {name:40s} adj={adj:.2f} unc={unc:.2f} rev={rev:.2f} tens={mt:.3f} allowed={allowed} confirm={confirm} blocked={bc}")
+        print(
+            f"- {name:40s} adj={adj:.2f} unc={unc:.2f} rev={rev:.2f} tens={mt:.3f} allowed={allowed} confirm={confirm} blocked={bc}"
+        )
 
     print("\nTop 10 highest max_tension:")
-    for name, adj, unc, rev, mt, allowed, confirm, bc in sorted(rows, key=lambda x: x[4], reverse=True)[:10]:
-        print(f"- {name:40s} tens={mt:.3f} adj={adj:.2f} unc={unc:.2f} rev={rev:.2f} allowed={allowed} confirm={confirm} blocked={bc}")
+    for name, adj, unc, rev, mt, allowed, confirm, bc in sorted(
+        rows, key=lambda x: x[4], reverse=True
+    )[:10]:
+        print(
+            f"- {name:40s} tens={mt:.3f} adj={adj:.2f} unc={unc:.2f} rev={rev:.2f} allowed={allowed} confirm={confirm} blocked={bc}"
+        )
 
     print("\nDone.")
 

@@ -110,6 +110,26 @@ def print_cosmic39(result: dict) -> None:
         print(f"Final execution allowed: {'YES' if final else 'NO'}")
         print()
 
+    # Rollback Plan - Operator Responsibility (not Gumdrop boundary-setting)
+    rp = result.get("rollback_plan", {})
+    if rp:
+        print("Rollback Plan (Recovery Protocol):")
+        print(f"  Scenario type: {rp.get('scenario_type', 'unknown')}")
+        print(f"  Obligation: {rp.get('obligation', 'unknown')}")
+        print("  Recovery steps:")
+        for step in rp.get("recovery_steps", [])[:3]:  # Show first 3 steps
+            print(f"    {step['order']}. {step['action']}")
+        if len(rp.get("recovery_steps", [])) > 3:
+            print(f"    ... ({len(rp['recovery_steps']) - 3} more steps)")
+        print(f"  Fallback terminal: {rp.get('fallback_terminal', 'unknown')}")
+        print()
+
+    # Execution State - Operator tracking (world commits)
+    es = result.get("execution_state", {})
+    if es:
+        print(f"Execution state: {es.get('status', 'unknown').upper()}")
+        print()
+
     print(f"Runtime: {result['runtime_sec']:.3f} seconds")
     print("=" * 80)
 
@@ -213,7 +233,9 @@ def main() -> None:
     )
     c39.add_argument("--save", action="store_true", help="Save result to runs/ directory")
     c39.add_argument("--out", default=None, help="Explicit output JSON path")
-    c39.add_argument("--confirm", action="store_true", help="Require human Yes/No confirmation when needed")
+    c39.add_argument(
+        "--confirm", action="store_true", help="Require human Yes/No confirmation when needed"
+    )
 
     args = parser.parse_args()
 
