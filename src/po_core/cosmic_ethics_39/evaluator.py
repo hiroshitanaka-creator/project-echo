@@ -297,79 +297,94 @@ def _blocked_options(
     return blocked
 
 
-def _compute_responsibility_boundary(
+def _responsibility_boundary(
+    *,
     adjusted: dict[str, float],
-    blocked: list[dict[str, Any]],
-    tension: list[dict[str, Any]],
     meta: dict[str, Any],
+    blocked_options: list[dict[str, Any]],
+    tension_topk: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """
-    Compute responsibility boundary - who decides, who confirms, who bears liability.
+    Decide responsibility boundary mechanically.
 
-    This is the core of Responsible AI: not just explaining decisions,
-    but establishing who is responsible when things go wrong.
-
-    Returns:
-        Dictionary with responsibility protocol fields
+    Key outputs:
+      - ai_recommends: always False (this project policy)
+      - execution_allowed: whether the system allows execution
+      - requires_human_confirm: whether human confirmation is mandatory
+      - reasons: list[str] explaining boundary decisions
     """
-    adj_score = adjusted["adjusted_score"]
-    max_tension = max((t["tension_score"] for t in tension), default=0.0)
-    has_blocks = len(blocked) > 0
-    uncertainty = abs(adjusted.get("uncertainty_penalty", 0.0))
-    irreversibility = abs(adjusted.get("irreversibility_penalty", 0.0))
+    adjusted_score = float(adjusted.get("adjusted_score", 0.0))
+    uncertainty = _safe_get(meta, "uncertainty", 0.5)
+    reversibility = _safe_get(meta, "reversibility", 0.5)
 
-    # AI never recommends - this is anti-Gumdrop
-    ai_recommends = False
+    # Max tension among topk
+    max_tension = 0.0
+    if tension_topk:
+        max_tension = max(float(t.get("tension_score", 0.0)) for t in tension_topk)
 
-    # Require human confirmation if:
-    # - Any blocked options exist
-    # - Adjusted score below threshold
-    # - High tension among philosophers
-    # - High uncertainty or irreversibility
-    requires_human_confirm = (
-        has_blocks or adj_score < 0.6 or max_tension >= 0.1 or uncertainty >= 0.2
-    )
+    reasons: list[str] = []
 
-    # Execution allowed only if:
-    # - Adjusted score meets minimum threshold
-    # - Fewer than 2 blocking dimensions
-    execution_allowed = adj_score >= 0.5 and len(blocked) < 2
+    # ---- Execution allowed (hard gate) ----
+    # Rule: blocked_options exists OR score too low -> not allowed
+    execution_allowed = True
+    if blocked_options:
+        execution_allowed = False
+        reasons.append("blocked_options_present")
+    if adjusted_score < 0.50:
+        execution_allowed = False
+        reasons.append("adjusted_score_below_0.50")
 
-    # Liability mode determines recovery protocol
-    if adj_score < 0.5:
-        liability_mode = "audit-only"  # Too risky, record only
-        rationale = "Adjusted score below safety threshold - execution prohibited"
-    elif has_blocks:
-        liability_mode = "rollback"  # Requires rollback capability
-        rationale = "Blocking conditions detected - rollback protocol required"
+    # ---- Requires human confirm (soft gate) ----
+    # If not allowed => must confirm (and typically stop), but keep flag True for clarity.
+    requires_human_confirm = True
+
+    if execution_allowed:
+        # If allowed, confirm is conditional on risk/uncertainty/irreversibility/tension.
+        requires_human_confirm = False
+
+        # High uncertainty
+        if uncertainty >= 0.60:
+            requires_human_confirm = True
+            reasons.append("uncertainty_high")
+
+        # Low reversibility
+        if reversibility <= 0.30:
+            requires_human_confirm = True
+            reasons.append("reversibility_low")
+
+        # High disagreement among philosophers
+        # (tune threshold; start conservative)
+        if max_tension >= 0.08:
+            requires_human_confirm = True
+            reasons.append("tension_high")
+
+        # Medium score but not strong green light => require confirm
+        if adjusted_score < 0.70:
+            requires_human_confirm = True
+            reasons.append("adjusted_score_below_0.70")
+
+    # Liability mode is stub for now
+    liability_mode = "audit-only"
+    if not execution_allowed:
+        liability_mode = "audit-only"
+    elif requires_human_confirm:
+        liability_mode = "audit-only"
     else:
-        liability_mode = "compensate"  # Execution possible with compensation plan
-        rationale = "Execution permissible with compensation protocol"
+        liability_mode = "audit-only"
 
     return {
-        "ai_recommends": ai_recommends,  # Always false - AI does not recommend
-        "requires_human_confirm": requires_human_confirm,
+        "ai_recommends": False,  # policy: never "recommend"
         "execution_allowed": execution_allowed,
+        "requires_human_confirm": requires_human_confirm,
         "liability_mode": liability_mode,
-        "rationale": rationale,
-        "human_confirmation": {
-            "required": requires_human_confirm,
-            "method": "cli_yesno" if requires_human_confirm else "none",
-            "confirmed_at": None,  # Filled when human confirms
-            "confirmed_by": None,  # User identifier
+        "signals": {
+            "adjusted_score": adjusted_score,
+            "uncertainty": uncertainty,
+            "reversibility": reversibility,
+            "max_tension": max_tension,
+            "blocked_count": len(blocked_options),
         },
-        "rollback_plan": {
-            "available": liability_mode in ["rollback", "compensate"],
-            "steps": [],  # To be filled by domain-specific logic
-            "estimated_recovery_time": None,
-        },
-        "risk_factors": {
-            "adjusted_score": float(adj_score),
-            "max_tension": float(max_tension),
-            "blocked_count": len(blocked),
-            "uncertainty": float(uncertainty),
-            "irreversibility": float(irreversibility),
-        },
+        "reasons": reasons,
     }
 
 
@@ -435,8 +450,13 @@ class CosmicEthics39Evaluator:
         # 7) Generate blocked options
         blocked = _blocked_options(adjusted, adjusted_scores)
 
-        # 8) Compute responsibility boundary - core of Responsible AI
-        responsibility = _compute_responsibility_boundary(adjusted, blocked, tension, meta)
+        # 8) Responsibility boundary (mechanical)
+        responsibility_boundary = _responsibility_boundary(
+            adjusted=adjusted,
+            meta=meta,
+            blocked_options=blocked,
+            tension_topk=tension,
+        )
 
         dt = time.time() - t0
 
@@ -453,7 +473,13 @@ class CosmicEthics39Evaluator:
             },
             "tension_topk": tension,
             "blocked_options": blocked,
-            "responsibility_boundary": responsibility,  # Who decides, who confirms, who bears liability
+            "responsibility_boundary": responsibility_boundary,
+            "human_confirmation": {  # Future proof - evidence of human decision
+                "required": responsibility_boundary["requires_human_confirm"],
+                "method": "none",
+                "confirmed_at": None,
+                "confirmed_by": None,
+            },
             "philosophers": {
                 "preset": self.preset,
                 "active_count": len(perspectives),

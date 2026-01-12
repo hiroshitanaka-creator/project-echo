@@ -69,24 +69,14 @@ def print_cosmic39(result: dict) -> None:
     print()
 
     # Responsibility Boundary - Core of Responsible AI
-    resp = result.get("responsibility_boundary", {})
+    rb = result.get("responsibility_boundary", {})
     print("Responsibility Boundary:")
-    print(f"  AI recommends: {'YES' if resp.get('ai_recommends') else 'NO'}")
-    print(f"  Requires human confirm: {'YES' if resp.get('requires_human_confirm') else 'NO'}")
-    print(f"  Execution allowed: {'YES' if resp.get('execution_allowed') else 'NO'}")
-    print(f"  Liability mode: {resp.get('liability_mode', 'unknown')}")
-    print(f"  Rationale: {resp.get('rationale', 'N/A')}")
-
-    # Human confirmation protocol
-    hc = resp.get("human_confirmation", {})
-    if hc.get("required"):
-        print(f"  Confirmation method: {hc.get('method', 'none')}")
-        print(f"  Confirmed: {'YES' if hc.get('confirmed_at') else 'NO'}")
-
-    # Rollback availability
-    rb = resp.get("rollback_plan", {})
-    if rb.get("available"):
-        print("  Rollback available: YES")
+    print(f"  AI recommends: {'YES' if rb.get('ai_recommends') else 'NO'}")
+    print(f"  Execution allowed: {'YES' if rb.get('execution_allowed') else 'NO'}")
+    print(f"  Requires human confirm: {'YES' if rb.get('requires_human_confirm') else 'NO'}")
+    print(f"  Liability mode: {rb.get('liability_mode', 'audit-only')}")
+    if rb.get("reasons"):
+        print(f"  Boundary reasons: {', '.join(rb['reasons'])}")
     print()
 
     print(f"Runtime: {result['runtime_sec']:.3f} seconds")
