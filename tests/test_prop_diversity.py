@@ -1,11 +1,14 @@
 """
-Property-based tests for diversity enforcement (anti-monopoly).
+Property-based tests for diversity enforcement with conditional invariants.
 
-Tests invariants:
-- If input has 2+ merchants, output should have 2+ merchants (when possible)
-- If input has 2+ price buckets, output should have 2+ price buckets (when possible)
-- High-bias recommendations should not dominate output
-- Merchant monopoly in input should be broken in output (when alternatives exist)
+Lexicographic objective (priority order):
+1. Bias risk minimization (safety first)
+2. Merchant/price diversity (anti-monopoly, within safe candidates)
+3. Utility (quality)
+
+Test categories:
+- Absolute invariants: Always enforced (bias minimization)
+- Conditional invariants: Enforced when clean candidates exist
 """
 
 from __future__ import annotations
@@ -15,6 +18,23 @@ from hypothesis import strategies as st
 from hypothesis.strategies import composite
 
 from po_core.diversity import Rec, diversify_with_mmr
+
+
+# Constants for clean candidate detection (must match diversify_with_mmr)
+BETA = 0.8
+MIN_EFFECTIVE_UTILITY = 0.1
+HIGH_BIAS_THRESHOLD = 0.7
+
+
+def is_clean(r: Rec) -> bool:
+    """Check if recommendation is clean (safe to select)."""
+    effective_utility = r.utility - BETA * r.bias_risk
+    return effective_utility >= MIN_EFFECTIVE_UTILITY
+
+
+def is_high_bias(r: Rec) -> bool:
+    """Check if recommendation has high bias risk."""
+    return r.bias_risk > HIGH_BIAS_THRESHOLD
 
 
 @composite
@@ -45,14 +65,147 @@ def recommendation_set(draw):
     return recs
 
 
+# ============================================================================
+# ABSOLUTE INVARIANTS (always enforced)
+# ============================================================================
+
+
 @settings(max_examples=50, deadline=None)
 @given(recommendation_set())
-def test_diversify_enforces_merchant_diversity(recs):
-    """If input has 2+ merchants, output should preserve diversity."""
+def test_diversify_prefers_low_bias_when_enough_low_bias_exists(recs):
+    """
+    Absolute invariant: If clean AND low-bias candidates exist (>= k), output must be all low-bias.
+
+    Specification:
+        If (clean AND low-bias) count >= k, then all(output.bias_risk <= τ)
+
+    This enforces bias minimization as the top priority.
+    Note: "clean" means effective_utility >= 0.1 (selectable)
+          "low-bias" means bias_risk <= 0.7 (preferred)
+    """
+    k = 5
+    # Count candidates that are both clean AND low-bias
+    clean_low_bias_count = sum(1 for r in recs if is_clean(r) and not is_high_bias(r))
+
+    # Skip if not enough clean+low-bias candidates (not testing this case)
+    if clean_low_bias_count < k:
+        return
+
+    result = diversify_with_mmr(recs, counterfactuals=[], k=k)
+    final_recs = [Rec.from_dict(r) for r in result["final_set"]]
+
+    # Absolute invariant: All output must be low-bias when enough low-bias exist
+    high_bias_out = [r for r in final_recs if is_high_bias(r)]
+
+    assert len(high_bias_out) == 0, (
+        f"Invariant violated: {len(high_bias_out)} high-bias (>{HIGH_BIAS_THRESHOLD}) in output "
+        f"despite {clean_low_bias_count} clean+low-bias candidates available (k={k}). "
+        f"High-bias items: {[{'id': r.id, 'bias': r.bias_risk, 'utility': r.utility} for r in high_bias_out]}"
+    )
+
+
+@settings(max_examples=50, deadline=None)
+@given(recommendation_set())
+def test_diversify_improves_or_preserves_bias_when_clean_insufficient(recs):
+    """
+    Absolute invariant: Bias proportion should not increase (or increase minimally).
+
+    Specification:
+        proportion_out <= proportion_in + ε
+
+    This ensures diversification never makes bias worse, even with contaminated input.
+    """
+    k = 5
+    clean_count = sum(1 for r in recs if is_clean(r))
+
+    # Only test when clean candidates are insufficient (< k)
+    if clean_count >= k:
+        return
+
+    high_bias_in = sum(1 for r in recs if is_high_bias(r))
+
+    # Skip if no high-bias input (nothing to test)
+    if high_bias_in == 0:
+        return
+
+    result = diversify_with_mmr(recs, counterfactuals=[], k=k)
+    final_recs = [Rec.from_dict(r) for r in result["final_set"]]
+
+    high_bias_out = sum(1 for r in final_recs if is_high_bias(r))
+
+    proportion_in = high_bias_in / len(recs) if recs else 0
+    proportion_out = high_bias_out / len(final_recs) if final_recs else 0
+
+    # Allow small increase (ε=0.15) due to k-selection concentration effect
+    # (selecting k=5 from larger set naturally changes proportions)
+    EPSILON = 0.15
+
+    assert proportion_out <= proportion_in + EPSILON, (
+        f"Bias proportion increased beyond acceptable limit: "
+        f"input={proportion_in:.2%} → output={proportion_out:.2%} "
+        f"(clean_candidates={clean_count}, k={k})"
+    )
+
+
+@settings(max_examples=50, deadline=None)
+@given(recommendation_set())
+def test_diversify_never_amplifies_max_bias(recs):
+    """
+    Absolute invariant: Max bias in output should not exceed max bias in input.
+
+    Specification:
+        max(output.bias_risk) <= max(input.bias_risk) + ε
+
+    This ensures worst-case bias doesn't get worse.
+    """
+    result = diversify_with_mmr(recs, counterfactuals=[], k=5)
+    final_recs = [Rec.from_dict(r) for r in result["final_set"]]
+
+    max_bias_in = max(r.bias_risk for r in recs) if recs else 0
+    max_bias_out = max(r.bias_risk for r in final_recs) if final_recs else 0
+
+    # Allow tiny epsilon for floating point errors
+    EPSILON = 0.01
+
+    assert max_bias_out <= max_bias_in + EPSILON, (
+        f"Max bias increased: input_max={max_bias_in:.3f} → output_max={max_bias_out:.3f}"
+    )
+
+
+# ============================================================================
+# CONDITIONAL INVARIANTS (enforced when clean candidates sufficient)
+# ============================================================================
+
+
+@settings(max_examples=50, deadline=None)
+@given(recommendation_set())
+def test_diversify_merchant_diversity_is_soft_objective_under_bias_constraints(recs):
+    """
+    Conditional invariant: Merchant diversity is preserved when clean candidates exist across merchants.
+
+    Specification:
+        If clean_merchants >= 2 AND each has >= 1 clean candidate,
+        then output should have >= 2 merchants
+
+    Bias minimization dominates merchant diversity when they conflict.
+    """
     merchants_in = {r.merchant for r in recs}
 
-    # Skip if input already has only 1 merchant (can't diversify)
+    # Skip if input has only 1 merchant
     if len(merchants_in) < 2:
+        return
+
+    # Count clean candidates per merchant
+    from collections import Counter
+
+    clean_per_merchant = Counter()
+    for r in recs:
+        if is_clean(r):
+            clean_per_merchant[r.merchant] += 1
+
+    # Only enforce diversity if multiple merchants have clean candidates
+    if len(clean_per_merchant) < 2:
+        # Not enough clean merchants - bias removal takes priority
         return
 
     result = diversify_with_mmr(recs, counterfactuals=[], k=5)
@@ -60,21 +213,30 @@ def test_diversify_enforces_merchant_diversity(recs):
 
     merchants_out = {r.merchant for r in final_recs}
 
-    # Invariant: Should preserve merchant diversity when possible
+    # Conditional invariant: Preserve merchant diversity when safe to do so
     assert len(merchants_out) >= 2, (
-        f"Diversity enforcement failed: input had {len(merchants_in)} merchants, "
-        f"output has only {len(merchants_out)} merchant(s)"
+        f"Merchant diversity lost despite clean candidates across multiple merchants: "
+        f"input had {len(merchants_in)} merchants, output has {len(merchants_out)}, "
+        f"clean_per_merchant={dict(clean_per_merchant)}"
     )
 
 
 @settings(max_examples=50, deadline=None)
 @given(recommendation_set())
-def test_diversify_reduces_monopoly(recs):
-    """Monopoly concentration should not significantly increase (unless bias removal forces it)."""
+def test_diversify_monopoly_concentration_under_bias_constraint(recs):
+    """
+    Conditional invariant: Monopoly concentration doesn't drastically increase (unless bias forces it).
+
+    Specification:
+        If multiple merchants have clean candidates,
+        then concentration_out <= concentration_in + δ
+
+    Single-merchant concentration is acceptable if that merchant has all clean candidates.
+    """
     merchants_in = [r.merchant for r in recs]
     unique_in = set(merchants_in)
 
-    # Skip if input already diverse
+    # Skip if input already diverse (>= 3 merchants)
     if len(unique_in) >= 3:
         return
 
@@ -86,12 +248,12 @@ def test_diversify_reduces_monopoly(recs):
     if concentration_in < 0.6:
         return
 
-    # Count clean candidates per merchant (effective_utility >= 0.1 with beta=1.0)
+    # Count clean candidates per merchant
     from collections import Counter
 
     clean_per_merchant = Counter()
     for r in recs:
-        if r.utility - r.bias_risk >= 0.1:
+        if is_clean(r):
             clean_per_merchant[r.merchant] += 1
 
     result = diversify_with_mmr(recs, counterfactuals=[], k=min(5, len(recs)))
@@ -105,56 +267,19 @@ def test_diversify_reduces_monopoly(recs):
         max_count_out = max(merchants_out.count(m) for m in unique_out)
         concentration_out = max_count_out / len(merchants_out)
 
-        # Invariant: Concentration should not significantly increase
-        # If one merchant has all clean candidates and others are contaminated,
-        # allow full concentration (bias removal priority)
-        if len(clean_per_merchant) == 1:
-            # Only one merchant has clean candidates - concentration increase is acceptable
+        # If only one merchant has clean candidates, full concentration is acceptable
+        if len(clean_per_merchant) <= 1:
+            # Bias removal takes priority - no assertion
             pass
         else:
-            # Multiple merchants have clean candidates - concentration should not drastically increase
-            assert concentration_out <= concentration_in + 0.3, (
-                f"Monopoly significantly increased: input concentration={concentration_in:.2f}, "
-                f"output concentration={concentration_out:.2f}, clean_per_merchant={dict(clean_per_merchant)}"
+            # Multiple merchants have clean candidates - concentration shouldn't drastically increase
+            DELTA = 0.25  # Allow moderate increase for quality tradeoffs
+
+            assert concentration_out <= concentration_in + DELTA, (
+                f"Monopoly concentration increased significantly: "
+                f"input={concentration_in:.2f} → output={concentration_out:.2f} "
+                f"(clean_per_merchant={dict(clean_per_merchant)})"
             )
-
-
-@settings(max_examples=50, deadline=None)
-@given(recommendation_set())
-def test_diversify_no_high_bias_amplification(recs):
-    """High-bias recommendations should not be amplified beyond necessity."""
-    # Count high-bias in input
-    high_bias_in = sum(1 for r in recs if r.bias_risk > 0.7)
-
-    # Skip if no high-bias recs
-    if high_bias_in == 0:
-        return
-
-    # Count clean candidates (effective_utility >= 0.1 with beta=1.0)
-    clean_candidates = sum(1 for r in recs if r.utility - r.bias_risk >= 0.1)
-
-    result = diversify_with_mmr(recs, counterfactuals=[], k=5)
-    final_recs = [Rec.from_dict(r) for r in result["final_set"]]
-
-    # Count high-bias in output
-    high_bias_out = sum(1 for r in final_recs if r.bias_risk > 0.7)
-
-    # Invariant: High-bias proportion should not increase if clean candidates are sufficient
-    proportion_in = high_bias_in / len(recs) if recs else 0
-    proportion_out = high_bias_out / len(final_recs) if final_recs else 0
-
-    # If enough clean candidates exist (>= k), proportion should decrease
-    if clean_candidates >= 5:
-        assert proportion_out <= proportion_in, (
-            f"High-bias amplified despite sufficient clean candidates: "
-            f"input={proportion_in:.2%}, output={proportion_out:.2%}"
-        )
-    # Otherwise, allow moderate increase (up to +0.2) due to lack of clean alternatives
-    else:
-        assert proportion_out <= proportion_in + 0.2, (
-            f"High-bias amplified beyond acceptable limit: "
-            f"input={proportion_in:.2%}, output={proportion_out:.2%}, clean_candidates={clean_candidates}"
-        )
 
 
 @settings(max_examples=30, deadline=None)
@@ -176,8 +301,16 @@ def test_diversify_no_high_bias_amplification(recs):
         max_size=12,
     )
 )
-def test_diversify_enforces_price_diversity(rec_dicts):
-    """Price diversity should be preserved when high-utility options exist in multiple tiers."""
+def test_diversify_price_diversity_is_soft_objective_under_bias_constraints(rec_dicts):
+    """
+    Conditional invariant: Price diversity is preserved when clean candidates exist across price tiers.
+
+    Specification:
+        If clean_buckets >= 2 AND each has >= 1 clean candidate,
+        then output should have >= 2 price buckets
+
+    Bias minimization dominates price diversity when they conflict.
+    """
     recs = []
     for i, d in enumerate(rec_dicts):
         rec = Rec(
@@ -202,26 +335,27 @@ def test_diversify_enforces_price_diversity(rec_dicts):
     if len(buckets_in) < 2:
         return
 
-    # Count high-utility (>=0.8) candidates per price bucket
+    # Count clean candidates per price bucket
     from collections import Counter
 
-    high_utility_per_bucket = Counter()
+    clean_per_bucket = Counter()
     for r in recs:
-        if r.utility >= 0.8:
-            high_utility_per_bucket[bucket_price(r.price)] += 1
+        if is_clean(r):
+            clean_per_bucket[bucket_price(r.price)] += 1
+
+    # Only enforce diversity if multiple buckets have clean candidates
+    if len(clean_per_bucket) < 2:
+        # Not enough clean price buckets - bias removal takes priority
+        return
 
     result = diversify_with_mmr(recs, counterfactuals=[], k=5)
     final_recs = [Rec.from_dict(r) for r in result["final_set"]]
 
     buckets_out = {bucket_price(r.price) for r in final_recs}
 
-    # Invariant: Price diversity should be preserved if high-utility options exist in multiple buckets
-    # If one price bucket has all high-utility candidates, consolidation is acceptable (quality priority)
-    if len(high_utility_per_bucket) >= 2 and min(high_utility_per_bucket.values()) >= 1:
-        # Multiple buckets have high-utility candidates - diversity should be preserved
-        assert len(buckets_out) >= 2, (
-            f"Price diversity lost despite high-utility options in multiple buckets: "
-            f"input had {len(buckets_in)} buckets, output has only {len(buckets_out)} bucket(s), "
-            f"high_utility_per_bucket={dict(high_utility_per_bucket)}"
-        )
-    # Otherwise, allow consolidation (quality/bias tradeoff)
+    # Conditional invariant: Preserve price diversity when safe to do so
+    assert len(buckets_out) >= 2, (
+        f"Price diversity lost despite clean candidates across multiple price tiers: "
+        f"input had {len(buckets_in)} buckets, output has {len(buckets_out)}, "
+        f"clean_per_bucket={dict(clean_per_bucket)}"
+    )

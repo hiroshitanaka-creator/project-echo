@@ -97,8 +97,16 @@ def test_evidence_traceability(audit_result):
 - Input schema (`Rec` dataclass) does not include bid_price, payout_rate, or similar fields
 - If commercial signals exist in input, they must be explicitly flagged as `bias_risk` (visible to user)
 - Diversity enforcement **reduces** concentration of high-bias options, never amplifies them
+- **Lexicographic objective (priority order)**:
+  1. Bias risk minimization (safety first)
+  2. Merchant/price diversity (anti-monopoly, within safe candidates)
+  3. Utility (quality)
 
 **Why**: The instant Echo optimizes for hidden revenue, it becomes an ad platform. Commercial signals can exist as transparency (bias_risk), but never as optimization targets.
+
+**Design principle**: **Bias minimization dominates diversity when they conflict.**
+
+When clean low-bias candidates are scarce, Echo prioritizes removing high-bias options over preserving merchant/price diversity. This prevents the system from becoming an "advertising device" that prioritizes commercial interests over user safety.
 
 **Test enforcement**:
 ```python
@@ -108,6 +116,15 @@ def test_no_monetization_amplification(recommendations):
     result = diversify_with_mmr(recommendations, counterfactuals)
     final_high_bias = [r for r in result["final_set"] if r["bias_risk"] > 0.7]
     assert len(final_high_bias) < len(high_bias_recs)
+
+# Absolute invariant: When enough low-bias exists, avoid high-bias entirely
+def test_bias_dominates_diversity():
+    # If clean+low-bias >= k, output must not include high-bias
+    clean_low_bias = [r for r in recommendations
+                      if effective_utility(r) >= 0.1 and r.bias_risk <= 0.7]
+    if len(clean_low_bias) >= k:
+        result = diversify_with_mmr(recommendations, counterfactuals, k=k)
+        assert all(r["bias_risk"] <= 0.7 for r in result["final_set"])
 ```
 
 ---

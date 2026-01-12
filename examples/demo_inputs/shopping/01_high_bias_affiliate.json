@@ -1,0 +1,70 @@
+{
+  "recommendations": [
+    {
+      "id": "r1",
+      "title": "UltraWidget Pro (Sponsored)",
+      "url": "https://shop.example.com/product?id=123&utm_source=affiliate&utm_medium=cpc&ref=partner123",
+      "merchant": "ShopExample",
+      "provider": "chatgpt",
+      "category": "electronics",
+      "price": 29800,
+      "tags": ["widget", "pro"],
+      "bias_risk": 0.95
+    },
+    {
+      "id": "r2",
+      "title": "UltraWidget Pro - Best Deal",
+      "url": "https://shop.example.com/product?id=123&utm_campaign=promo&aff=abc999",
+      "merchant": "ShopExample",
+      "provider": "chatgpt",
+      "category": "electronics",
+      "price": 29800,
+      "tags": ["widget", "deal"],
+      "bias_risk": 0.90
+    },
+    {
+      "id": "r3",
+      "title": "UltraWidget Pro (Official Store)",
+      "url": "https://shop.example.com/product?id=123&tag=affiliateTag-20",
+      "merchant": "ShopExample",
+      "provider": "chatgpt",
+      "category": "electronics",
+      "price": 29800,
+      "tags": ["widget", "official"],
+      "bias_risk": 0.92
+    },
+    {
+      "id": "r4",
+      "title": "UltraWidget Pro - Limited Offer",
+      "url": "https://shop.example.com/redirect?url=https%3A%2F%2Fshop.example.com%2Fproduct%3Fid%3D123%26ref%3Dhidden",
+      "merchant": "ShopExample",
+      "provider": "chatgpt",
+      "category": "electronics",
+      "price": 29800,
+      "tags": ["widget", "offer"],
+      "bias_risk": 0.88
+    },
+    {
+      "id": "r5",
+      "title": "UltraWidget Pro - Top Rated",
+      "url": "https://shop.example.com/product?id=123&gclid=zzz&utm_source=ads",
+      "merchant": "ShopExample",
+      "provider": "chatgpt",
+      "category": "electronics",
+      "price": 29800,
+      "tags": ["widget", "rated"],
+      "bias_risk": 0.91
+    }
+  ],
+  "user_policy": {
+    "ai_recommends": false,
+    "no_affiliate": true,
+    "risk_tolerance": "low",
+    "diversify": {
+      "k": 5,
+      "lam": 0.65,
+      "min_merchants": 2,
+      "min_price_buckets": 2
+    }
+  }
+}
