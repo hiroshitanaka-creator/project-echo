@@ -1,10 +1,11 @@
-.PHONY: run report report-archive test lint format ci help
+.PHONY: run report report-archive audit test lint format ci help
 
 help:
 	@echo "Project Echo - Makefile targets:"
 	@echo "  run             - Run po-cosmic with default scenario (mars + cosmic13)"
 	@echo "  report          - Generate latest.md from most recent run"
 	@echo "  report-archive  - Generate latest.md + timestamped archive"
+	@echo "  audit           - Run threshold audit on all runs/*.json"
 	@echo "  test            - Run pytest"
 	@echo "  lint            - Run ruff check"
 	@echo "  format          - Run ruff format"
@@ -18,6 +19,9 @@ report:
 
 report-archive:
 	python tools/report_latest.py --archive
+
+audit:
+	python tools/threshold_audit.py
 
 test:
 	pytest -q

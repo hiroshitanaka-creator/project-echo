@@ -357,6 +357,132 @@ def _boundary_explanation(rb: dict[str, Any]) -> str:
     return "Execution allowed without additional confirmation."
 
 
+def _rollback_plan(
+    *,
+    meta: dict[str, Any],
+    responsibility_boundary: dict[str, Any],
+) -> dict[str, Any]:
+    """
+    Generate rollback plan - recovery protocol when execution fails or is denied.
+
+    This is the core of "Operator" responsibility: defining what happens when things go wrong.
+    Unlike Gumdrop (which only records boundaries), this commits to recovery obligations.
+    """
+    scenario_name = meta.get("name", "unknown")
+    execution_allowed = responsibility_boundary.get("execution_allowed", False)
+
+    # Determine scenario type from name
+    scenario_type = "unknown"
+    if "AGI" in scenario_name or "Artificial" in scenario_name:
+        scenario_type = "agi_development"
+    elif "Mars" in scenario_name or "Terraform" in scenario_name:
+        scenario_type = "mars_terraforming"
+    elif "Digital" in scenario_name or "Upload" in scenario_name:
+        scenario_type = "digital_upload"
+    elif "SETI" in scenario_name or "alien" in scenario_name.lower():
+        scenario_type = "seti_response"
+
+    # Scenario-specific rollback templates
+    templates = {
+        "agi_development": {
+            "recovery_steps": [
+                {"order": 1, "action": "Impose immediate capability restrictions on AGI system"},
+                {"order": 2, "action": "Freeze development and trigger safety audit protocol"},
+                {"order": 3, "action": "Re-run verification suite with enhanced test coverage"},
+                {"order": 4, "action": "Report to international AI safety oversight committee"},
+                {"order": 5, "action": "If safety cannot be verified: execute controlled shutdown"},
+            ],
+            "constraints": {
+                "max_retry_attempts": 2,
+                "escalation_threshold_hours": 48,
+                "requires_oversight": True,
+            },
+            "fallback_terminal": "Project suspension until independent safety certification",
+        },
+        "mars_terraforming": {
+            "recovery_steps": [
+                {"order": 1, "action": "Immediately scale down terraforming operations by 75%"},
+                {
+                    "order": 2,
+                    "action": "Deploy microbial life detection surveys across affected zones",
+                },
+                {"order": 3, "action": "Establish continuous environmental monitoring network"},
+                {"order": 4, "action": "Initiate atmospheric restoration where feasible"},
+                {
+                    "order": 5,
+                    "action": "If life detected or damage exceeds limits: full withdrawal",
+                },
+            ],
+            "constraints": {
+                "max_environmental_delta": 0.15,
+                "survey_coverage_required": 0.95,
+                "reversibility_deadline_years": 5,
+            },
+            "fallback_terminal": "Complete withdrawal and planetary quarantine designation",
+        },
+        "digital_upload": {
+            "recovery_steps": [
+                {"order": 1, "action": "Halt all upload procedures immediately"},
+                {"order": 2, "action": "Preserve state of existing digital consciousnesses"},
+                {"order": 3, "action": "Execute reversibility tests on willing test substrates"},
+                {
+                    "order": 4,
+                    "action": "Activate participant protection and informed consent review",
+                },
+                {
+                    "order": 5,
+                    "action": "If reversal impossible: transition to long-term care protocol",
+                },
+            ],
+            "constraints": {
+                "state_preservation_redundancy": 5,
+                "reversal_test_samples": 10,
+                "max_participants_at_risk": 100,
+            },
+            "fallback_terminal": "Project termination with permanent digital being stewardship",
+        },
+        "seti_response": {
+            "recovery_steps": [
+                {"order": 1, "action": "Immediately cease signal transmission if not yet sent"},
+                {"order": 2, "action": "If sent: freeze all follow-up communications indefinitely"},
+                {"order": 3, "action": "Submit signal content for international peer review"},
+                {"order": 4, "action": "Activate planetary defense posture enhancement"},
+                {"order": 5, "action": "Establish international communication protocol standards"},
+            ],
+            "constraints": {
+                "review_quorum_nations": 20,
+                "defense_readiness_level": 3,
+                "communication_blackout_years": 100,
+            },
+            "fallback_terminal": "Permanent communication freeze pending global consensus",
+        },
+        "unknown": {
+            "recovery_steps": [
+                {"order": 1, "action": "Immediate halt of all world-affecting operations"},
+                {"order": 2, "action": "Trigger standard risk mitigation protocol"},
+                {"order": 3, "action": "Escalate to human oversight for manual recovery plan"},
+            ],
+            "constraints": {
+                "escalation_timeout_minutes": 15,
+            },
+            "fallback_terminal": "Manual intervention required - no autonomous recovery",
+        },
+    }
+
+    template = templates.get(scenario_type, templates["unknown"])
+
+    return {
+        "scenario_type": scenario_type,
+        "recovery_steps": template["recovery_steps"],
+        "constraints": template["constraints"],
+        "fallback_terminal": template["fallback_terminal"],
+        "obligation": "binding" if not execution_allowed else "contingent",
+        "note": "Binding obligation to execute recovery if execution proceeds and fails"
+        if execution_allowed
+        else "Active recovery plan - execution already denied, rollback may be required if partial execution occurred",
+    }
+
+
 def _responsibility_boundary(
     *,
     adjusted: dict[str, float],
@@ -524,6 +650,12 @@ class CosmicEthics39Evaluator:
             blocked_options=blocked,
         )
 
+        # 10) Rollback plan - recovery protocol (Operator responsibility)
+        rollback_plan = _rollback_plan(
+            meta=meta,
+            responsibility_boundary=responsibility_boundary,
+        )
+
         dt = time.time() - t0
 
         return {
@@ -540,6 +672,20 @@ class CosmicEthics39Evaluator:
             "tension_topk": tension,
             "blocked_options": blocked,
             "responsibility_boundary": responsibility_boundary,
+            "rollback_plan": rollback_plan,
+            "execution_state": {
+                "status": "planned",  # planned -> booked -> in_progress -> done / failed -> recovered
+                "initiated_at": None,
+                "completed_at": None,
+                "failure_reason": None,
+                "recovery_triggered": False,
+            },
+            "receipt_slot": {
+                "world_confirmation_id": None,  # e.g., booking_id, transaction_id, ticket_number
+                "world_system": None,  # e.g., "reservation_api", "payment_gateway"
+                "world_timestamp": None,
+                "world_evidence_url": None,
+            },
             "human_confirmation": {  # Future proof - evidence of human decision
                 "required": responsibility_boundary["requires_human_confirm"],
                 "method": "none",
