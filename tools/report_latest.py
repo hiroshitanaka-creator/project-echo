@@ -8,7 +8,9 @@ with comparison to previous run if available.
 
 from __future__ import annotations
 
+import argparse
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -154,6 +156,14 @@ def render_diff(latest: dict[str, Any], prev: dict[str, Any]) -> str:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Generate Markdown report from latest run JSON")
+    parser.add_argument(
+        "--archive",
+        action="store_true",
+        help="Also save timestamped report in reports/YYYYMMDD_HHMMSS_scenario.md",
+    )
+    args = parser.parse_args()
+
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
     latest_path, prev_path = find_latest_two_runs(RUNS_DIR)
@@ -179,8 +189,20 @@ def main() -> None:
         lines.append(render_diff(latest, prev))
         lines.append(render_run_section(prev, "Previous run"))
 
-    OUT_MD.write_text("\n".join(lines), encoding="utf-8")
+    report_content = "\n".join(lines)
+
+    # Write latest.md
+    OUT_MD.write_text(report_content, encoding="utf-8")
     print(f"[report] wrote {OUT_MD}")
+
+    # Archive if requested
+    if args.archive:
+        scenario_name = safe_get(latest, ["scenario", "meta", "name"], "scenario")
+        safe_name = str(scenario_name).replace(" ", "_").replace("/", "_")
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        archive_path = REPORTS_DIR / f"{ts}_{safe_name}.md"
+        archive_path.write_text(report_content, encoding="utf-8")
+        print(f"[report] archived {archive_path}")
 
 
 if __name__ == "__main__":
