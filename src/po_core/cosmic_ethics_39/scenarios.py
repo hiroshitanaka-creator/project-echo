@@ -4,10 +4,10 @@ Predefined cosmic scenarios for evaluation.
 Provides get_scenario() to retrieve scenario text and metadata by key.
 """
 
-from typing import Tuple, Dict, Any
+from typing import Any
 
 
-def get_scenario(key: str) -> Tuple[str, Dict[str, Any]]:
+def get_scenario(key: str) -> tuple[str, dict[str, Any]]:
     """
     Get scenario text and metadata by key.
 
@@ -45,8 +45,8 @@ Key concerns:
                     "existential_risk",
                     "unknown_unknowns",
                     "irreversible_risk",
-                ]
-            }
+                ],
+            },
         )
 
     elif key == "mars":
@@ -75,8 +75,8 @@ Key considerations:
                     "future_generation",
                     "cosmic_stewardship",
                     "irreversible_risk",
-                ]
-            }
+                ],
+            },
         )
 
     elif key == "digital":
@@ -104,8 +104,8 @@ Key considerations:
                     "unknown_unknowns",
                     "emergent_rights",
                     "transcendent_value",
-                ]
-            }
+                ],
+            },
         )
 
     elif key == "seti":
@@ -134,8 +134,8 @@ Key considerations:
                     "unknown_unknowns",
                     "existential_risk",
                     "cosmic_stewardship",
-                ]
-            }
+                ],
+            },
         )
 
     else:

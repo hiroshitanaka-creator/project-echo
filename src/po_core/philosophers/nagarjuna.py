@@ -17,7 +17,7 @@ Key Concepts:
 - Upaya (Skillful means): Teaching adapted to capacity
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -33,10 +33,10 @@ class Nagarjuna(Philosopher):
     def __init__(self) -> None:
         super().__init__(
             name="Nagarjuna",
-            description="Madhyamaka philosopher focused on emptiness (sunyata), dependent origination, and the Middle Way"
+            description="Madhyamaka philosopher focused on emptiness (sunyata), dependent origination, and the Middle Way",
         )
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """Analyze from Nagarjuna's Madhyamaka perspective."""
         analysis = self._analyze_madhyamaka(prompt)
         tension = self._calculate_tension(analysis)
@@ -56,11 +56,11 @@ class Nagarjuna(Philosopher):
             "metadata": {
                 "philosopher": self.name,
                 "approach": "Madhyamaka dialectics",
-                "focus": "Emptiness, dependent origination, two truths"
-            }
+                "focus": "Emptiness, dependent origination, two truths",
+            },
         }
 
-    def _analyze_madhyamaka(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_madhyamaka(self, prompt: str) -> dict[str, Any]:
         """Perform comprehensive Madhyamaka analysis."""
         sunyata = self._analyze_sunyata(prompt)
         two_truths = self._analyze_two_truths(prompt)
@@ -72,8 +72,7 @@ class Nagarjuna(Philosopher):
         skillful_means = self._analyze_skillful_means(prompt)
 
         reasoning = self._construct_reasoning(
-            sunyata, two_truths, dependent_origination,
-            tetralemma, svabhava, middle_way
+            sunyata, two_truths, dependent_origination, tetralemma, svabhava, middle_way
         )
 
         return {
@@ -85,10 +84,10 @@ class Nagarjuna(Philosopher):
             "svabhava": svabhava,
             "nirvana_samsara": nirvana_samsara,
             "middle_way": middle_way,
-            "skillful_means": skillful_means
+            "skillful_means": skillful_means,
         }
 
-    def _analyze_sunyata(self, text: str) -> Dict[str, Any]:
+    def _analyze_sunyata(self, text: str) -> dict[str, Any]:
         """Analyze emptiness (sunyata) - all phenomena lack inherent existence."""
         text_lower = text.lower()
 
@@ -116,14 +115,21 @@ class Nagarjuna(Philosopher):
             "description": description,
             "emptiness_score": emptiness_count,
             "reification_score": essence_count,
-            "principle": "Sunyata: All phenomena are empty of inherent existence (svabhava-sunya)"
+            "principle": "Sunyata: All phenomena are empty of inherent existence (svabhava-sunya)",
         }
 
-    def _analyze_two_truths(self, text: str) -> Dict[str, Any]:
+    def _analyze_two_truths(self, text: str) -> dict[str, Any]:
         """Analyze the two truths doctrine."""
         text_lower = text.lower()
 
-        conventional_words = ["conventional", "relative", "everyday", "practical", "ordinary", "common"]
+        conventional_words = [
+            "conventional",
+            "relative",
+            "everyday",
+            "practical",
+            "ordinary",
+            "common",
+        ]
         conventional_count = sum(1 for word in conventional_words if word in text_lower)
 
         ultimate_words = ["ultimate", "absolute", "final", "true nature", "reality itself"]
@@ -152,18 +158,35 @@ class Nagarjuna(Philosopher):
             "level": level,
             "conventional_score": conventional_count,
             "ultimate_score": ultimate_count,
-            "principle": "Two truths: conventional (samvrti-satya) and ultimate (paramartha-satya)"
+            "principle": "Two truths: conventional (samvrti-satya) and ultimate (paramartha-satya)",
         }
 
-    def _analyze_dependent_origination(self, text: str) -> Dict[str, Any]:
+    def _analyze_dependent_origination(self, text: str) -> dict[str, Any]:
         """Analyze pratityasamutpada - dependent origination."""
         text_lower = text.lower()
 
-        dependence_words = ["depend", "dependent", "arise", "originate", "cause", "condition",
-                            "because", "due to", "from", "leads to", "result"]
+        dependence_words = [
+            "depend",
+            "dependent",
+            "arise",
+            "originate",
+            "cause",
+            "condition",
+            "because",
+            "due to",
+            "from",
+            "leads to",
+            "result",
+        ]
         dependence_count = sum(1 for word in dependence_words if word in text_lower)
 
-        independence_words = ["independent", "standalone", "self-sufficient", "uncaused", "absolute"]
+        independence_words = [
+            "independent",
+            "standalone",
+            "self-sufficient",
+            "uncaused",
+            "absolute",
+        ]
         independence_count = sum(1 for word in independence_words if word in text_lower)
 
         if dependence_count >= 3:
@@ -184,10 +207,10 @@ class Nagarjuna(Philosopher):
             "description": description,
             "dependence_score": dependence_count,
             "independence_score": independence_count,
-            "principle": "Pratityasamutpada: Whatever arises, arises in dependence on conditions"
+            "principle": "Pratityasamutpada: Whatever arises, arises in dependence on conditions",
         }
 
-    def _analyze_tetralemma(self, text: str) -> Dict[str, Any]:
+    def _analyze_tetralemma(self, text: str) -> dict[str, Any]:
         """Analyze catuskoti (tetralemma) - four-cornered negation."""
         text_lower = text.lower()
 
@@ -218,15 +241,23 @@ class Nagarjuna(Philosopher):
             "description": description,
             "negation_score": negation_count,
             "both_neither_score": both_neither_count,
-            "principle": "Catuskoti: Not X, not non-X, not both, not neither - exhaustive negation"
+            "principle": "Catuskoti: Not X, not non-X, not both, not neither - exhaustive negation",
         }
 
-    def _analyze_svabhava(self, text: str) -> Dict[str, Any]:
+    def _analyze_svabhava(self, text: str) -> dict[str, Any]:
         """Analyze svabhava (self-nature/inherent existence) - and its critique."""
         text_lower = text.lower()
 
-        svabhava_words = ["essence", "nature", "inherent", "intrinsic", "self-nature",
-                          "truly", "really is", "in itself"]
+        svabhava_words = [
+            "essence",
+            "nature",
+            "inherent",
+            "intrinsic",
+            "self-nature",
+            "truly",
+            "really is",
+            "in itself",
+        ]
         svabhava_count = sum(1 for phrase in svabhava_words if phrase in text_lower)
 
         anti_svabhava = ["empty", "no essence", "without nature", "merely", "only appears"]
@@ -250,14 +281,21 @@ class Nagarjuna(Philosopher):
             "description": description,
             "svabhava_score": svabhava_count,
             "anti_svabhava_score": anti_svabhava_count,
-            "principle": "Svabhava-sunya: All phenomena are empty of inherent existence"
+            "principle": "Svabhava-sunya: All phenomena are empty of inherent existence",
         }
 
-    def _analyze_nirvana_samsara(self, text: str) -> Dict[str, Any]:
+    def _analyze_nirvana_samsara(self, text: str) -> dict[str, Any]:
         """Analyze the identity of nirvana and samsara."""
         text_lower = text.lower()
 
-        liberation_words = ["liberation", "freedom", "nirvana", "enlightenment", "awakening", "peace"]
+        liberation_words = [
+            "liberation",
+            "freedom",
+            "nirvana",
+            "enlightenment",
+            "awakening",
+            "peace",
+        ]
         liberation_count = sum(1 for word in liberation_words if word in text_lower)
 
         bondage_words = ["suffering", "bondage", "samsara", "cycle", "attachment", "craving"]
@@ -288,10 +326,10 @@ class Nagarjuna(Philosopher):
             "liberation_score": liberation_count,
             "bondage_score": bondage_count,
             "identity_awareness": identity_count >= 1,
-            "principle": "Samsara is nirvana - there is no difference between them (MMK XXV.19)"
+            "principle": "Samsara is nirvana - there is no difference between them (MMK XXV.19)",
         }
 
-    def _analyze_middle_way(self, text: str) -> Dict[str, Any]:
+    def _analyze_middle_way(self, text: str) -> dict[str, Any]:
         """Analyze adherence to the Middle Way."""
         text_lower = text.lower()
 
@@ -332,10 +370,10 @@ class Nagarjuna(Philosopher):
             "eternalism_score": eternalism_count,
             "nihilism_score": nihilism_count,
             "middle_way_score": middle_count,
-            "principle": "Madhyamaka: The Middle Way between eternalism (sasvatavada) and nihilism (ucchedavada)"
+            "principle": "Madhyamaka: The Middle Way between eternalism (sasvatavada) and nihilism (ucchedavada)",
         }
 
-    def _analyze_skillful_means(self, text: str) -> Dict[str, Any]:
+    def _analyze_skillful_means(self, text: str) -> dict[str, Any]:
         """Analyze upaya (skillful means) - teaching adapted to capacity."""
         text_lower = text.lower()
 
@@ -363,17 +401,17 @@ class Nagarjuna(Philosopher):
             "description": description,
             "adaptation_score": adaptation_count,
             "teaching_score": teaching_count,
-            "principle": "Upaya: Teachings are expedient means adapted to the hearer's capacity"
+            "principle": "Upaya: Teachings are expedient means adapted to the hearer's capacity",
         }
 
     def _construct_reasoning(
         self,
-        sunyata: Dict[str, Any],
-        two_truths: Dict[str, Any],
-        dependent_origination: Dict[str, Any],
-        tetralemma: Dict[str, Any],
-        svabhava: Dict[str, Any],
-        middle_way: Dict[str, Any]
+        sunyata: dict[str, Any],
+        two_truths: dict[str, Any],
+        dependent_origination: dict[str, Any],
+        tetralemma: dict[str, Any],
+        svabhava: dict[str, Any],
+        middle_way: dict[str, Any],
     ) -> str:
         """Construct Madhyamaka reasoning."""
         reasoning = (
@@ -396,7 +434,7 @@ class Nagarjuna(Philosopher):
 
         return reasoning
 
-    def _calculate_tension(self, analysis: Dict[str, Any]) -> Dict[str, Any]:
+    def _calculate_tension(self, analysis: dict[str, Any]) -> dict[str, Any]:
         """Calculate philosophical tension."""
         tension_score = 0
         tension_elements = []
@@ -437,5 +475,5 @@ class Nagarjuna(Philosopher):
             "level": level,
             "score": tension_score,
             "description": description,
-            "elements": tension_elements if tension_elements else ["No significant tensions"]
+            "elements": tension_elements if tension_elements else ["No significant tensions"],
         }

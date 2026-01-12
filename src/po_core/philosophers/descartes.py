@@ -17,7 +17,7 @@ Key Concepts:
 - Mathematical Method: Apply geometric certainty to philosophy (mathesis universalis)
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -33,10 +33,10 @@ class Descartes(Philosopher):
     def __init__(self) -> None:
         super().__init__(
             name="René Descartes",
-            description="Rationalist philosopher focused on certainty through doubt, clear ideas, and mind-body dualism"
+            description="Rationalist philosopher focused on certainty through doubt, clear ideas, and mind-body dualism",
         )
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Analyze the prompt from Descartes' rationalist perspective.
 
@@ -70,11 +70,11 @@ class Descartes(Philosopher):
             "metadata": {
                 "philosopher": self.name,
                 "approach": "Rationalist method of systematic doubt toward certainty",
-                "focus": "Cogito, clear and distinct ideas, and the foundations of knowledge"
-            }
+                "focus": "Cogito, clear and distinct ideas, and the foundations of knowledge",
+            },
         }
 
-    def _analyze_cartesian_framework(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_cartesian_framework(self, prompt: str) -> dict[str, Any]:
         """
         Perform comprehensive Cartesian rationalist analysis.
 
@@ -98,8 +98,7 @@ class Descartes(Philosopher):
 
         # Construct comprehensive reasoning
         reasoning = self._construct_reasoning(
-            cogito, methodic_doubt, clear_distinct, mind_body,
-            rationalism, mathematical
+            cogito, methodic_doubt, clear_distinct, mind_body, rationalism, mathematical
         )
 
         return {
@@ -113,10 +112,10 @@ class Descartes(Philosopher):
             "evil_demon": evil_demon,
             "pineal_gland": pineal_gland,
             "rationalism": rationalism,
-            "mathematical_method": mathematical
+            "mathematical_method": mathematical,
         }
 
-    def _analyze_cogito(self, text: str) -> Dict[str, Any]:
+    def _analyze_cogito(self, text: str) -> dict[str, Any]:
         """
         Analyze the Cogito ergo sum - "I think, therefore I am".
 
@@ -172,10 +171,10 @@ class Descartes(Philosopher):
             "has_first_person": has_first_person,
             "thinking_emphasized": thinking_count >= 2,
             "existence_connected": existence_count >= 1 and thinking_count >= 1,
-            "principle": "Cogito ergo sum - I think, therefore I am - the one indubitable truth"
+            "principle": "Cogito ergo sum - I think, therefore I am - the one indubitable truth",
         }
 
-    def _analyze_methodic_doubt(self, text: str) -> Dict[str, Any]:
+    def _analyze_methodic_doubt(self, text: str) -> dict[str, Any]:
         """
         Analyze Methodic Doubt (doute méthodique).
 
@@ -193,7 +192,12 @@ class Descartes(Philosopher):
         has_method = any(phrase in text_lower for phrase in method_words)
 
         # Questioning everything
-        everything_phrases = ["doubt everything", "question all", "reject all", "start from scratch"]
+        everything_phrases = [
+            "doubt everything",
+            "question all",
+            "reject all",
+            "start from scratch",
+        ]
         questions_all = any(phrase in text_lower for phrase in everything_phrases)
 
         # Senses unreliable
@@ -242,10 +246,10 @@ class Descartes(Philosopher):
             "doubts_senses": doubts_senses,
             "dream_argument": has_dream_argument,
             "seeks_certainty": seeks_certainty,
-            "principle": "Doubt everything that can be doubted to find what is indubitable"
+            "principle": "Doubt everything that can be doubted to find what is indubitable",
         }
 
-    def _analyze_clear_distinct_ideas(self, text: str) -> Dict[str, Any]:
+    def _analyze_clear_distinct_ideas(self, text: str) -> dict[str, Any]:
         """
         Analyze Clear and Distinct Ideas - the criterion of truth.
 
@@ -311,10 +315,10 @@ class Descartes(Philosopher):
             "both_present": clarity_count >= 1 and distinct_count >= 1,
             "has_confusion": has_confusion,
             "requires_attention": has_attention,
-            "principle": "Whatever is clearly and distinctly perceived is true"
+            "principle": "Whatever is clearly and distinctly perceived is true",
         }
 
-    def _analyze_mind_body_dualism(self, text: str) -> Dict[str, Any]:
+    def _analyze_mind_body_dualism(self, text: str) -> dict[str, Any]:
         """
         Analyze Mind-Body Dualism.
 
@@ -382,10 +386,10 @@ class Descartes(Philosopher):
             "both_substances": mind_count >= 1 and body_count >= 1,
             "dualism_explicit": has_dualism,
             "interaction_problem": has_interaction,
-            "principle": "Mind (res cogitans) and body (res extensa) are two distinct substances"
+            "principle": "Mind (res cogitans) and body (res extensa) are two distinct substances",
         }
 
-    def _analyze_innate_ideas(self, text: str) -> Dict[str, Any]:
+    def _analyze_innate_ideas(self, text: str) -> dict[str, Any]:
         """
         Analyze Innate Ideas (ideae innatae).
 
@@ -417,7 +421,12 @@ class Descartes(Philosopher):
         from_experience = sum(1 for phrase in experience_words if phrase in text_lower)
 
         # Mind's own resources
-        mind_resources = ["mind itself", "reason alone", "without experience", "prior to experience"]
+        mind_resources = [
+            "mind itself",
+            "reason alone",
+            "without experience",
+            "prior to experience",
+        ]
         from_mind = any(phrase in text_lower for phrase in mind_resources)
 
         innate_ideas_found = []
@@ -453,10 +462,10 @@ class Descartes(Philosopher):
             "has_god_idea": has_god,
             "has_mathematical_ideas": has_mathematics,
             "from_experience": from_experience >= 2,
-            "principle": "Some ideas are innate - born with us, not derived from sense experience"
+            "principle": "Some ideas are innate - born with us, not derived from sense experience",
         }
 
-    def _analyze_god_as_guarantor(self, text: str) -> Dict[str, Any]:
+    def _analyze_god_as_guarantor(self, text: str) -> dict[str, Any]:
         """
         Analyze God as Guarantor of truth.
 
@@ -519,11 +528,12 @@ class Descartes(Philosopher):
             "god_present": has_god,
             "perfection_emphasized": has_perfection,
             "guarantees_truth": has_guarantee,
-            "prevents_deception": god_not_deceiver or (has_god and has_perfection and has_deception),
-            "principle": "God's perfection guarantees truth of what we clearly and distinctly perceive"
+            "prevents_deception": god_not_deceiver
+            or (has_god and has_perfection and has_deception),
+            "principle": "God's perfection guarantees truth of what we clearly and distinctly perceive",
         }
 
-    def _analyze_evil_demon(self, text: str) -> Dict[str, Any]:
+    def _analyze_evil_demon(self, text: str) -> dict[str, Any]:
         """
         Analyze the Evil Demon (Genius Malignus) hypothesis.
 
@@ -590,10 +600,10 @@ class Descartes(Philosopher):
             "deception_emphasized": deception_count >= 2,
             "radical_doubt": has_radical,
             "survives_doubt": survives_doubt,
-            "principle": "Even if evil demon deceives about all else, cogito remains certain"
+            "principle": "Even if evil demon deceives about all else, cogito remains certain",
         }
 
-    def _analyze_pineal_gland(self, text: str) -> Dict[str, Any]:
+    def _analyze_pineal_gland(self, text: str) -> dict[str, Any]:
         """
         Analyze Pineal Gland theory - proposed site of mind-body interaction.
 
@@ -611,7 +621,13 @@ class Descartes(Philosopher):
         has_brain = any(word in text_lower for word in brain_words)
 
         # Interaction site
-        interaction_words = ["interact", "connection", "interface", "meeting point", "where mind meets"]
+        interaction_words = [
+            "interact",
+            "connection",
+            "interface",
+            "meeting point",
+            "where mind meets",
+        ]
         has_interaction_site = any(phrase in text_lower for phrase in interaction_words)
 
         # Mind-body problem
@@ -646,10 +662,10 @@ class Descartes(Philosopher):
             "pineal_explicit": has_pineal,
             "interaction_problem": has_problem,
             "seeks_physical_site": has_interaction_site and has_brain,
-            "principle": "Pineal gland proposed as point of mind-body interaction (controversial)"
+            "principle": "Pineal gland proposed as point of mind-body interaction (controversial)",
         }
 
-    def _analyze_rationalism(self, text: str) -> Dict[str, Any]:
+    def _analyze_rationalism(self, text: str) -> dict[str, Any]:
         """
         Analyze Rationalism - reason as primary source of knowledge.
 
@@ -664,7 +680,12 @@ class Descartes(Philosopher):
         reason_count = sum(1 for word in reason_words if word in text_lower)
 
         # A priori knowledge
-        apriori_words = ["a priori", "prior to experience", "independent of experience", "before experience"]
+        apriori_words = [
+            "a priori",
+            "prior to experience",
+            "independent of experience",
+            "before experience",
+        ]
         has_apriori = any(phrase in text_lower for phrase in apriori_words)
 
         # Deductive reasoning
@@ -672,7 +693,12 @@ class Descartes(Philosopher):
         has_deduction = any(word in text_lower for word in deduction_words)
 
         # Senses unreliable (rationalist view)
-        senses_unreliable = ["senses deceive", "sense unreliable", "cannot trust senses", "senses mislead"]
+        senses_unreliable = [
+            "senses deceive",
+            "sense unreliable",
+            "cannot trust senses",
+            "senses mislead",
+        ]
         distrusts_senses = any(phrase in text_lower for phrase in senses_unreliable)
 
         # Empiricism indicators (opposed to rationalism)
@@ -687,7 +713,9 @@ class Descartes(Philosopher):
         intuition_words = ["intuition", "self-evident", "immediately known", "grasp"]
         has_intuition = any(phrase in text_lower for phrase in intuition_words)
 
-        rationalism_score = reason_count + (2 if has_apriori else 0) + (1 if distrusts_senses else 0)
+        rationalism_score = (
+            reason_count + (2 if has_apriori else 0) + (1 if distrusts_senses else 0)
+        )
 
         if rationalism_score >= 4 or has_pure_reason:
             position = "Strong Rationalism"
@@ -718,10 +746,10 @@ class Descartes(Philosopher):
             "has_apriori": has_apriori,
             "distrusts_senses": distrusts_senses,
             "empiricism_present": empiricism_count >= 2,
-            "principle": "Reason is the primary source of knowledge, superior to sense experience"
+            "principle": "Reason is the primary source of knowledge, superior to sense experience",
         }
 
-    def _analyze_mathematical_method(self, text: str) -> Dict[str, Any]:
+    def _analyze_mathematical_method(self, text: str) -> dict[str, Any]:
         """
         Analyze Mathematical Method (mathesis universalis).
 
@@ -791,17 +819,17 @@ class Descartes(Philosopher):
             "deductive": deduction_count >= 2,
             "seeks_certainty": certainty_count >= 2,
             "rigorous": precision_count >= 2,
-            "principle": "Apply mathematical method to philosophy - clear axioms and rigorous deduction"
+            "principle": "Apply mathematical method to philosophy - clear axioms and rigorous deduction",
         }
 
     def _construct_reasoning(
         self,
-        cogito: Dict[str, Any],
-        methodic_doubt: Dict[str, Any],
-        clear_distinct: Dict[str, Any],
-        mind_body: Dict[str, Any],
-        rationalism: Dict[str, Any],
-        mathematical: Dict[str, Any]
+        cogito: dict[str, Any],
+        methodic_doubt: dict[str, Any],
+        clear_distinct: dict[str, Any],
+        mind_body: dict[str, Any],
+        rationalism: dict[str, Any],
+        mathematical: dict[str, Any],
     ) -> str:
         """Construct comprehensive Cartesian philosophical reasoning."""
         reasoning = (
@@ -810,29 +838,19 @@ class Descartes(Philosopher):
         )
 
         # Cogito analysis
-        reasoning += (
-            f"Cogito: {cogito['status']} - {cogito['description']}. "
-        )
+        reasoning += f"Cogito: {cogito['status']} - {cogito['description']}. "
 
         # Clear and distinct ideas
-        reasoning += (
-            f"Clear and distinct ideas: {clear_distinct['status']} - {clear_distinct['description']}. "
-        )
+        reasoning += f"Clear and distinct ideas: {clear_distinct['status']} - {clear_distinct['description']}. "
 
         # Mind-body dualism
-        reasoning += (
-            f"Mind-body: {mind_body['position']} - {mind_body['description']}. "
-        )
+        reasoning += f"Mind-body: {mind_body['position']} - {mind_body['description']}. "
 
         # Rationalism
-        reasoning += (
-            f"Epistemology: {rationalism['position']} - {rationalism['description']}. "
-        )
+        reasoning += f"Epistemology: {rationalism['position']} - {rationalism['description']}. "
 
         # Mathematical method
-        reasoning += (
-            f"Method: {mathematical['status']} - {mathematical['description']}. "
-        )
+        reasoning += f"Method: {mathematical['status']} - {mathematical['description']}. "
 
         # Concluding Cartesian wisdom
         reasoning += (
@@ -845,7 +863,7 @@ class Descartes(Philosopher):
 
         return reasoning
 
-    def _calculate_tension(self, analysis: Dict[str, Any]) -> Dict[str, Any]:
+    def _calculate_tension(self, analysis: dict[str, Any]) -> dict[str, Any]:
         """
         Calculate philosophical tension based on Cartesian analysis.
 
@@ -925,5 +943,5 @@ class Descartes(Philosopher):
             "level": level,
             "score": tension_score,
             "description": description,
-            "elements": tension_elements if tension_elements else ["No significant tensions"]
+            "elements": tension_elements if tension_elements else ["No significant tensions"],
         }

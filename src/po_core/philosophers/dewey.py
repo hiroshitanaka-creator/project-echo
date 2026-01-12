@@ -17,7 +17,7 @@ Key Concepts:
 - Occupations: Learning by doing, hands-on engagement
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -33,10 +33,10 @@ class Dewey(Philosopher):
     def __init__(self) -> None:
         super().__init__(
             name="John Dewey",
-            description="American pragmatist focused on experience, inquiry, democracy, and education"
+            description="American pragmatist focused on experience, inquiry, democracy, and education",
         )
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Analyze the prompt from Dewey's pragmatist perspective.
 
@@ -64,11 +64,11 @@ class Dewey(Philosopher):
             "metadata": {
                 "philosopher": self.name,
                 "approach": "Pragmatism and experimentalism",
-                "focus": "Experience, inquiry, and democratic growth"
-            }
+                "focus": "Experience, inquiry, and democratic growth",
+            },
         }
 
-    def _analyze_experience(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_experience(self, prompt: str) -> dict[str, Any]:
         """
         Perform Deweyan experiential analysis.
 
@@ -103,9 +103,7 @@ class Dewey(Philosopher):
         continuity_interaction = self._check_continuity_interaction(prompt)
 
         # Construct reasoning
-        reasoning = self._construct_reasoning(
-            experience, inquiry, growth, democracy, reflection
-        )
+        reasoning = self._construct_reasoning(experience, inquiry, growth, democracy, reflection)
 
         return {
             "reasoning": reasoning,
@@ -116,10 +114,10 @@ class Dewey(Philosopher):
             "reflection": reflection,
             "habit": habit,
             "instrumentalism": instrumentalism,
-            "continuity_interaction": continuity_interaction
+            "continuity_interaction": continuity_interaction,
         }
 
-    def _assess_experience(self, text: str) -> Dict[str, Any]:
+    def _assess_experience(self, text: str) -> dict[str, Any]:
         """
         Assess the quality of experience.
 
@@ -166,10 +164,10 @@ class Dewey(Philosopher):
             "quality": quality,
             "description": description,
             "type": type_exp,
-            "principle": "Experience is not mere sensation but interaction with environment"
+            "principle": "Experience is not mere sensation but interaction with environment",
         }
 
-    def _evaluate_inquiry(self, text: str) -> Dict[str, Any]:
+    def _evaluate_inquiry(self, text: str) -> dict[str, Any]:
         """
         Evaluate the stage of inquiry.
 
@@ -237,10 +235,10 @@ class Dewey(Philosopher):
             "description": description,
             "status": status,
             "stages_present": stages_present if stages_present else ["None"],
-            "principle": "Inquiry transforms indeterminate situations into determinate ones"
+            "principle": "Inquiry transforms indeterminate situations into determinate ones",
         }
 
-    def _assess_growth(self, text: str) -> Dict[str, Any]:
+    def _assess_growth(self, text: str) -> dict[str, Any]:
         """
         Assess growth potential.
 
@@ -254,7 +252,14 @@ class Dewey(Philosopher):
         has_growth = sum(1 for word in growth_words if word in text_lower)
 
         # Reconstruction indicators
-        reconstruction_words = ["change", "transform", "reconstruct", "reorganize", "adapt", "modify"]
+        reconstruction_words = [
+            "change",
+            "transform",
+            "reconstruct",
+            "reorganize",
+            "adapt",
+            "modify",
+        ]
         has_reconstruction = sum(1 for word in reconstruction_words if word in text_lower)
 
         # Future-oriented indicators
@@ -289,10 +294,10 @@ class Dewey(Philosopher):
             "potential": potential,
             "description": description,
             "orientation": orientation,
-            "principle": "Education is growth; growth is life - there is no goal beyond growth itself"
+            "principle": "Education is growth; growth is life - there is no goal beyond growth itself",
         }
 
-    def _evaluate_democracy(self, text: str) -> Dict[str, Any]:
+    def _evaluate_democracy(self, text: str) -> dict[str, Any]:
         """
         Evaluate democratic quality.
 
@@ -302,11 +307,25 @@ class Dewey(Philosopher):
         text_lower = text.lower()
 
         # Democratic participation indicators
-        participation_words = ["participate", "together", "share", "collaborate", "contribute", "engage"]
+        participation_words = [
+            "participate",
+            "together",
+            "share",
+            "collaborate",
+            "contribute",
+            "engage",
+        ]
         has_participation = sum(1 for word in participation_words if word in text_lower)
 
         # Communication/dialogue indicators
-        communication_words = ["communicate", "discuss", "dialogue", "talk", "exchange", "share ideas"]
+        communication_words = [
+            "communicate",
+            "discuss",
+            "dialogue",
+            "talk",
+            "exchange",
+            "share ideas",
+        ]
         has_communication = sum(1 for word in communication_words if word in text_lower)
 
         # Mutual respect/equality indicators
@@ -345,10 +364,10 @@ class Dewey(Philosopher):
             "quality": quality,
             "description": description,
             "mode": mode,
-            "principle": "Democracy is a way of life, not merely a form of government"
+            "principle": "Democracy is a way of life, not merely a form of government",
         }
 
-    def _check_reflective_thinking(self, text: str) -> Dict[str, Any]:
+    def _check_reflective_thinking(self, text: str) -> dict[str, Any]:
         """
         Check the presence of reflective thinking.
 
@@ -358,7 +377,14 @@ class Dewey(Philosopher):
         text_lower = text.lower()
 
         # Reflection indicators
-        reflection_words = ["reflect", "think about", "consider", "ponder", "contemplate", "examine"]
+        reflection_words = [
+            "reflect",
+            "think about",
+            "consider",
+            "ponder",
+            "contemplate",
+            "examine",
+        ]
         has_reflection = sum(1 for word in reflection_words if word in text_lower)
 
         # Careful consideration indicators
@@ -400,10 +426,10 @@ class Dewey(Philosopher):
             "level": level,
             "description": description,
             "type": type_thinking,
-            "principle": "We learn from experience only when we reflect upon it"
+            "principle": "We learn from experience only when we reflect upon it",
         }
 
-    def _assess_habit_formation(self, text: str) -> Dict[str, Any]:
+    def _assess_habit_formation(self, text: str) -> dict[str, Any]:
         """
         Assess habit formation.
 
@@ -446,10 +472,10 @@ class Dewey(Philosopher):
             "formation": formation,
             "description": description,
             "quality": quality,
-            "principle": "Habits are tools, not chains - they should be intelligent and flexible"
+            "principle": "Habits are tools, not chains - they should be intelligent and flexible",
         }
 
-    def _evaluate_instrumentalism(self, text: str) -> Dict[str, Any]:
+    def _evaluate_instrumentalism(self, text: str) -> dict[str, Any]:
         """
         Evaluate instrumentalist thinking.
 
@@ -498,10 +524,10 @@ class Dewey(Philosopher):
             "level": level,
             "description": description,
             "orientation": orientation,
-            "principle": "Ideas are instruments for solving problems, not mirrors of reality"
+            "principle": "Ideas are instruments for solving problems, not mirrors of reality",
         }
 
-    def _check_continuity_interaction(self, text: str) -> Dict[str, Any]:
+    def _check_continuity_interaction(self, text: str) -> dict[str, Any]:
         """
         Check continuity and interaction - two principles of experience.
 
@@ -534,16 +560,16 @@ class Dewey(Philosopher):
         return {
             "quality": quality,
             "description": description,
-            "principle": "Experience has continuity (temporal) and interaction (situational)"
+            "principle": "Experience has continuity (temporal) and interaction (situational)",
         }
 
     def _construct_reasoning(
         self,
-        experience: Dict[str, Any],
-        inquiry: Dict[str, Any],
-        growth: Dict[str, Any],
-        democracy: Dict[str, Any],
-        reflection: Dict[str, Any]
+        experience: dict[str, Any],
+        inquiry: dict[str, Any],
+        growth: dict[str, Any],
+        democracy: dict[str, Any],
+        reflection: dict[str, Any],
     ) -> str:
         """Construct Deweyan pragmatist reasoning."""
         reasoning = (

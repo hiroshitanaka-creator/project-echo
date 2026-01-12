@@ -18,7 +18,7 @@ Key Concepts:
 - Concept Creation: Philosophy as creation of concepts, not contemplation
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -34,10 +34,10 @@ class Deleuze(Philosopher):
     def __init__(self) -> None:
         super().__init__(
             name="Gilles Deleuze",
-            description="Post-structuralist focused on difference, rhizomes, becoming, and concept creation"
+            description="Post-structuralist focused on difference, rhizomes, becoming, and concept creation",
         )
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Analyze the prompt from Deleuze's perspective.
 
@@ -66,11 +66,11 @@ class Deleuze(Philosopher):
             "metadata": {
                 "philosopher": self.name,
                 "approach": "Creative difference and multiplicity",
-                "focus": "Rhizomes, becoming, and deterritorialization"
-            }
+                "focus": "Rhizomes, becoming, and deterritorialization",
+            },
         }
 
-    def _analyze_difference(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_difference(self, prompt: str) -> dict[str, Any]:
         """
         Perform Deleuzian differential analysis.
 
@@ -108,9 +108,7 @@ class Deleuze(Philosopher):
         virtuality = self._check_virtuality(prompt)
 
         # Construct reasoning
-        reasoning = self._construct_reasoning(
-            rhizome, difference, becoming, lines, territory
-        )
+        reasoning = self._construct_reasoning(rhizome, difference, becoming, lines, territory)
 
         return {
             "reasoning": reasoning,
@@ -122,10 +120,10 @@ class Deleuze(Philosopher):
             "territory": territory,
             "space": space,
             "desire": desire,
-            "virtuality": virtuality
+            "virtuality": virtuality,
         }
 
-    def _assess_rhizome_tree(self, text: str) -> Dict[str, Any]:
+    def _assess_rhizome_tree(self, text: str) -> dict[str, Any]:
         """
         Assess rhizomatic vs arborescent (tree) structure.
 
@@ -135,11 +133,29 @@ class Deleuze(Philosopher):
         text_lower = text.lower()
 
         # Rhizomatic indicators
-        rhizome_words = ["network", "connection", "interconnect", "web", "mesh", "lateral", "horizontal"]
+        rhizome_words = [
+            "network",
+            "connection",
+            "interconnect",
+            "web",
+            "mesh",
+            "lateral",
+            "horizontal",
+        ]
         has_rhizome = sum(1 for word in rhizome_words if word in text_lower)
 
         # Tree/hierarchical indicators
-        tree_words = ["hierarchy", "top", "bottom", "root", "branch", "level", "above", "below", "structure"]
+        tree_words = [
+            "hierarchy",
+            "top",
+            "bottom",
+            "root",
+            "branch",
+            "level",
+            "above",
+            "below",
+            "structure",
+        ]
         has_tree = sum(1 for word in tree_words if word in text_lower)
 
         # Multiple entry points (rhizomatic)
@@ -156,11 +172,15 @@ class Deleuze(Philosopher):
 
         if rhizome_score > tree_score and rhizome_score >= 2:
             structure = "Rhizomatic"
-            description = "Non-hierarchical, multi-directional connections - any point connects to any other"
+            description = (
+                "Non-hierarchical, multi-directional connections - any point connects to any other"
+            )
             type_struct = "Nomadic"
         elif tree_score > rhizome_score and tree_score >= 2:
             structure = "Arborescent (Tree)"
-            description = "Hierarchical, rooted structure - binary divisions and vertical organization"
+            description = (
+                "Hierarchical, rooted structure - binary divisions and vertical organization"
+            )
             type_struct = "Sedentary"
         elif rhizome_score > 0 and tree_score > 0:
             structure = "Mixed (Rhizome-Tree)"
@@ -175,10 +195,10 @@ class Deleuze(Philosopher):
             "structure": structure,
             "description": description,
             "type": type_struct,
-            "principle": "The rhizome is anti-hierarchical - any point connects to any other"
+            "principle": "The rhizome is anti-hierarchical - any point connects to any other",
         }
 
-    def _analyze_difference_repetition(self, text: str) -> Dict[str, Any]:
+    def _analyze_difference_repetition(self, text: str) -> dict[str, Any]:
         """
         Analyze difference and repetition.
 
@@ -188,7 +208,15 @@ class Deleuze(Philosopher):
         text_lower = text.lower()
 
         # Difference indicators
-        difference_words = ["different", "differ", "difference", "vary", "change", "unique", "distinct"]
+        difference_words = [
+            "different",
+            "differ",
+            "difference",
+            "vary",
+            "change",
+            "unique",
+            "distinct",
+        ]
         has_difference = sum(1 for word in difference_words if word in text_lower)
 
         # Sameness/identity indicators
@@ -205,7 +233,9 @@ class Deleuze(Philosopher):
 
         if has_difference >= 2:
             orientation = "Difference-Oriented"
-            description = "Primacy of difference - identity is derivative, difference is fundamental"
+            description = (
+                "Primacy of difference - identity is derivative, difference is fundamental"
+            )
             status = "Deleuzian"
         elif has_repetition >= 1 and has_creative >= 1:
             orientation = "Creative Repetition"
@@ -224,10 +254,10 @@ class Deleuze(Philosopher):
             "orientation": orientation,
             "description": description,
             "status": status,
-            "principle": "Difference is primary - identity is a product of difference, not vice versa"
+            "principle": "Difference is primary - identity is a product of difference, not vice versa",
         }
 
-    def _detect_becoming(self, text: str) -> Dict[str, Any]:
+    def _detect_becoming(self, text: str) -> dict[str, Any]:
         """
         Detect becoming (devenir).
 
@@ -237,7 +267,14 @@ class Deleuze(Philosopher):
         text_lower = text.lower()
 
         # Becoming indicators
-        becoming_words = ["become", "becoming", "transform", "metamorphose", "change into", "turn into"]
+        becoming_words = [
+            "become",
+            "becoming",
+            "transform",
+            "metamorphose",
+            "change into",
+            "turn into",
+        ]
         has_becoming = sum(1 for word in becoming_words if word in text_lower)
 
         # Being/state indicators (opposed to becoming)
@@ -283,10 +320,10 @@ class Deleuze(Philosopher):
             "description": description,
             "mode": mode,
             "specific_becomings": specific_becomings if specific_becomings else ["None detected"],
-            "principle": "Becoming, not being - life is process, not state"
+            "principle": "Becoming, not being - life is process, not state",
         }
 
-    def _check_body_without_organs(self, text: str) -> Dict[str, Any]:
+    def _check_body_without_organs(self, text: str) -> dict[str, Any]:
         """
         Check for body without organs (BwO).
 
@@ -332,10 +369,10 @@ class Deleuze(Philosopher):
             "status": status,
             "description": description,
             "level": level,
-            "principle": "The BwO is not against organs, but against the organism's organization"
+            "principle": "The BwO is not against organs, but against the organism's organization",
         }
 
-    def _identify_lines_of_flight(self, text: str) -> Dict[str, Any]:
+    def _identify_lines_of_flight(self, text: str) -> dict[str, Any]:
         """
         Identify lines of flight (lignes de fuite).
 
@@ -382,10 +419,10 @@ class Deleuze(Philosopher):
             "presence": presence,
             "description": description,
             "type": type_line,
-            "principle": "Lines of flight are creative escapes that produce new territories"
+            "principle": "Lines of flight are creative escapes that produce new territories",
         }
 
-    def _assess_territorialization(self, text: str) -> Dict[str, Any]:
+    def _assess_territorialization(self, text: str) -> dict[str, Any]:
         """
         Assess territorialization, deterritorialization, and reterritorialization.
 
@@ -396,7 +433,15 @@ class Deleuze(Philosopher):
         text_lower = text.lower()
 
         # Territorialization indicators (establishing territory)
-        territory_words = ["establish", "found", "create space", "domain", "territory", "ground", "base"]
+        territory_words = [
+            "establish",
+            "found",
+            "create space",
+            "domain",
+            "territory",
+            "ground",
+            "base",
+        ]
         has_territory = sum(1 for word in territory_words if word in text_lower)
 
         # Deterritorialization indicators (breaking away)
@@ -410,7 +455,9 @@ class Deleuze(Philosopher):
         # Determine process
         if has_deterrit >= 1 and has_reterrit >= 1:
             process = "Deterritorialization-Reterritorialization"
-            description = "Breaking from old territories while forming new ones - creative transformation"
+            description = (
+                "Breaking from old territories while forming new ones - creative transformation"
+            )
             status = "Dynamic"
         elif has_deterrit >= 2:
             process = "Deterritorialization"
@@ -429,10 +476,10 @@ class Deleuze(Philosopher):
             "process": process,
             "description": description,
             "status": status,
-            "principle": "Deterritorialization and reterritorialization are constant processes"
+            "principle": "Deterritorialization and reterritorialization are constant processes",
         }
 
-    def _evaluate_smooth_striated(self, text: str) -> Dict[str, Any]:
+    def _evaluate_smooth_striated(self, text: str) -> dict[str, Any]:
         """
         Evaluate smooth vs striated space.
 
@@ -442,11 +489,29 @@ class Deleuze(Philosopher):
         text_lower = text.lower()
 
         # Smooth space indicators
-        smooth_words = ["open", "fluid", "flow", "nomadic", "wander", "drift", "smooth", "continuous"]
+        smooth_words = [
+            "open",
+            "fluid",
+            "flow",
+            "nomadic",
+            "wander",
+            "drift",
+            "smooth",
+            "continuous",
+        ]
         has_smooth = sum(1 for word in smooth_words if word in text_lower)
 
         # Striated space indicators
-        striated_words = ["grid", "line", "boundary", "division", "segment", "organize", "measure", "metric"]
+        striated_words = [
+            "grid",
+            "line",
+            "boundary",
+            "division",
+            "segment",
+            "organize",
+            "measure",
+            "metric",
+        ]
         has_striated = sum(1 for word in striated_words if word in text_lower)
 
         # Nomadic indicators
@@ -481,10 +546,10 @@ class Deleuze(Philosopher):
             "type": space_type,
             "description": description,
             "mode": mode,
-            "principle": "Smooth and striated spaces constantly transform into each other"
+            "principle": "Smooth and striated spaces constantly transform into each other",
         }
 
-    def _analyze_desire(self, text: str) -> Dict[str, Any]:
+    def _analyze_desire(self, text: str) -> dict[str, Any]:
         """
         Analyze desire.
 
@@ -526,10 +591,10 @@ class Deleuze(Philosopher):
             "conception": conception,
             "description": description,
             "type": type_desire,
-            "principle": "Desire is productive, not based on lack - desiring-machines produce reality"
+            "principle": "Desire is productive, not based on lack - desiring-machines produce reality",
         }
 
-    def _check_virtuality(self, text: str) -> Dict[str, Any]:
+    def _check_virtuality(self, text: str) -> dict[str, Any]:
         """
         Check virtuality.
 
@@ -568,16 +633,16 @@ class Deleuze(Philosopher):
             "status": status,
             "description": description,
             "understanding": understanding,
-            "principle": "The virtual is real - virtuality is not opposed to reality but to actuality"
+            "principle": "The virtual is real - virtuality is not opposed to reality but to actuality",
         }
 
     def _construct_reasoning(
         self,
-        rhizome: Dict[str, Any],
-        difference: Dict[str, Any],
-        becoming: Dict[str, Any],
-        lines: Dict[str, Any],
-        territory: Dict[str, Any]
+        rhizome: dict[str, Any],
+        difference: dict[str, Any],
+        becoming: dict[str, Any],
+        lines: dict[str, Any],
+        territory: dict[str, Any],
     ) -> str:
         """Construct Deleuzian differential reasoning."""
         reasoning = (

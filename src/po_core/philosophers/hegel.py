@@ -18,7 +18,7 @@ Key Concepts:
 - Recognition (Anerkennung): Mutual recognition constituting self-consciousness
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -34,10 +34,10 @@ class Hegel(Philosopher):
     def __init__(self) -> None:
         super().__init__(
             name="Georg Wilhelm Friedrich Hegel",
-            description="German Idealist focused on dialectical development, Absolute Spirit, and historical reason"
+            description="German Idealist focused on dialectical development, Absolute Spirit, and historical reason",
         )
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Analyze the prompt from Hegel's dialectical idealist perspective.
 
@@ -72,11 +72,11 @@ class Hegel(Philosopher):
             "metadata": {
                 "philosopher": self.name,
                 "approach": "Dialectical idealism and systematic philosophy",
-                "focus": "Spirit's self-realization through dialectical development"
-            }
+                "focus": "Spirit's self-realization through dialectical development",
+            },
         }
 
-    def _analyze_hegelian_framework(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_hegelian_framework(self, prompt: str) -> dict[str, Any]:
         """
         Perform comprehensive Hegelian dialectical analysis.
 
@@ -101,8 +101,7 @@ class Hegel(Philosopher):
 
         # Construct comprehensive dialectical reasoning
         reasoning = self._construct_reasoning(
-            dialectic, geist, phenomenology, master_slave,
-            contradiction, history, freedom, absolute
+            dialectic, geist, phenomenology, master_slave, contradiction, history, freedom, absolute
         )
 
         return {
@@ -117,10 +116,10 @@ class Hegel(Philosopher):
             "history": history,
             "freedom": freedom,
             "absolute": absolute,
-            "recognition": recognition
+            "recognition": recognition,
         }
 
-    def _analyze_dialectic(self, text: str) -> Dict[str, Any]:
+    def _analyze_dialectic(self, text: str) -> dict[str, Any]:
         """
         Analyze dialectical movement: Thesis-Antithesis-Synthesis / Aufhebung.
 
@@ -154,7 +153,9 @@ class Hegel(Philosopher):
         # Determine dialectical stage
         if has_synthesis >= 1 or has_aufhebung >= 2:
             stage = "Synthesis/Aufhebung"
-            description = "Dialectical sublation - negating, preserving, and elevating contradictions"
+            description = (
+                "Dialectical sublation - negating, preserving, and elevating contradictions"
+            )
             movement_type = "Complete dialectical movement"
         elif has_antithesis >= 1 and has_thesis >= 1:
             stage = "Thesis-Antithesis"
@@ -182,10 +183,10 @@ class Hegel(Philosopher):
             "has_synthesis": has_synthesis >= 1,
             "aufhebung": has_aufhebung >= 1,
             "double_negation": double_negation,
-            "principle": "The dialectic is the self-movement of the concept through contradiction to higher unity"
+            "principle": "The dialectic is the self-movement of the concept through contradiction to higher unity",
         }
 
-    def _analyze_geist(self, text: str) -> Dict[str, Any]:
+    def _analyze_geist(self, text: str) -> dict[str, Any]:
         """
         Analyze Geist (Spirit/Mind) and its self-realization.
 
@@ -247,10 +248,10 @@ class Hegel(Philosopher):
             "substance_and_subject": has_substance and has_subject,
             "absolute_dimension": absolute_count >= 1,
             "historical_manifestation": has_historical,
-            "principle": "Spirit is substance that is also subject - the Absolute realizing itself"
+            "principle": "Spirit is substance that is also subject - the Absolute realizing itself",
         }
 
-    def _analyze_phenomenology(self, text: str) -> Dict[str, Any]:
+    def _analyze_phenomenology(self, text: str) -> dict[str, Any]:
         """
         Analyze the phenomenological journey of consciousness.
 
@@ -287,7 +288,9 @@ class Hegel(Philosopher):
             stages_identified.append("Spirit")
 
         # Absolute knowing
-        if any(phrase in text_lower for phrase in ["absolute knowing", "absolute knowledge", "science"]):
+        if any(
+            phrase in text_lower for phrase in ["absolute knowing", "absolute knowledge", "science"]
+        ):
             stages_identified.append("Absolute Knowing")
 
         # Journey/development indicators
@@ -328,10 +331,10 @@ class Hegel(Philosopher):
             "stage_count": len(stages_identified),
             "has_journey": has_journey,
             "experience_emphasis": experience_count,
-            "principle": "Consciousness develops through its own self-testing experience toward absolute knowing"
+            "principle": "Consciousness develops through its own self-testing experience toward absolute knowing",
         }
 
-    def _analyze_master_slave_dialectic(self, text: str) -> Dict[str, Any]:
+    def _analyze_master_slave_dialectic(self, text: str) -> dict[str, Any]:
         """
         Analyze the Master-Slave (Herrschaft und Knechtschaft) dialectic.
 
@@ -375,7 +378,9 @@ class Hegel(Philosopher):
         if has_master >= 1 and has_slave >= 1:
             if has_work >= 2 and has_reversal:
                 position = "Dialectical Reversal"
-                description = "Slave achieves self-consciousness through work while master stagnates"
+                description = (
+                    "Slave achieves self-consciousness through work while master stagnates"
+                )
                 moment = "Resolution through labor"
             elif has_struggle >= 1 and has_recognition >= 1:
                 position = "Life-and-Death Struggle"
@@ -408,10 +413,10 @@ class Hegel(Philosopher):
             "has_struggle": has_struggle >= 1,
             "work_transformation": has_work >= 2,
             "dialectical_reversal": has_reversal,
-            "principle": "Self-consciousness requires recognition from another - achieved through struggle and work"
+            "principle": "Self-consciousness requires recognition from another - achieved through struggle and work",
         }
 
-    def _analyze_absolute_idealism(self, text: str) -> Dict[str, Any]:
+    def _analyze_absolute_idealism(self, text: str) -> dict[str, Any]:
         """
         Analyze Absolute Idealism.
 
@@ -439,7 +444,12 @@ class Hegel(Philosopher):
         has_thought_being = any(phrase in text_lower for phrase in thought_being)
 
         # Self-development
-        self_dev_words = ["self-development", "self-unfolding", "self-actualization", "self-movement"]
+        self_dev_words = [
+            "self-development",
+            "self-unfolding",
+            "self-actualization",
+            "self-movement",
+        ]
         has_self_development = any(phrase in text_lower for phrase in self_dev_words)
 
         # System/systematic
@@ -448,7 +458,9 @@ class Hegel(Philosopher):
 
         if absolute_count >= 2 and idealism_count >= 2 and (has_unity >= 1 or has_thought_being):
             position = "Absolute Idealism"
-            description = "Reality as the self-development of Absolute Spirit - unity of thought and being"
+            description = (
+                "Reality as the self-development of Absolute Spirit - unity of thought and being"
+            )
             stance = "Systematic idealism"
         elif idealism_count >= 2 and has_unity >= 1:
             position = "Idealism"
@@ -476,10 +488,10 @@ class Hegel(Philosopher):
             "real_is_rational": has_real_rational,
             "thought_being_unity": has_thought_being,
             "systematic": has_system >= 2,
-            "principle": "The Absolute is Spirit - reality is the rational self-development of the Idea"
+            "principle": "The Absolute is Spirit - reality is the rational self-development of the Idea",
         }
 
-    def _analyze_concrete_universal(self, text: str) -> Dict[str, Any]:
+    def _analyze_concrete_universal(self, text: str) -> dict[str, Any]:
         """
         Analyze the concrete universal (das konkrete Allgemeine).
 
@@ -545,10 +557,10 @@ class Hegel(Philosopher):
             "particular_emphasis": particular_count,
             "concrete": has_concrete >= 1,
             "develops_through_particulars": has_development >= 1,
-            "principle": "The true universal is concrete - it contains and develops its particulars"
+            "principle": "The true universal is concrete - it contains and develops its particulars",
         }
 
-    def _analyze_contradiction(self, text: str) -> Dict[str, Any]:
+    def _analyze_contradiction(self, text: str) -> dict[str, Any]:
         """
         Analyze contradiction as productive force.
 
@@ -616,10 +628,10 @@ class Hegel(Philosopher):
             "productive": has_productive >= 1,
             "resolving": has_resolution >= 1,
             "drives_movement": has_movement >= 1,
-            "principle": "Contradiction is the root of all movement and life - not error but productive force"
+            "principle": "Contradiction is the root of all movement and life - not error but productive force",
         }
 
-    def _analyze_history(self, text: str) -> Dict[str, Any]:
+    def _analyze_history(self, text: str) -> dict[str, Any]:
         """
         Analyze history as Spirit's self-realization.
 
@@ -686,10 +698,10 @@ class Hegel(Philosopher):
             "freedom_realization": freedom_count >= 1,
             "spirit_in_history": has_spirit_history,
             "rational_necessity": has_rational >= 2,
-            "principle": "World history is the progress in the consciousness of freedom"
+            "principle": "World history is the progress in the consciousness of freedom",
         }
 
-    def _analyze_freedom(self, text: str) -> Dict[str, Any]:
+    def _analyze_freedom(self, text: str) -> dict[str, Any]:
         """
         Analyze freedom as Spirit's essence.
 
@@ -760,10 +772,10 @@ class Hegel(Philosopher):
             "in_state": has_state,
             "self_determination": has_self_determination,
             "recognizes_necessity": has_necessity >= 1,
-            "principle": "Freedom is the essence of Spirit - not arbitrary will but rational self-determination"
+            "principle": "Freedom is the essence of Spirit - not arbitrary will but rational self-determination",
         }
 
-    def _analyze_absolute(self, text: str) -> Dict[str, Any]:
+    def _analyze_absolute(self, text: str) -> dict[str, Any]:
         """
         Analyze the Absolute.
 
@@ -831,10 +843,10 @@ class Hegel(Philosopher):
             "process": has_process >= 1,
             "substance_subject": has_substance_subject,
             "systematic": has_system >= 1,
-            "principle": "The truth is the whole - the Absolute is living substance that is also subject"
+            "principle": "The truth is the whole - the Absolute is living substance that is also subject",
         }
 
-    def _analyze_recognition(self, text: str) -> Dict[str, Any]:
+    def _analyze_recognition(self, text: str) -> dict[str, Any]:
         """
         Analyze recognition (Anerkennung).
 
@@ -897,47 +909,45 @@ class Hegel(Philosopher):
             "through_other": has_through_other,
             "struggle": has_struggle,
             "ethical_community": has_community >= 1,
-            "principle": "Self-consciousness achieves reality only through recognition from another self-consciousness"
+            "principle": "Self-consciousness achieves reality only through recognition from another self-consciousness",
         }
 
     def _construct_reasoning(
         self,
-        dialectic: Dict[str, Any],
-        geist: Dict[str, Any],
-        phenomenology: Dict[str, Any],
-        master_slave: Dict[str, Any],
-        contradiction: Dict[str, Any],
-        history: Dict[str, Any],
-        freedom: Dict[str, Any],
-        absolute: Dict[str, Any]
+        dialectic: dict[str, Any],
+        geist: dict[str, Any],
+        phenomenology: dict[str, Any],
+        master_slave: dict[str, Any],
+        contradiction: dict[str, Any],
+        history: dict[str, Any],
+        freedom: dict[str, Any],
+        absolute: dict[str, Any],
     ) -> str:
         """Construct comprehensive Hegelian philosophical reasoning."""
         reasoning = (
-            f"From Hegel's absolute idealist perspective, we must examine this text dialectically "
-            f"as a moment in Spirit's self-realization. "
+            "From Hegel's absolute idealist perspective, we must examine this text dialectically "
+            "as a moment in Spirit's self-realization. "
         )
 
         # Dialectical movement
-        reasoning += (
-            f"Dialectical movement: {dialectic['stage']} - {dialectic['description']}. "
-        )
+        reasoning += f"Dialectical movement: {dialectic['stage']} - {dialectic['description']}. "
 
         # Geist/Spirit
         reasoning += f"Geist: {geist['status']} - {geist['description']}. "
 
         # Phenomenological stage
-        if phenomenology['current_stage'] != "Undetermined":
+        if phenomenology["current_stage"] != "Undetermined":
             reasoning += (
                 f"Phenomenological stage: {phenomenology['current_stage']} - "
                 f"{phenomenology['description']}. "
             )
 
         # Master-slave dialectic
-        if master_slave['position'] != "No Master-Slave Dialectic":
+        if master_slave["position"] != "No Master-Slave Dialectic":
             reasoning += f"Recognition: {master_slave['description']}. "
 
         # Contradiction as productive
-        if contradiction['status'] != "No Contradiction":
+        if contradiction["status"] != "No Contradiction":
             reasoning += f"Contradiction: {contradiction['description']}. "
 
         # Historical dimension
@@ -958,7 +968,7 @@ class Hegel(Philosopher):
 
         return reasoning
 
-    def _calculate_tension(self, analysis: Dict[str, Any]) -> Dict[str, Any]:
+    def _calculate_tension(self, analysis: dict[str, Any]) -> dict[str, Any]:
         """
         Calculate philosophical tension based on Hegelian analysis.
 
@@ -1025,7 +1035,9 @@ class Hegel(Philosopher):
         # Determine tension level (note: some tension is productive in Hegel)
         if tension_score >= 8:
             level = "Very High"
-            description = "Severe undialectical thinking - abstract, ahistorical, denies contradiction"
+            description = (
+                "Severe undialectical thinking - abstract, ahistorical, denies contradiction"
+            )
         elif tension_score >= 6:
             level = "High"
             description = "Significant tensions - arrested development, abstract universals"
@@ -1043,5 +1055,7 @@ class Hegel(Philosopher):
             "level": level,
             "score": tension_score,
             "description": description,
-            "elements": tension_elements if tension_elements else ["No significant tensions - productive contradiction at work"]
+            "elements": tension_elements
+            if tension_elements
+            else ["No significant tensions - productive contradiction at work"],
         }

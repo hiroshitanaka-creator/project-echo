@@ -19,7 +19,7 @@ Key Concepts:
 - Perspectivism: No absolute truth, only perspectives
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -35,10 +35,10 @@ class Nietzsche(Philosopher):
     def __init__(self) -> None:
         super().__init__(
             name="Friedrich Nietzsche",
-            description="German philosopher focused on will to power, Übermensch, and revaluation of values"
+            description="German philosopher focused on will to power, Übermensch, and revaluation of values",
         )
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Analyze the prompt from Nietzsche's perspective.
 
@@ -71,11 +71,11 @@ class Nietzsche(Philosopher):
             "metadata": {
                 "philosopher": self.name,
                 "approach": "Life affirmation and value creation",
-                "focus": "Will to power, Übermensch, and eternal recurrence"
-            }
+                "focus": "Will to power, Übermensch, and eternal recurrence",
+            },
         }
 
-    def _analyze_power(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_power(self, prompt: str) -> dict[str, Any]:
         """
         Perform Nietzschean power analysis.
 
@@ -127,10 +127,10 @@ class Nietzsche(Philosopher):
             "ressentiment": ressentiment,
             "amor_fati": amor_fati,
             "dionysian_apollonian": dionysian_apollonian,
-            "value_creation": value_creation
+            "value_creation": value_creation,
         }
 
-    def _assess_will_to_power(self, text: str) -> Dict[str, Any]:
+    def _assess_will_to_power(self, text: str) -> dict[str, Any]:
         """
         Assess the will to power.
 
@@ -176,10 +176,10 @@ class Nietzsche(Philosopher):
             "presence": presence,
             "description": description,
             "type": type_will,
-            "principle": "Will to power is the fundamental drive of all life"
+            "principle": "Will to power is the fundamental drive of all life",
         }
 
-    def _evaluate_ubermensch(self, text: str) -> Dict[str, Any]:
+    def _evaluate_ubermensch(self, text: str) -> dict[str, Any]:
         """
         Evaluate Übermensch (Overman) orientation.
 
@@ -189,7 +189,13 @@ class Nietzsche(Philosopher):
         text_lower = text.lower()
 
         # Übermensch indicators
-        uber_words = ["create values", "own values", "new values", "beyond good and evil", "self-create"]
+        uber_words = [
+            "create values",
+            "own values",
+            "new values",
+            "beyond good and evil",
+            "self-create",
+        ]
         has_uber = sum(1 for phrase in uber_words if phrase in text_lower)
 
         # Self-overcoming indicators
@@ -229,10 +235,10 @@ class Nietzsche(Philosopher):
             "orientation": orientation,
             "description": description,
             "type": type_human,
-            "principle": "The Übermensch creates values and affirms life beyond good and evil"
+            "principle": "The Übermensch creates values and affirms life beyond good and evil",
         }
 
-    def _check_eternal_recurrence(self, text: str) -> Dict[str, Any]:
+    def _check_eternal_recurrence(self, text: str) -> dict[str, Any]:
         """
         Check eternal recurrence thought experiment.
 
@@ -278,10 +284,10 @@ class Nietzsche(Philosopher):
             "test_result": test_result,
             "description": description,
             "attitude": attitude,
-            "principle": "Live as if you would will this moment to recur eternally"
+            "principle": "Live as if you would will this moment to recur eternally",
         }
 
-    def _analyze_nihilism(self, text: str) -> Dict[str, Any]:
+    def _analyze_nihilism(self, text: str) -> dict[str, Any]:
         """
         Analyze nihilism - passive vs active.
 
@@ -331,10 +337,10 @@ class Nietzsche(Philosopher):
             "type": type_nihil,
             "description": description,
             "status": status,
-            "principle": "God is dead - we must become creators of values"
+            "principle": "God is dead - we must become creators of values",
         }
 
-    def _determine_morality_type(self, text: str) -> Dict[str, Any]:
+    def _determine_morality_type(self, text: str) -> dict[str, Any]:
         """
         Determine master vs slave morality.
 
@@ -387,10 +393,10 @@ class Nietzsche(Philosopher):
             "type": type_morality,
             "description": description,
             "orientation": orientation,
-            "principle": "Master morality creates values; slave morality reacts with ressentiment"
+            "principle": "Master morality creates values; slave morality reacts with ressentiment",
         }
 
-    def _detect_ressentiment(self, text: str) -> Dict[str, Any]:
+    def _detect_ressentiment(self, text: str) -> dict[str, Any]:
         """
         Detect ressentiment (resentment).
 
@@ -436,10 +442,10 @@ class Nietzsche(Philosopher):
             "presence": presence,
             "description": description,
             "level": level,
-            "principle": "Ressentiment is the revenge of the weak through moral condemnation"
+            "principle": "Ressentiment is the revenge of the weak through moral condemnation",
         }
 
-    def _assess_amor_fati(self, text: str) -> Dict[str, Any]:
+    def _assess_amor_fati(self, text: str) -> dict[str, Any]:
         """
         Assess amor fati (love of fate).
 
@@ -485,10 +491,10 @@ class Nietzsche(Philosopher):
             "presence": presence,
             "description": description,
             "level": level,
-            "principle": "My formula for greatness: amor fati - love your fate"
+            "principle": "My formula for greatness: amor fati - love your fate",
         }
 
-    def _evaluate_dionysian_apollonian(self, text: str) -> Dict[str, Any]:
+    def _evaluate_dionysian_apollonian(self, text: str) -> dict[str, Any]:
         """
         Evaluate Dionysian vs Apollonian.
 
@@ -499,11 +505,29 @@ class Nietzsche(Philosopher):
         text_lower = text.lower()
 
         # Dionysian indicators
-        dionysian_words = ["chaos", "ecstasy", "passion", "wild", "intoxication", "frenzy", "dance", "music"]
+        dionysian_words = [
+            "chaos",
+            "ecstasy",
+            "passion",
+            "wild",
+            "intoxication",
+            "frenzy",
+            "dance",
+            "music",
+        ]
         has_dionysian = sum(1 for word in dionysian_words if word in text_lower)
 
         # Apollonian indicators
-        apollonian_words = ["order", "reason", "clarity", "form", "structure", "measure", "beauty", "light"]
+        apollonian_words = [
+            "order",
+            "reason",
+            "clarity",
+            "form",
+            "structure",
+            "measure",
+            "beauty",
+            "light",
+        ]
         has_apollonian = sum(1 for word in apollonian_words if word in text_lower)
 
         # Synthesis indicators
@@ -531,10 +555,10 @@ class Nietzsche(Philosopher):
             "type": type_spirit,
             "description": description,
             "balance": balance,
-            "principle": "The best art combines Dionysian ecstasy with Apollonian form"
+            "principle": "The best art combines Dionysian ecstasy with Apollonian form",
         }
 
-    def _check_value_creation(self, text: str) -> Dict[str, Any]:
+    def _check_value_creation(self, text: str) -> dict[str, Any]:
         """
         Check value creation.
 
@@ -571,10 +595,10 @@ class Nietzsche(Philosopher):
             "status": status,
             "description": description,
             "type": type_creator,
-            "principle": "We must become creators of values - beyond good and evil"
+            "principle": "We must become creators of values - beyond good and evil",
         }
 
-    def _calculate_tension(self, analysis: Dict[str, Any]) -> Dict[str, Any]:
+    def _calculate_tension(self, analysis: dict[str, Any]) -> dict[str, Any]:
         """
         Calculate philosophical tension based on Nietzschean analysis.
 
@@ -652,16 +676,16 @@ class Nietzsche(Philosopher):
         return {
             "level": level,
             "description": description,
-            "elements": tension_elements if tension_elements else ["No significant tensions"]
+            "elements": tension_elements if tension_elements else ["No significant tensions"],
         }
 
     def _construct_reasoning(
         self,
-        will_to_power: Dict[str, Any],
-        ubermensch: Dict[str, Any],
-        nihilism: Dict[str, Any],
-        morality: Dict[str, Any],
-        amor_fati: Dict[str, Any]
+        will_to_power: dict[str, Any],
+        ubermensch: dict[str, Any],
+        nihilism: dict[str, Any],
+        morality: dict[str, Any],
+        amor_fati: dict[str, Any],
     ) -> str:
         """Construct Nietzschean life-affirming reasoning."""
         reasoning = (

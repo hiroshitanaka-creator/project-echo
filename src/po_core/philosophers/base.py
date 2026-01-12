@@ -7,7 +7,7 @@ Each philosopher provides a unique perspective for analyzing and generating mean
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 @dataclass
@@ -18,29 +18,30 @@ class PhilosopherPerspective:
     This bridges the gap between individual philosopher reasoning and
     the cosmic ethics evaluation framework.
     """
+
     name: str
     approach: str
     reasoning: str
 
     # Cosmic Ethics 39 dimension weights (optional)
     # Maps dimension names to weights (0.0-1.0)
-    cosmic_weights: Optional[Dict[str, float]] = None
+    cosmic_weights: dict[str, float] | None = None
 
     # FreedomPressureTensor integration (optional)
     # Maps pressure dimensions to values
-    freedom_pressure: Optional[Dict[str, float]] = None
+    freedom_pressure: dict[str, float] | None = None
 
     # Tension profile - which dimensions conflict
-    tension_elements: Optional[list] = field(default_factory=list)
+    tension_elements: list | None = field(default_factory=list)
 
     # Blocked options - what this philosopher would reject
-    blocked_options: Optional[list] = field(default_factory=list)
+    blocked_options: list | None = field(default_factory=list)
 
     # Additional notes or commentary
-    notes: Optional[str] = None
+    notes: str | None = None
 
     # Raw reasoning result from the philosopher
-    raw_result: Optional[Dict[str, Any]] = None
+    raw_result: dict[str, Any] | None = None
 
 
 class Philosopher(ABC):
@@ -61,10 +62,10 @@ class Philosopher(ABC):
         """
         self.name = name
         self.description = description
-        self._context: Dict[str, Any] = {}
+        self._context: dict[str, Any] = {}
 
     @abstractmethod
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Generate philosophical reasoning for the given prompt.
 
@@ -81,7 +82,7 @@ class Philosopher(ABC):
         """
         pass
 
-    def analyze(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> PhilosopherPerspective:
+    def analyze(self, prompt: str, context: dict[str, Any] | None = None) -> PhilosopherPerspective:
         """
         Analyze prompt and return perspective for Cosmic Ethics 39 integration.
 
@@ -122,14 +123,12 @@ class Philosopher(ABC):
             tension_elements=tension_elements,
             blocked_options=blocked_options,
             notes=metadata.get("approach", ""),
-            raw_result=result
+            raw_result=result,
         )
 
     def _compute_cosmic_weights(
-        self,
-        result: Dict[str, Any],
-        context: Optional[Dict[str, Any]] = None
-    ) -> Optional[Dict[str, float]]:
+        self, result: dict[str, Any], context: dict[str, Any] | None = None
+    ) -> dict[str, float] | None:
         """
         Compute Cosmic Ethics 39 dimension weights from reasoning result.
 
@@ -146,10 +145,8 @@ class Philosopher(ABC):
         return None
 
     def _compute_freedom_pressure(
-        self,
-        result: Dict[str, Any],
-        context: Optional[Dict[str, Any]] = None
-    ) -> Optional[Dict[str, float]]:
+        self, result: dict[str, Any], context: dict[str, Any] | None = None
+    ) -> dict[str, float] | None:
         """
         Compute FreedomPressureTensor values from reasoning result.
 
@@ -166,9 +163,7 @@ class Philosopher(ABC):
         return None
 
     def _compute_blocked_options(
-        self,
-        result: Dict[str, Any],
-        context: Optional[Dict[str, Any]] = None
+        self, result: dict[str, Any], context: dict[str, Any] | None = None
     ) -> list:
         """
         Compute which options this philosopher would block/reject.

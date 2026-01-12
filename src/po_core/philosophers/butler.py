@@ -16,7 +16,7 @@ Key concepts:
 - Undoing Gender: Expanding livable lives
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -54,7 +54,7 @@ class Butler(Philosopher):
             "citation",
         ]
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Apply Butler's critical theory to the prompt.
 
@@ -86,7 +86,7 @@ class Butler(Philosopher):
             },
         }
 
-    def _analyze_butler(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_butler(self, prompt: str) -> dict[str, Any]:
         """Comprehensive Butler analysis of the prompt."""
         performativity = self._analyze_performativity(prompt)
         gender_trouble = self._analyze_gender_trouble(prompt)
@@ -100,8 +100,15 @@ class Butler(Philosopher):
         political = self._derive_political_implications(prompt)
 
         reasoning = self._construct_reasoning(
-            prompt, performativity, gender_trouble, bodies, matrix,
-            precarity, grievability, recognition, subversion
+            prompt,
+            performativity,
+            gender_trouble,
+            bodies,
+            matrix,
+            precarity,
+            grievability,
+            recognition,
+            subversion,
         )
 
         return {
@@ -118,7 +125,7 @@ class Butler(Philosopher):
             "political": political,
         }
 
-    def _analyze_performativity(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_performativity(self, prompt: str) -> dict[str, Any]:
         """
         Analyze through the lens of performativity.
 
@@ -150,7 +157,7 @@ class Butler(Philosopher):
             "application": "What is being performatively constituted here?",
         }
 
-    def _analyze_gender_trouble(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_gender_trouble(self, prompt: str) -> dict[str, Any]:
         """
         Examine how gender categories can be troubled.
 
@@ -181,7 +188,7 @@ class Butler(Philosopher):
             "application": "What gender assumptions operate here?",
         }
 
-    def _analyze_bodies_that_matter(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_bodies_that_matter(self, prompt: str) -> dict[str, Any]:
         """
         Examine the materiality of bodies and their discursive formation.
 
@@ -212,7 +219,7 @@ class Butler(Philosopher):
             "application": "Which bodies matter in this context? Which are excluded?",
         }
 
-    def _analyze_heteronormative_matrix(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_heteronormative_matrix(self, prompt: str) -> dict[str, Any]:
         """
         Examine the regulatory framework of gender and sexuality.
 
@@ -243,7 +250,7 @@ class Butler(Philosopher):
             "application": "How does the heteronormative matrix operate here?",
         }
 
-    def _analyze_precarity(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_precarity(self, prompt: str) -> dict[str, Any]:
         """
         Examine shared vulnerability and precarious life.
 
@@ -274,7 +281,7 @@ class Butler(Philosopher):
             "application": "What precarity is at stake here?",
         }
 
-    def _analyze_grievability(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_grievability(self, prompt: str) -> dict[str, Any]:
         """
         Examine whose lives are considered grievable.
 
@@ -305,7 +312,7 @@ class Butler(Philosopher):
             "application": "Whose life is grievable here? Whose is not?",
         }
 
-    def _analyze_recognition(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_recognition(self, prompt: str) -> dict[str, Any]:
         """
         Examine the conditions for subject recognition.
 
@@ -336,7 +343,7 @@ class Butler(Philosopher):
             "application": "What forms of recognition are at stake?",
         }
 
-    def _analyze_subversion(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_subversion(self, prompt: str) -> dict[str, Any]:
         """
         Examine possibilities for subverting norms.
 
@@ -367,7 +374,7 @@ class Butler(Philosopher):
             "application": "What possibilities for subversion exist here?",
         }
 
-    def _analyze_ethical_violence(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_ethical_violence(self, prompt: str) -> dict[str, Any]:
         """
         Examine the violence in demands for self-account.
 
@@ -398,7 +405,7 @@ class Butler(Philosopher):
             "application": "What demands for self-account operate here?",
         }
 
-    def _derive_political_implications(self, prompt: str) -> Dict[str, Any]:
+    def _derive_political_implications(self, prompt: str) -> dict[str, Any]:
         """Extract political implications from Butler's framework."""
         return {
             "coalition_politics": {
@@ -424,49 +431,56 @@ class Butler(Philosopher):
         }
 
     def _construct_reasoning(
-        self, prompt: str, performativity: Dict, gender_trouble: Dict, bodies: Dict,
-        matrix: Dict, precarity: Dict, grievability: Dict, recognition: Dict,
-        subversion: Dict
+        self,
+        prompt: str,
+        performativity: dict,
+        gender_trouble: dict,
+        bodies: dict,
+        matrix: dict,
+        precarity: dict,
+        grievability: dict,
+        recognition: dict,
+        subversion: dict,
     ) -> str:
         """Construct comprehensive Butler reasoning."""
         return f"""Critical Analysis through Butler: "{prompt}"
 
 PERFORMATIVITY
-{performativity['concept']['description']}. {performativity['concept']['effect']}
-{performativity['citation']['description']}. {performativity['citation']['implication']}
+{performativity["concept"]["description"]}. {performativity["concept"]["effect"]}
+{performativity["citation"]["description"]}. {performativity["citation"]["implication"]}
 
 TROUBLING GENDER
-{gender_trouble['destabilization']['target']}. By showing the constructed nature
-of what seems natural, we reveal contingency. {gender_trouble['trouble_as_method']['description']}
+{gender_trouble["destabilization"]["target"]}. By showing the constructed nature
+of what seems natural, we reveal contingency. {gender_trouble["trouble_as_method"]["description"]}
 
 BODIES THAT MATTER
-{bodies['materialization']['description']}. But not all bodies matter equally.
-{bodies['which_bodies_matter']['exclusion']}. The boundary is political.
+{bodies["materialization"]["description"]}. But not all bodies matter equally.
+{bodies["which_bodies_matter"]["exclusion"]}. The boundary is political.
 
 THE HETERONORMATIVE MATRIX
-{matrix['structure']['description']}. {matrix['regulatory_ideal']['effect']}
+{matrix["structure"]["description"]}. {matrix["regulatory_ideal"]["effect"]}
 The matrix produces coherent subjects while excluding others.
 
 PRECARITY AND VULNERABILITY
-{precarity['precariousness']['description']}. But {precarity['precarity']['description']}.
+{precarity["precariousness"]["description"]}. But {precarity["precarity"]["description"]}.
 Our shared vulnerability grounds ethical and political response.
 
 GRIEVABILITY
-{grievability['grievable_lives']['description']}. {grievability['ungrievable_lives']['consequence']}
+{grievability["grievable_lives"]["description"]}. {grievability["ungrievable_lives"]["consequence"]}
 We must contest the frames that determine whose lives count.
 
 RECOGNITION
-{recognition['subject_formation']['description']}. {recognition['norms_of_recognition']['exclusion']}
+{recognition["subject_formation"]["description"]}. {recognition["norms_of_recognition"]["exclusion"]}
 The struggle is for forms of recognition that do not violate.
 
 POSSIBILITIES FOR SUBVERSION
-{subversion['subversive_repetition']['description']}. {subversion['resignification']['politics']}
+{subversion["subversive_repetition"]["description"]}. {subversion["resignification"]["politics"]}
 Working within the terms of power, we can destabilize them.
 
 This analysis asks: What norms are operating? Who is excluded?
 How might we work toward more livable lives for all?"""
 
-    def _calculate_tension(self, analysis: Dict[str, Any]) -> float:
+    def _calculate_tension(self, analysis: dict[str, Any]) -> float:
         """
         Calculate philosophical tension.
 

@@ -16,7 +16,7 @@ Key concepts:
 - Rootedness: Human need for belonging
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -53,7 +53,7 @@ class Weil(Philosopher):
             "the good",
         ]
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Apply Weil's philosophy to the prompt.
 
@@ -85,7 +85,7 @@ class Weil(Philosopher):
             },
         }
 
-    def _analyze_weil(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_weil(self, prompt: str) -> dict[str, Any]:
         """Comprehensive Weil analysis of the prompt."""
         attention = self._analyze_attention(prompt)
         affliction = self._analyze_affliction(prompt)
@@ -99,8 +99,16 @@ class Weil(Philosopher):
         spiritual = self._derive_spiritual_guidance(prompt)
 
         reasoning = self._construct_reasoning(
-            prompt, attention, affliction, decreation, gravity_grace,
-            void, beauty, justice, labor, rootedness
+            prompt,
+            attention,
+            affliction,
+            decreation,
+            gravity_grace,
+            void,
+            beauty,
+            justice,
+            labor,
+            rootedness,
         )
 
         return {
@@ -117,7 +125,7 @@ class Weil(Philosopher):
             "spiritual": spiritual,
         }
 
-    def _analyze_attention(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_attention(self, prompt: str) -> dict[str, Any]:
         """
         Analyze through the lens of attention.
 
@@ -153,7 +161,7 @@ class Weil(Philosopher):
             "application": "What does genuine attention reveal here?",
         }
 
-    def _analyze_affliction(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_affliction(self, prompt: str) -> dict[str, Any]:
         """
         Examine the concept of affliction (malheur).
 
@@ -190,7 +198,7 @@ class Weil(Philosopher):
             "application": "What affliction, if any, is present here?",
         }
 
-    def _analyze_decreation(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_decreation(self, prompt: str) -> dict[str, Any]:
         """
         Examine the concept of decreation.
 
@@ -221,7 +229,7 @@ class Weil(Philosopher):
             "application": "What self-renunciation might be appropriate here?",
         }
 
-    def _analyze_gravity_and_grace(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_gravity_and_grace(self, prompt: str) -> dict[str, Any]:
         """
         Examine the two forces that shape human existence.
 
@@ -252,7 +260,7 @@ class Weil(Philosopher):
             "application": "What forces of gravity and grace operate here?",
         }
 
-    def _analyze_void(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_void(self, prompt: str) -> dict[str, Any]:
         """
         Examine the concept of the void.
 
@@ -283,7 +291,7 @@ class Weil(Philosopher):
             "application": "What void is present here? How is it being filled or accepted?",
         }
 
-    def _analyze_beauty(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_beauty(self, prompt: str) -> dict[str, Any]:
         """
         Examine beauty as gateway to transcendence.
 
@@ -314,7 +322,7 @@ class Weil(Philosopher):
             "application": "What beauty is relevant to this situation?",
         }
 
-    def _analyze_justice(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_justice(self, prompt: str) -> dict[str, Any]:
         """
         Examine justice as supernatural virtue.
 
@@ -345,7 +353,7 @@ class Weil(Philosopher):
             "application": "What demands of justice arise here?",
         }
 
-    def _analyze_labor(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_labor(self, prompt: str) -> dict[str, Any]:
         """
         Examine physical work as spiritual discipline.
 
@@ -376,7 +384,7 @@ class Weil(Philosopher):
             "application": "What forms of labor are relevant here?",
         }
 
-    def _analyze_rootedness(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_rootedness(self, prompt: str) -> dict[str, Any]:
         """
         Examine the human need for roots.
 
@@ -407,7 +415,7 @@ class Weil(Philosopher):
             "application": "What questions of rootedness or uprootedness arise?",
         }
 
-    def _derive_spiritual_guidance(self, prompt: str) -> Dict[str, Any]:
+    def _derive_spiritual_guidance(self, prompt: str) -> dict[str, Any]:
         """Extract spiritual guidance from Weil's philosophy."""
         return {
             "practice_of_attention": {
@@ -438,49 +446,57 @@ class Weil(Philosopher):
         }
 
     def _construct_reasoning(
-        self, prompt: str, attention: Dict, affliction: Dict, decreation: Dict,
-        gravity_grace: Dict, void: Dict, beauty: Dict, justice: Dict,
-        labor: Dict, rootedness: Dict
+        self,
+        prompt: str,
+        attention: dict,
+        affliction: dict,
+        decreation: dict,
+        gravity_grace: dict,
+        void: dict,
+        beauty: dict,
+        justice: dict,
+        labor: dict,
+        rootedness: dict,
     ) -> str:
         """Construct comprehensive Weil reasoning."""
         return f"""Contemplation through Simone Weil: "{prompt}"
 
 THE FACULTY OF ATTENTION
-{attention['nature']['description']}. {attention['moral_attention']['description']}
-{attention['prayer_and_attention']['claim']}
+{attention["nature"]["description"]}. {attention["moral_attention"]["description"]}
+{attention["prayer_and_attention"]["claim"]}
 
 AFFLICTION AND SUFFERING
-{affliction['nature']['description']}. Affliction is not mere suffering but
-{affliction['nature']['effect']}. {affliction['response']['attention']}
+{affliction["nature"]["description"]}. Affliction is not mere suffering but
+{affliction["nature"]["effect"]}. {affliction["response"]["attention"]}
 
 THE PATH OF DECREATION
-{decreation['concept']['description']}. {decreation['consent']['nature']}.
-{decreation['divine_model']['imitation']}
+{decreation["concept"]["description"]}. {decreation["consent"]["nature"]}.
+{decreation["divine_model"]["imitation"]}
 
 GRAVITY AND GRACE
-{gravity_grace['gravity']['description']}. Against this, {gravity_grace['grace']['description']}.
-{gravity_grace['relation']['paradox']}
+{gravity_grace["gravity"]["description"]}. Against this, {gravity_grace["grace"]["description"]}.
+{gravity_grace["relation"]["paradox"]}
 
 ACCEPTING THE VOID
-{void['nature']['description']}. {void['filling_the_void']['failure']}
-{void['accepting_the_void']['result']}
+{void["nature"]["description"]}. {void["filling_the_void"]["failure"]}
+{void["accepting_the_void"]["result"]}
 
 THE CALL OF BEAUTY
-{beauty['nature']['description']}. {beauty['transcendent_function']['experience']}
+{beauty["nature"]["description"]}. {beauty["transcendent_function"]["experience"]}
 Beauty teaches the soul to wait without grasping.
 
 THE DEMANDS OF JUSTICE
-{justice['nature']['description']}. {justice['recognition']['effect']}
+{justice["nature"]["description"]}. {justice["recognition"]["effect"]}
 Justice is supernatural because it requires not exercising power we possess.
 
 LABOR AND ROOTEDNESS
-{labor['significance']['description']}. {rootedness['human_need']['description']}
-{rootedness['uprootedness']['description']}: the affliction of modern humanity.
+{labor["significance"]["description"]}. {rootedness["human_need"]["description"]}
+{rootedness["uprootedness"]["description"]}: the affliction of modern humanity.
 
 Thus wisdom counsels: Give absolute attention. Accept the void without filling it.
 Wait for grace. See the sacred in the other. Do not exercise force."""
 
-    def _calculate_tension(self, analysis: Dict[str, Any]) -> float:
+    def _calculate_tension(self, analysis: dict[str, Any]) -> float:
         """
         Calculate philosophical tension.
 

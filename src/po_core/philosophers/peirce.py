@@ -19,7 +19,7 @@ Key Concepts:
 - Pragmatic Maxim: Consider practical effects to clarify ideas
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -35,10 +35,10 @@ class Peirce(Philosopher):
     def __init__(self) -> None:
         super().__init__(
             name="Charles Sanders Peirce",
-            description="Pragmatist philosopher focused on semiotics, abduction, and scientific inquiry"
+            description="Pragmatist philosopher focused on semiotics, abduction, and scientific inquiry",
         )
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Analyze the prompt from Peirce's pragmatic perspective.
 
@@ -67,11 +67,11 @@ class Peirce(Philosopher):
             "metadata": {
                 "philosopher": self.name,
                 "approach": "Pragmatic and semiotic analysis",
-                "focus": "Signs, inference, inquiry, and practical consequences"
-            }
+                "focus": "Signs, inference, inquiry, and practical consequences",
+            },
         }
 
-    def _analyze_pragmatic(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_pragmatic(self, prompt: str) -> dict[str, Any]:
         """
         Perform Peircean pragmatic analysis.
 
@@ -109,9 +109,7 @@ class Peirce(Philosopher):
         continuity = self._detect_continuity(prompt)
 
         # Construct reasoning
-        reasoning = self._construct_reasoning(
-            semiotics, inference, belief_doubt, pragmatic_maxim
-        )
+        reasoning = self._construct_reasoning(semiotics, inference, belief_doubt, pragmatic_maxim)
 
         return {
             "reasoning": reasoning,
@@ -123,10 +121,10 @@ class Peirce(Philosopher):
             "pragmatic_maxim": pragmatic_maxim,
             "fallibilism": fallibilism,
             "community": community,
-            "continuity": continuity
+            "continuity": continuity,
         }
 
-    def _analyze_semiotics(self, text: str) -> Dict[str, Any]:
+    def _analyze_semiotics(self, text: str) -> dict[str, Any]:
         """
         Analyze triadic semiotics.
 
@@ -160,11 +158,7 @@ class Peirce(Philosopher):
         has_index = sum(1 for phrase in index_words if phrase in text_lower)
         has_symbol = sum(1 for word in symbol_words if word in text_lower)
 
-        sign_type_scores = {
-            "Icon": has_icon,
-            "Index": has_index,
-            "Symbol": has_symbol
-        }
+        sign_type_scores = {"Icon": has_icon, "Index": has_index, "Symbol": has_symbol}
         dominant_sign = max(sign_type_scores, key=sign_type_scores.get)
 
         if has_sign >= 1 and has_interpretant >= 1:
@@ -194,10 +188,10 @@ class Peirce(Philosopher):
             "description": description,
             "structure": structure,
             "sign_type": sign_type,
-            "principle": "Triadic semiotics: Sign, Object, Interpretant (irreducible triad)"
+            "principle": "Triadic semiotics: Sign, Object, Interpretant (irreducible triad)",
         }
 
-    def _determine_inference(self, text: str) -> Dict[str, Any]:
+    def _determine_inference(self, text: str) -> dict[str, Any]:
         """
         Determine type of inference: Deduction, Induction, or Abduction.
 
@@ -230,7 +224,7 @@ class Peirce(Philosopher):
         scores = {
             "Deduction": has_deduction,
             "Induction": has_induction,
-            "Abduction": has_abduction + has_best_explanation + has_surprise
+            "Abduction": has_abduction + has_best_explanation + has_surprise,
         }
         dominant = max(scores, key=scores.get)
 
@@ -256,10 +250,10 @@ class Peirce(Philosopher):
             "description": description,
             "mode": mode,
             "scores": scores,
-            "principle": "Three types of inference: Deduction (necessary), Induction (probable), Abduction (explanatory)"
+            "principle": "Three types of inference: Deduction (necessary), Induction (probable), Abduction (explanatory)",
         }
 
-    def _assess_categories(self, text: str) -> Dict[str, Any]:
+    def _assess_categories(self, text: str) -> dict[str, Any]:
         """
         Assess Peirce's three categories: Firstness, Secondness, Thirdness.
 
@@ -284,7 +278,7 @@ class Peirce(Philosopher):
         scores = {
             "Firstness": has_firstness,
             "Secondness": has_secondness,
-            "Thirdness": has_thirdness
+            "Thirdness": has_thirdness,
         }
         dominant = max(scores, key=scores.get)
 
@@ -310,10 +304,10 @@ class Peirce(Philosopher):
             "description": description,
             "character": character,
             "scores": scores,
-            "principle": "Three categories: Firstness (quality), Secondness (reaction), Thirdness (mediation)"
+            "principle": "Three categories: Firstness (quality), Secondness (reaction), Thirdness (mediation)",
         }
 
-    def _evaluate_belief_doubt(self, text: str) -> Dict[str, Any]:
+    def _evaluate_belief_doubt(self, text: str) -> dict[str, Any]:
         """
         Evaluate belief and doubt.
 
@@ -364,10 +358,10 @@ class Peirce(Philosopher):
             "state": state,
             "description": description,
             "mode": mode,
-            "principle": "Doubt is irritation that prompts inquiry; belief is settled habit"
+            "principle": "Doubt is irritation that prompts inquiry; belief is settled habit",
         }
 
-    def _assess_inquiry(self, text: str) -> Dict[str, Any]:
+    def _assess_inquiry(self, text: str) -> dict[str, Any]:
         """
         Assess scientific inquiry and method.
 
@@ -421,10 +415,10 @@ class Peirce(Philosopher):
             "status": status,
             "description": description,
             "approach": approach,
-            "principle": "Inquiry is self-correcting process of the community of investigators"
+            "principle": "Inquiry is self-correcting process of the community of investigators",
         }
 
-    def _apply_pragmatic_maxim(self, text: str) -> Dict[str, Any]:
+    def _apply_pragmatic_maxim(self, text: str) -> dict[str, Any]:
         """
         Apply the pragmatic maxim.
 
@@ -478,10 +472,10 @@ class Peirce(Philosopher):
             "application": application,
             "description": description,
             "mode": mode,
-            "principle": "Pragmatic maxim: Consider practical effects to clarify ideas"
+            "principle": "Pragmatic maxim: Consider practical effects to clarify ideas",
         }
 
-    def _check_fallibilism(self, text: str) -> Dict[str, Any]:
+    def _check_fallibilism(self, text: str) -> dict[str, Any]:
         """
         Check fallibilism - all knowledge is provisional.
 
@@ -527,10 +521,10 @@ class Peirce(Philosopher):
             "stance": stance,
             "description": description,
             "attitude": attitude,
-            "principle": "Fallibilism: All knowledge is provisional and corrigible"
+            "principle": "Fallibilism: All knowledge is provisional and corrigible",
         }
 
-    def _assess_community(self, text: str) -> Dict[str, Any]:
+    def _assess_community(self, text: str) -> dict[str, Any]:
         """
         Assess community of inquiry.
 
@@ -581,10 +575,10 @@ class Peirce(Philosopher):
             "status": status,
             "description": description,
             "nature": nature,
-            "principle": "Truth is ultimate agreement of the community of investigators"
+            "principle": "Truth is ultimate agreement of the community of investigators",
         }
 
-    def _detect_continuity(self, text: str) -> Dict[str, Any]:
+    def _detect_continuity(self, text: str) -> dict[str, Any]:
         """
         Detect continuity (synechism).
 
@@ -630,15 +624,15 @@ class Peirce(Philosopher):
             "presence": presence,
             "description": description,
             "character": character,
-            "principle": "Synechism: Doctrine of continuity - no absolute discontinuities"
+            "principle": "Synechism: Doctrine of continuity - no absolute discontinuities",
         }
 
     def _construct_reasoning(
         self,
-        semiotics: Dict[str, Any],
-        inference: Dict[str, Any],
-        belief_doubt: Dict[str, Any],
-        pragmatic_maxim: Dict[str, Any]
+        semiotics: dict[str, Any],
+        inference: dict[str, Any],
+        belief_doubt: dict[str, Any],
+        pragmatic_maxim: dict[str, Any],
     ) -> str:
         """Construct Peircean pragmatic reasoning."""
         reasoning = (

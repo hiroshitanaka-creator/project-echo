@@ -16,7 +16,7 @@ Key concepts:
 - The Garden: Community of philosophical friends
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -52,7 +52,7 @@ class Epicurus(Philosopher):
             "prudence",
         ]
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Apply Epicurean reasoning to the prompt.
 
@@ -84,7 +84,7 @@ class Epicurus(Philosopher):
             },
         }
 
-    def _analyze_epicurean(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_epicurean(self, prompt: str) -> dict[str, Any]:
         """Comprehensive Epicurean analysis of the prompt."""
         pleasure = self._analyze_pleasure(prompt)
         desires = self._classify_desires(prompt)
@@ -98,8 +98,15 @@ class Epicurus(Philosopher):
         practical = self._derive_practical_guidance(prompt)
 
         reasoning = self._construct_reasoning(
-            prompt, pleasure, desires, tetrapharmakos, ataraxia,
-            aponia, mortality, friendship, prudence
+            prompt,
+            pleasure,
+            desires,
+            tetrapharmakos,
+            ataraxia,
+            aponia,
+            mortality,
+            friendship,
+            prudence,
         )
 
         return {
@@ -116,7 +123,7 @@ class Epicurus(Philosopher):
             "practical": practical,
         }
 
-    def _analyze_pleasure(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_pleasure(self, prompt: str) -> dict[str, Any]:
         """
         Analyze through the Epicurean understanding of pleasure.
 
@@ -148,7 +155,7 @@ class Epicurus(Philosopher):
             "application": "What is the nature of pleasure or pain involved here?",
         }
 
-    def _classify_desires(self, prompt: str) -> Dict[str, Any]:
+    def _classify_desires(self, prompt: str) -> dict[str, Any]:
         """
         Apply the Epicurean classification of desires.
 
@@ -190,7 +197,7 @@ class Epicurus(Philosopher):
             "application": "What category of desire is operating here?",
         }
 
-    def _apply_tetrapharmakos(self, prompt: str) -> Dict[str, Any]:
+    def _apply_tetrapharmakos(self, prompt: str) -> dict[str, Any]:
         """
         Apply the four-part remedy for a good life.
 
@@ -225,7 +232,7 @@ class Epicurus(Philosopher):
             "application": "Which of these remedies applies to the current situation?",
         }
 
-    def _analyze_ataraxia(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_ataraxia(self, prompt: str) -> dict[str, Any]:
         """
         Examine the goal of mental tranquility.
 
@@ -258,7 +265,7 @@ class Epicurus(Philosopher):
             "application": "What is disturbing tranquility here?",
         }
 
-    def _analyze_aponia(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_aponia(self, prompt: str) -> dict[str, Any]:
         """
         Examine freedom from bodily pain.
 
@@ -286,7 +293,7 @@ class Epicurus(Philosopher):
             "application": "What bodily concerns are relevant here?",
         }
 
-    def _analyze_mortality(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_mortality(self, prompt: str) -> dict[str, Any]:
         """
         Apply Epicurean arguments about death.
 
@@ -317,7 +324,7 @@ class Epicurus(Philosopher):
             "application": "How does mortality bear on this situation?",
         }
 
-    def _analyze_friendship(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_friendship(self, prompt: str) -> dict[str, Any]:
         """
         Examine the role of friendship in the good life.
 
@@ -348,7 +355,7 @@ class Epicurus(Philosopher):
             "application": "What role does friendship or community play here?",
         }
 
-    def _analyze_prudence(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_prudence(self, prompt: str) -> dict[str, Any]:
         """
         Examine practical wisdom in choosing pleasures.
 
@@ -385,7 +392,7 @@ class Epicurus(Philosopher):
             "application": "What does prudent calculation suggest here?",
         }
 
-    def _analyze_atomism(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_atomism(self, prompt: str) -> dict[str, Any]:
         """
         Consider the atomic basis of Epicurean philosophy.
 
@@ -416,7 +423,7 @@ class Epicurus(Philosopher):
             "application": "How does material understanding illuminate this?",
         }
 
-    def _derive_practical_guidance(self, prompt: str) -> Dict[str, Any]:
+    def _derive_practical_guidance(self, prompt: str) -> dict[str, Any]:
         """Extract practical guidance from Epicurean wisdom."""
         return {
             "for_daily_life": [
@@ -446,54 +453,62 @@ class Epicurus(Philosopher):
         }
 
     def _construct_reasoning(
-        self, prompt: str, pleasure: Dict, desires: Dict, tetrapharmakos: Dict,
-        ataraxia: Dict, aponia: Dict, mortality: Dict, friendship: Dict, prudence: Dict
+        self,
+        prompt: str,
+        pleasure: dict,
+        desires: dict,
+        tetrapharmakos: dict,
+        ataraxia: dict,
+        aponia: dict,
+        mortality: dict,
+        friendship: dict,
+        prudence: dict,
     ) -> str:
         """Construct comprehensive Epicurean reasoning."""
         return f"""Epicurean Analysis of: "{prompt}"
 
 THE NATURE OF PLEASURE
-{pleasure['nature_of_pleasure']['definition']}. True pleasure is not excess or
+{pleasure["nature_of_pleasure"]["definition"]}. True pleasure is not excess or
 indulgence but the stable condition of well-being - what Epicurus calls
-katastematic pleasure. {pleasure['katastematic_pleasure']['priority']}
+katastematic pleasure. {pleasure["katastematic_pleasure"]["priority"]}
 
 CLASSIFICATION OF DESIRES
 We must distinguish what we desire:
-- Natural and necessary: {desires['natural_and_necessary']['description']}
-- Natural but unnecessary: {desires['natural_but_unnecessary']['description']}
-- Unnatural and unnecessary: {desires['unnatural_and_unnecessary']['description']}
-{desires['wisdom']}
+- Natural and necessary: {desires["natural_and_necessary"]["description"]}
+- Natural but unnecessary: {desires["natural_but_unnecessary"]["description"]}
+- Unnatural and unnecessary: {desires["unnatural_and_unnecessary"]["description"]}
+{desires["wisdom"]}
 
 THE FOUR-PART REMEDY
 The Tetrapharmakos addresses our deepest fears:
-1. {tetrapharmakos['god_not_feared']['maxim']}: {tetrapharmakos['god_not_feared']['explanation']}
-2. {tetrapharmakos['death_not_felt']['maxim']}: {tetrapharmakos['death_not_felt']['explanation']}
-3. {tetrapharmakos['good_easily_obtained']['maxim']}: {tetrapharmakos['good_easily_obtained']['explanation']}
-4. {tetrapharmakos['evil_easily_endured']['maxim']}: {tetrapharmakos['evil_easily_endured']['explanation']}
+1. {tetrapharmakos["god_not_feared"]["maxim"]}: {tetrapharmakos["god_not_feared"]["explanation"]}
+2. {tetrapharmakos["death_not_felt"]["maxim"]}: {tetrapharmakos["death_not_felt"]["explanation"]}
+3. {tetrapharmakos["good_easily_obtained"]["maxim"]}: {tetrapharmakos["good_easily_obtained"]["explanation"]}
+4. {tetrapharmakos["evil_easily_endured"]["maxim"]}: {tetrapharmakos["evil_easily_endured"]["explanation"]}
 
 PATH TO TRANQUILITY
-{ataraxia['nature']['description']}. We achieve this through philosophy,
+{ataraxia["nature"]["description"]}. We achieve this through philosophy,
 simple living, and withdrawal from unnecessary troubles.
-{ataraxia['lathe_biosas']['maxim']}: {ataraxia['lathe_biosas']['meaning']}
+{ataraxia["lathe_biosas"]["maxim"]}: {ataraxia["lathe_biosas"]["meaning"]}
 
 REGARDING DEATH
-{mortality['epicurus_argument']['description']}: {mortality['epicurus_argument']['reasoning']}
-{mortality['symmetry_argument']['description']}: {mortality['symmetry_argument']['reasoning']}
+{mortality["epicurus_argument"]["description"]}: {mortality["epicurus_argument"]["reasoning"]}
+{mortality["symmetry_argument"]["description"]}: {mortality["symmetry_argument"]["reasoning"]}
 
 THE VALUE OF FRIENDSHIP
-{friendship['centrality']['claim']}. The Garden teaches us that
-the good life is lived among friends. {friendship['benefits']['philosophy']}
+{friendship["centrality"]["claim"]}. The Garden teaches us that
+the good life is lived among friends. {friendship["benefits"]["philosophy"]}
 
 PRUDENT CALCULATION
-{prudence['centrality']['claim']}. We must weigh pleasures and pains wisely,
+{prudence["centrality"]["claim"]}. We must weigh pleasures and pains wisely,
 sometimes accepting present pain for future pleasure, sometimes rejecting
-present pleasure to avoid future pain. {prudence['long_term_thinking']['principle']}
+present pleasure to avoid future pain. {prudence["long_term_thinking"]["principle"]}
 
 Thus Epicurean wisdom counsels: Pursue simple, natural pleasures;
 dissolve irrational fears through understanding; cultivate friendship;
 and live a quiet life of philosophical contentment."""
 
-    def _calculate_tension(self, analysis: Dict[str, Any]) -> float:
+    def _calculate_tension(self, analysis: dict[str, Any]) -> float:
         """
         Calculate philosophical tension.
 

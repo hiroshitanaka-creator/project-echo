@@ -9,12 +9,10 @@ Loader Functions:
 - load_cosmic_philosophers(): Load philosophers for Cosmic Ethics 39 scenarios
 """
 
-from typing import List
-
-from po_core.philosophers.base import Philosopher, PhilosopherPerspective
 from po_core.philosophers.arendt import Arendt
 from po_core.philosophers.aristotle import Aristotle
 from po_core.philosophers.badiou import Badiou
+from po_core.philosophers.base import Philosopher, PhilosopherPerspective
 from po_core.philosophers.beauvoir import Beauvoir
 from po_core.philosophers.butler import Butler
 from po_core.philosophers.confucius import Confucius
@@ -99,7 +97,7 @@ __all__ = [
 ]
 
 
-def load_all_philosophers() -> List[Philosopher]:
+def load_all_philosophers() -> list[Philosopher]:
     """
     Load all 39 philosophers.
 
@@ -173,7 +171,7 @@ COSMIC_SET = {
 }
 
 
-def load_cosmic_philosophers() -> List[Philosopher]:
+def load_cosmic_philosophers() -> list[Philosopher]:
     """
     Load philosophers particularly relevant to Cosmic Ethics 39 scenarios.
 
