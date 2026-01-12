@@ -135,14 +135,15 @@ def _compute_or_verify_echo_mark(run: dict) -> dict | None:
 
     # secretあり
     if existing:
+        # Support both v1 (secret param) and v2 (key_store lookup)
         ok = VERIFY_ECHO_MARK(
             payload=existing["payload"],
             payload_hash=existing["payload_hash"],
             signature=existing["signature"],
-            secret=secret,
+            secret=secret,  # v1 compat
         )
         return {
-            "schema_version": "echo_mark_v1",
+            "schema_version": existing.get("schema_version", "echo_mark_v1"),
             "label": existing.get("label"),
             "badge_text": existing.get("badge_text", ""),
             "payload_hash": existing.get("payload_hash", ""),
@@ -152,9 +153,10 @@ def _compute_or_verify_echo_mark(run: dict) -> dict | None:
         }
 
     # no existing → generate (treated VALID by construction)
-    badge = MAKE_ECHO_MARK(audit, secret=secret, run_id=audit.get("run_id"))
+    # v2 is now default in make_echo_mark
+    badge = MAKE_ECHO_MARK(audit, run_id=audit.get("run_id"))
     return {
-        "schema_version": "echo_mark_v1",
+        "schema_version": badge.get("schema_version", "echo_mark_v2"),
         "label": badge.get("label"),
         "badge_text": badge.get("badge_text", ""),
         "payload_hash": badge.get("payload_hash", ""),
