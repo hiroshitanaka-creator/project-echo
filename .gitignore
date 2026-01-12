@@ -2,3 +2,8 @@ __pycache__/
 *.pyc
 test_output.json
 runs/
+
+# Python build/distribution artifacts
+*.egg-info/
+dist/
+build/

@@ -297,6 +297,157 @@ def _blocked_options(
     return blocked
 
 
+# Mapping: boundary reasons -> dimension keys
+REASON_TO_DIMENSIONS: dict[str, list[str]] = {
+    # boundary reasons
+    "blocked_options_present": [],  # Pulled from blocked_options
+    "adjusted_score_below_0.50": ["adjusted_score_low"],
+    "adjusted_score_below_0.70": ["adjusted_score_medium"],
+    "uncertainty_high": ["known_unknowns", "unknown_unknowns"],
+    "reversibility_low": ["irreversible_risk"],
+    "tension_high": ["tension_high"],
+}
+
+
+def _merge_boundary_and_blocking(
+    *,
+    responsibility_boundary: dict[str, Any],
+    blocked_options: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """
+    Merge boundary reasons with blocked_options dimensions into a single, consistent set.
+
+    This ensures that "why execution was blocked/confirmation required" is unified
+    across reasons and blocking_dimensions for consistency.
+    """
+    dims: set[str] = set()
+
+    # 1) From boundary reasons -> mapped dimensions
+    for r in responsibility_boundary.get("reasons", []):
+        for d in REASON_TO_DIMENSIONS.get(r, []):
+            dims.add(d)
+
+    # 2) From blocked_options -> blocking_dimensions
+    for b in blocked_options:
+        for d in b.get("blocking_dimensions", []) or []:
+            dims.add(str(d))
+
+    # 3) Attach merged set
+    responsibility_boundary["blocking_dimensions_merged"] = sorted(dims)
+
+    # 4) Human-facing one-liner
+    responsibility_boundary["explanation"] = _boundary_explanation(responsibility_boundary)
+
+    return responsibility_boundary
+
+
+def _boundary_explanation(rb: dict[str, Any]) -> str:
+    """Generate human-readable explanation for boundary decision."""
+    allowed = rb.get("execution_allowed", False)
+    confirm = rb.get("requires_human_confirm", True)
+    reasons = rb.get("reasons", [])
+    dims = rb.get("blocking_dimensions_merged", [])
+
+    if not allowed:
+        return f"Execution blocked due to: {', '.join(dims) if dims else ', '.join(reasons)}"
+    if confirm:
+        return (
+            f"Human confirmation required due to: {', '.join(dims) if dims else ', '.join(reasons)}"
+        )
+    return "Execution allowed without additional confirmation."
+
+
+def _responsibility_boundary(
+    *,
+    adjusted: dict[str, float],
+    meta: dict[str, Any],
+    blocked_options: list[dict[str, Any]],
+    tension_topk: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """
+    Decide responsibility boundary mechanically.
+
+    Key outputs:
+      - ai_recommends: always False (this project policy)
+      - execution_allowed: whether the system allows execution
+      - requires_human_confirm: whether human confirmation is mandatory
+      - reasons: list[str] explaining boundary decisions
+    """
+    adjusted_score = float(adjusted.get("adjusted_score", 0.0))
+    uncertainty = _safe_get(meta, "uncertainty", 0.5)
+    reversibility = _safe_get(meta, "reversibility", 0.5)
+
+    # Max tension among topk
+    max_tension = 0.0
+    if tension_topk:
+        max_tension = max(float(t.get("tension_score", 0.0)) for t in tension_topk)
+
+    reasons: list[str] = []
+
+    # ---- Execution allowed (hard gate) ----
+    # Rule: blocked_options exists OR score too low -> not allowed
+    execution_allowed = True
+    if blocked_options:
+        execution_allowed = False
+        reasons.append("blocked_options_present")
+    if adjusted_score < 0.50:
+        execution_allowed = False
+        reasons.append("adjusted_score_below_0.50")
+
+    # ---- Requires human confirm (soft gate) ----
+    # If not allowed => must confirm (and typically stop), but keep flag True for clarity.
+    requires_human_confirm = True
+
+    if execution_allowed:
+        # If allowed, confirm is conditional on risk/uncertainty/irreversibility/tension.
+        requires_human_confirm = False
+
+        # High uncertainty
+        if uncertainty >= 0.60:
+            requires_human_confirm = True
+            reasons.append("uncertainty_high")
+
+        # Low reversibility
+        if reversibility <= 0.30:
+            requires_human_confirm = True
+            reasons.append("reversibility_low")
+
+        # High disagreement among philosophers
+        # (tune threshold; start conservative)
+        if max_tension >= 0.08:
+            requires_human_confirm = True
+            reasons.append("tension_high")
+
+        # Medium score but not strong green light => require confirm
+        if adjusted_score < 0.70:
+            requires_human_confirm = True
+            reasons.append("adjusted_score_below_0.70")
+
+    # Liability mode is stub for now
+    liability_mode = "audit-only"
+    if not execution_allowed:
+        liability_mode = "audit-only"
+    elif requires_human_confirm:
+        liability_mode = "audit-only"
+    else:
+        liability_mode = "audit-only"
+
+    return {
+        "ai_recommends": False,  # policy: never "recommend"
+        "execution_allowed": execution_allowed,
+        "requires_human_confirm": requires_human_confirm,
+        "liability_mode": liability_mode,
+        "signals": {
+            "adjusted_score": adjusted_score,
+            "uncertainty": uncertainty,
+            "reversibility": reversibility,
+            "max_tension": max_tension,
+            "blocked_count": len(blocked_options),
+        },
+        "reasons": reasons,
+    }
+
+
 class CosmicEthics39Evaluator:
     """
     Integrates 39-dimensional ethical evaluation with philosopher perspectives.
@@ -359,6 +510,20 @@ class CosmicEthics39Evaluator:
         # 7) Generate blocked options
         blocked = _blocked_options(adjusted, adjusted_scores)
 
+        # 8) Responsibility boundary (mechanical)
+        responsibility_boundary = _responsibility_boundary(
+            adjusted=adjusted,
+            meta=meta,
+            blocked_options=blocked,
+            tension_topk=tension,
+        )
+
+        # 9) Merge boundary reasons with blocking dimensions for consistency
+        responsibility_boundary = _merge_boundary_and_blocking(
+            responsibility_boundary=responsibility_boundary,
+            blocked_options=blocked,
+        )
+
         dt = time.time() - t0
 
         return {
@@ -374,6 +539,13 @@ class CosmicEthics39Evaluator:
             },
             "tension_topk": tension,
             "blocked_options": blocked,
+            "responsibility_boundary": responsibility_boundary,
+            "human_confirmation": {  # Future proof - evidence of human decision
+                "required": responsibility_boundary["requires_human_confirm"],
+                "method": "none",
+                "confirmed_at": None,
+                "confirmed_by": None,
+            },
             "philosophers": {
                 "preset": self.preset,
                 "active_count": len(perspectives),

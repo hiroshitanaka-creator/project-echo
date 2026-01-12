@@ -68,11 +68,19 @@ def print_cosmic39(result: dict) -> None:
             print(f"    blockers: {', '.join(b['blocking_dimensions'])}")
     print()
 
-    # Freedom Pressure (if available)
-    # TODO: Add freedom pressure calculation
-    # For now, just show placeholder
-    print("Freedom Pressure:")
-    print("  (not yet implemented)")
+    # Responsibility Boundary - Core of Responsible AI
+    rb = result.get("responsibility_boundary", {})
+    print("Responsibility Boundary:")
+    print(f"  AI recommends: {'YES' if rb.get('ai_recommends') else 'NO'}")
+    print(f"  Execution allowed: {'YES' if rb.get('execution_allowed') else 'NO'}")
+    print(f"  Requires human confirm: {'YES' if rb.get('requires_human_confirm') else 'NO'}")
+    print(f"  Liability mode: {rb.get('liability_mode', 'audit-only')}")
+    if rb.get("reasons"):
+        print(f"  Boundary reasons: {', '.join(rb['reasons'])}")
+    if rb.get("blocking_dimensions_merged"):
+        print(f"  Blocking dimensions: {', '.join(rb['blocking_dimensions_merged'])}")
+    if rb.get("explanation"):
+        print(f"  Explanation: {rb['explanation']}")
     print()
 
     print(f"Runtime: {result['runtime_sec']:.3f} seconds")
