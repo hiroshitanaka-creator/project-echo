@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -17,6 +18,159 @@ from typing import Any
 RUNS_DIR = Path("runs")
 REPORTS_DIR = Path("reports")
 OUT_MD = REPORTS_DIR / "latest.md"
+
+
+def _try_import_echo_mark():
+    try:
+        from po_echo.echo_mark import make_echo_mark, verify_mark  # type: ignore
+
+        return make_echo_mark, verify_mark
+    except Exception:
+        return None, None
+
+
+MAKE_ECHO_MARK, VERIFY_ECHO_MARK = _try_import_echo_mark()
+
+
+def _get_env_secret() -> str | None:
+    s = os.getenv("ECHO_MARK_SECRET", "").strip()
+    return s if s else None
+
+
+def _extract_audit_obj(run: dict) -> dict | None:
+    """
+    Accepts either:
+      - run itself (if it already matches audit schema)
+      - run["audit"] (if nested)
+    Minimal requirement: responsibility_boundary exists.
+    """
+    if isinstance(run.get("responsibility_boundary"), dict):
+        return run
+    if isinstance(run.get("audit"), dict) and isinstance(
+        run["audit"].get("responsibility_boundary"), dict
+    ):
+        return run["audit"]
+    return None
+
+
+def _extract_existing_badge(run: dict) -> dict | None:
+    """
+    If you already saved badge inside run, support it:
+      - run["echo_mark"]
+      - run["badge"]
+      - run["echo_mark_v1"]
+    """
+    for k in ("echo_mark", "badge", "echo_mark_v1"):
+        if isinstance(run.get(k), dict) and run[k].get("schema_version") == "echo_mark_v1":
+            return run[k]
+    # nested case
+    if isinstance(run.get("audit"), dict):
+        for k in ("echo_mark", "badge", "echo_mark_v1"):
+            v = run["audit"].get(k)
+            if isinstance(v, dict) and v.get("schema_version") == "echo_mark_v1":
+                return v
+    return None
+
+
+def _compute_or_verify_echo_mark(run: dict) -> dict | None:
+    """
+    Returns a dict with:
+      - label, badge_text, payload_hash, signature, verification_status, short fields
+    Does NOT mutate input.
+    """
+    audit = _extract_audit_obj(run)
+    if audit is None:
+        return None
+
+    secret = _get_env_secret()
+    existing = _extract_existing_badge(run)
+
+    # If we cannot import mark module, still show label-only if possible
+    if MAKE_ECHO_MARK is None or VERIFY_ECHO_MARK is None:
+        rb = audit.get("responsibility_boundary", {})
+        allowed = bool(rb.get("execution_allowed", False))
+        confirm = bool(rb.get("requires_human_confirm", True))
+        label = (
+            "ECHO_BLOCKED" if not allowed else ("ECHO_CHECK" if confirm else "ECHO_VERIFIED")
+        )
+        return {
+            "schema_version": "echo_mark_v1",
+            "label": label,
+            "badge_text": "",
+            "payload_hash": "",
+            "signature": "",
+            "verification_status": "UNAVAILABLE",
+            "short": {},
+        }
+
+    # secretなし → 表示だけ（UNVERIFIED）
+    if not secret:
+        # if existing exists, show it as UNVERIFIED
+        if existing:
+            return {
+                "schema_version": "echo_mark_v1",
+                "label": existing.get("label"),
+                "badge_text": existing.get("badge_text", ""),
+                "payload_hash": existing.get("payload_hash", ""),
+                "signature": existing.get("signature", ""),
+                "verification_status": "UNVERIFIED",
+                "short": existing.get("short", {}),
+            }
+        # else compute label from boundary only
+        rb = audit.get("responsibility_boundary", {})
+        allowed = bool(rb.get("execution_allowed", False))
+        confirm = bool(rb.get("requires_human_confirm", True))
+        label = (
+            "ECHO_BLOCKED" if not allowed else ("ECHO_CHECK" if confirm else "ECHO_VERIFIED")
+        )
+        return {
+            "schema_version": "echo_mark_v1",
+            "label": label,
+            "badge_text": "",
+            "payload_hash": "",
+            "signature": "",
+            "verification_status": "UNVERIFIED",
+            "short": {},
+        }
+
+    # secretあり
+    if existing:
+        # Support both v1 (secret param) and v2 (key_store lookup)
+        ok = VERIFY_ECHO_MARK(
+            payload=existing["payload"],
+            payload_hash=existing["payload_hash"],
+            signature=existing["signature"],
+            secret=secret,  # v1 compat
+        )
+        return {
+            "schema_version": existing.get("schema_version", "echo_mark_v1"),
+            "label": existing.get("label"),
+            "badge_text": existing.get("badge_text", ""),
+            "payload_hash": existing.get("payload_hash", ""),
+            "signature": existing.get("signature", ""),
+            "verification_status": "VALID" if ok else "INVALID",
+            "short": existing.get("short", {}),
+        }
+
+    # no existing → generate (treated VALID by construction)
+    # v2 is now default in make_echo_mark
+    badge = MAKE_ECHO_MARK(audit, run_id=audit.get("run_id"))
+    return {
+        "schema_version": badge.get("schema_version", "echo_mark_v2"),
+        "label": badge.get("label"),
+        "badge_text": badge.get("badge_text", ""),
+        "payload_hash": badge.get("payload_hash", ""),
+        "signature": badge.get("signature", ""),
+        "verification_status": "GENERATED",
+        "short": badge.get("short", {}),
+    }
+
+
+def _short_hex(s: str, n: int = 12) -> str:
+    if not s:
+        return ""
+    s = str(s)
+    return s[:n] + "…" if len(s) > n else s
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -113,6 +267,30 @@ def render_run_section(run: dict[str, Any], title: str) -> str:
             lines.append(f"  - reason: {b.get('reason', '')}")
             lines.append(f"  - blockers: {b.get('blocking_dimensions', [])}")
     lines.append("")
+
+    # Echo Mark
+    mark = _compute_or_verify_echo_mark(run)
+    lines.append("### Echo Mark")
+    if not mark:
+        lines.append("_not available_")
+        lines.append("")
+    else:
+        lines.append(f"- **Label**: `{mark.get('label','')}`")
+        if mark.get("badge_text"):
+            lines.append(f"- **Badge**: {mark.get('badge_text')}")
+        short = mark.get("short") or {}
+        if ("bias_original" in short) or ("bias_final" in short):
+            lines.append(
+                f"- **Bias**: {short.get('bias_original','NA')} → {short.get('bias_final','NA')} "
+                f"(Δ {short.get('bias_improvement','NA')})"
+            )
+        if short.get("reasons"):
+            lines.append(f"- **Reasons**: {', '.join(short.get('reasons'))}")
+        lines.append(f"- **Verification**: `{mark.get('verification_status','')}`")
+        lines.append(f"- **payload_hash**: `{_short_hex(mark.get('payload_hash',''))}`")
+        lines.append(f"- **signature**: `{_short_hex(mark.get('signature',''))}`")
+        lines.append("")
+
     return "\n".join(lines)
 
 
