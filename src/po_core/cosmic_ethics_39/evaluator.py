@@ -297,6 +297,66 @@ def _blocked_options(
     return blocked
 
 
+# Mapping: boundary reasons -> dimension keys
+REASON_TO_DIMENSIONS: dict[str, list[str]] = {
+    # boundary reasons
+    "blocked_options_present": [],  # Pulled from blocked_options
+    "adjusted_score_below_0.50": ["adjusted_score_low"],
+    "adjusted_score_below_0.70": ["adjusted_score_medium"],
+    "uncertainty_high": ["known_unknowns", "unknown_unknowns"],
+    "reversibility_low": ["irreversible_risk"],
+    "tension_high": ["tension_high"],
+}
+
+
+def _merge_boundary_and_blocking(
+    *,
+    responsibility_boundary: dict[str, Any],
+    blocked_options: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """
+    Merge boundary reasons with blocked_options dimensions into a single, consistent set.
+
+    This ensures that "why execution was blocked/confirmation required" is unified
+    across reasons and blocking_dimensions for consistency.
+    """
+    dims: set[str] = set()
+
+    # 1) From boundary reasons -> mapped dimensions
+    for r in responsibility_boundary.get("reasons", []):
+        for d in REASON_TO_DIMENSIONS.get(r, []):
+            dims.add(d)
+
+    # 2) From blocked_options -> blocking_dimensions
+    for b in blocked_options:
+        for d in b.get("blocking_dimensions", []) or []:
+            dims.add(str(d))
+
+    # 3) Attach merged set
+    responsibility_boundary["blocking_dimensions_merged"] = sorted(dims)
+
+    # 4) Human-facing one-liner
+    responsibility_boundary["explanation"] = _boundary_explanation(responsibility_boundary)
+
+    return responsibility_boundary
+
+
+def _boundary_explanation(rb: dict[str, Any]) -> str:
+    """Generate human-readable explanation for boundary decision."""
+    allowed = rb.get("execution_allowed", False)
+    confirm = rb.get("requires_human_confirm", True)
+    reasons = rb.get("reasons", [])
+    dims = rb.get("blocking_dimensions_merged", [])
+
+    if not allowed:
+        return f"Execution blocked due to: {', '.join(dims) if dims else ', '.join(reasons)}"
+    if confirm:
+        return (
+            f"Human confirmation required due to: {', '.join(dims) if dims else ', '.join(reasons)}"
+        )
+    return "Execution allowed without additional confirmation."
+
+
 def _responsibility_boundary(
     *,
     adjusted: dict[str, float],
@@ -456,6 +516,12 @@ class CosmicEthics39Evaluator:
             meta=meta,
             blocked_options=blocked,
             tension_topk=tension,
+        )
+
+        # 9) Merge boundary reasons with blocking dimensions for consistency
+        responsibility_boundary = _merge_boundary_and_blocking(
+            responsibility_boundary=responsibility_boundary,
+            blocked_options=blocked,
         )
 
         dt = time.time() - t0

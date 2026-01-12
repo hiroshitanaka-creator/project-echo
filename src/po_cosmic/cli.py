@@ -77,6 +77,10 @@ def print_cosmic39(result: dict) -> None:
     print(f"  Liability mode: {rb.get('liability_mode', 'audit-only')}")
     if rb.get("reasons"):
         print(f"  Boundary reasons: {', '.join(rb['reasons'])}")
+    if rb.get("blocking_dimensions_merged"):
+        print(f"  Blocking dimensions: {', '.join(rb['blocking_dimensions_merged'])}")
+    if rb.get("explanation"):
+        print(f"  Explanation: {rb['explanation']}")
     print()
 
     print(f"Runtime: {result['runtime_sec']:.3f} seconds")
