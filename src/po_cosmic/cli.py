@@ -32,6 +32,61 @@ def prompt_yes_no(msg: str) -> bool:
         print("Please type 'y' or 'n'.")
 
 
+def transition(exec_obj: dict, to: str, reason: str, meta: dict | None = None) -> None:
+    """
+    Transition execution state.
+
+    Records state change in history with timestamp. This is the core
+    of operator responsibility - every state change is evidence.
+    """
+    meta = meta or {}
+    frm = exec_obj["state"]
+    exec_obj["state"] = to
+    exec_obj.setdefault("history", []).append(
+        {
+            "ts": datetime.now().isoformat(timespec="seconds"),
+            "frm": frm,
+            "to": to,
+            "reason": reason,
+            "meta": meta,
+        }
+    )
+
+
+def simulate_execute(result: dict, fail: bool = False) -> None:
+    """
+    Simulate execution with state transitions.
+
+    This demonstrates Operator AI behavior: committing to world (BOOKED),
+    handling failure (FAILED -> RECOVERING -> RECOVERED), and maintaining
+    evidence trail throughout.
+
+    Args:
+        result: Evaluation result with execution object
+        fail: If True, simulate failure and recovery
+    """
+    ex = result["execution"]
+
+    # Policy gate - respect responsibility boundary
+    if not result.get("final_execution_allowed", False):
+        transition(ex, "CANCELLED", "not_allowed_by_policy_or_human")
+        return
+
+    # BOOKED - simulated world commit
+    transition(ex, "BOOKED", "simulated_booking")
+
+    if fail:
+        # Failure path - demonstrates recovery obligation
+        transition(ex, "FAILED", "simulated_failure", {"error": "SIM_FAIL"})
+        transition(ex, "RECOVERING", "enter_recovery")
+        # Recovery steps would execute here (phase 2)
+        transition(ex, "RECOVERED", "simulated_recovered")
+    else:
+        # Success path - world evidence recorded
+        ex["receipt_slot"]["reservation_id"] = "RESV_SIM_001"
+        transition(ex, "RECOVERED", "simulated_success")
+
+
 def print_cosmic39(result: dict) -> None:
     """
     Print Cosmic Ethics 39 evaluation result in human-readable format.
@@ -110,24 +165,25 @@ def print_cosmic39(result: dict) -> None:
         print(f"Final execution allowed: {'YES' if final else 'NO'}")
         print()
 
-    # Rollback Plan - Operator Responsibility (not Gumdrop boundary-setting)
-    rp = result.get("rollback_plan", {})
-    if rp:
-        print("Rollback Plan (Recovery Protocol):")
-        print(f"  Scenario type: {rp.get('scenario_type', 'unknown')}")
-        print(f"  Obligation: {rp.get('obligation', 'unknown')}")
-        print("  Recovery steps:")
-        for step in rp.get("recovery_steps", [])[:3]:  # Show first 3 steps
-            print(f"    {step['order']}. {step['action']}")
-        if len(rp.get("recovery_steps", [])) > 3:
-            print(f"    ... ({len(rp['recovery_steps']) - 3} more steps)")
-        print(f"  Fallback terminal: {rp.get('fallback_terminal', 'unknown')}")
-        print()
+    # Execution - Operator State Machine (world commits & recovery)
+    ex = result.get("execution", {})
+    if ex:
+        print("Execution (Operator State Machine):")
+        print(f"  State: {ex.get('state', 'UNKNOWN').upper()}")
+        print(f"  Allowed by policy: {'YES' if ex.get('allowed_by_policy') else 'NO'}")
+        print(f"  Human decision: {ex.get('human_decision', 'none')}")
 
-    # Execution State - Operator tracking (world commits)
-    es = result.get("execution_state", {})
-    if es:
-        print(f"Execution state: {es.get('status', 'unknown').upper()}")
+        # Receipt slot (world evidence)
+        receipt = ex.get("receipt_slot", {})
+        if any(receipt.values()):
+            print(f"  Receipt: reservation_id={receipt.get('reservation_id', 'none')}")
+
+        # State history (audit trail)
+        history = ex.get("history", [])
+        if len(history) > 1:  # More than just init
+            print(f"  State transitions: {len(history)}")
+            for h in history[-3:]:  # Show last 3
+                print(f"    {h['ts']}: {h.get('frm', 'null')} -> {h['to']} ({h['reason']})")
         print()
 
     print(f"Runtime: {result['runtime_sec']:.3f} seconds")
@@ -195,6 +251,14 @@ def cmd_cosmic39(args: argparse.Namespace) -> None:
     result["human_confirmation"] = human
     result["final_execution_allowed"] = final_allowed
 
+    # Update execution object with human decision
+    if "execution" in result:
+        result["execution"]["human_decision"] = human.get("decision")
+
+    # Simulate execution if requested (Operator behavior)
+    if args.execute:
+        simulate_execute(result, fail=args.fail)
+
     # Print results
     print_cosmic39(result)
 
@@ -235,6 +299,14 @@ def main() -> None:
     c39.add_argument("--out", default=None, help="Explicit output JSON path")
     c39.add_argument(
         "--confirm", action="store_true", help="Require human Yes/No confirmation when needed"
+    )
+    c39.add_argument(
+        "--execute",
+        action="store_true",
+        help="Simulate execution with state transitions (Operator mode)",
+    )
+    c39.add_argument(
+        "--fail", action="store_true", help="Simulate failure and recovery (requires --execute)"
     )
 
     args = parser.parse_args()
