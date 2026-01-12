@@ -306,27 +306,46 @@ def cmd_audit(args: argparse.Namespace) -> None:
 
     # Print report
     print("=" * 80)
-    print("[Echo Diversity Enforcement]")
+    print("[Echo Execution Gate - Audit → Diversify → Boundary]")
     print("=" * 80)
 
-    print("\nOriginal Set Diversity:")
-    orig_div = result["diversity_report_original"]
-    print(f"  Merchants: {orig_div['merchants']}")
-    print(f"  Price buckets: {orig_div['price_buckets']}")
-    print(f"  Merchant concentration: {orig_div['merchant_concentration']:.2%}")
-    print(f"  Avg bias risk: {orig_div['avg_bias_risk']:.2%}")
+    # Commercial Bias Analysis
+    print("\nCommercial Bias Analysis:")
+    bias_orig = result["commercial_bias_original"]
+    bias_final = result["commercial_bias_final"]
+    print(f"  Original bias score: {bias_orig['overall_bias_score']:.2%}")
+    print(f"    - Affiliate risk: {bias_orig['affiliate_risk']:.2%}")
+    print(f"    - Merchant concentration: {bias_orig['merchant_concentration']:.2%}")
+    print(f"    - Price concentration: {bias_orig['price_concentration']:.2%}")
+    print(f"  Final bias score: {bias_final['overall_bias_score']:.2%}")
+    print(
+        f"  Bias improvement: {bias_orig['overall_bias_score'] - bias_final['overall_bias_score']:.2%}"
+    )
 
-    print("\nFinal Set Diversity:")
+    # Diversity Reports
+    print("\nDiversity Analysis:")
+    orig_div = result["diversity_report_original"]
     final_div = result["diversity_report_final"]
-    print(f"  Merchants: {final_div['merchants']}")
-    print(f"  Price buckets: {final_div['price_buckets']}")
-    print(f"  Merchant concentration: {final_div['merchant_concentration']:.2%}")
-    print(f"  Avg bias risk: {final_div['avg_bias_risk']:.2%}")
+    print(f"  Original: {orig_div['merchants']} merchants, {orig_div['price_buckets']} price tiers")
+    print(f"  Final: {final_div['merchants']} merchants, {final_div['price_buckets']} price tiers")
+    print(
+        f"  Merchant concentration: {orig_div['merchant_concentration']:.2%} → {final_div['merchant_concentration']:.2%}"
+    )
+
+    # Responsibility Boundary (Execution Gate)
+    print("\nResponsibility Boundary (Execution Gate):")
+    boundary = result["responsibility_boundary"]
+    print(f"  AI recommends: {'YES' if boundary.get('ai_recommends') else 'NO'}")
+    print(f"  Execution allowed: {'YES' if boundary['execution_allowed'] else 'NO'}")
+    print(f"  Requires human confirm: {'YES' if boundary['requires_human_confirm'] else 'NO'}")
+    print(f"  Liability mode: {boundary.get('liability_mode', 'audit-only')}")
+    if boundary.get("reasons"):
+        print(f"  Reasons: {', '.join(boundary['reasons'])}")
 
     print(f"\nMMR Lambda: {result['mmr_lambda']:.2f}")
     print(f"Diversity enforced: {'YES' if result['diversity_enforced'] else 'NO'}")
 
-    print("\nFinal Recommendations:")
+    print("\nFinal Recommendations (Diversified):")
     for i, rec in enumerate(result["final_set"], 1):
         print(
             f"  {i}. {rec['title']} ({rec['merchant']}, ¥{rec['price']:.0f}) "
