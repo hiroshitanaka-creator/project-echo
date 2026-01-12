@@ -211,6 +211,7 @@ def commercial_bias_score(recs: list[Rec]) -> dict[str, Any]:
     - price_concentration: Single price tier dominance
     - source_diversity: Lack of diverse sources
     - overall_bias_score: Weighted sum (0..1, higher = more biased)
+    - evidence: Detailed breakdown for verification (receipt)
     """
     if not recs:
         return {
@@ -219,6 +220,12 @@ def commercial_bias_score(recs: list[Rec]) -> dict[str, Any]:
             "price_concentration": 0.0,
             "source_diversity": 1.0,
             "overall_bias_score": 0.0,
+            "evidence": {
+                "affiliate_evidence": [],
+                "merchant_distribution": {},
+                "price_bucket_counts": {"low": 0, "mid": 0, "high": 0},
+                "total_recommendations": 0,
+            },
         }
 
     # Affiliate risk (average bias_risk)
@@ -248,12 +255,76 @@ def commercial_bias_score(recs: list[Rec]) -> dict[str, Any]:
         + 0.1 * (1 - source_diversity)
     )
 
+    # Build detailed evidence (receipt)
+    # This enables verification: each aggregate score can be reconstructed from evidence
+
+    # 1. Affiliate evidence: bias_risk per recommendation
+    affiliate_evidence = [
+        {
+            "rec_id": r.id,
+            "title": r.title,
+            "bias_risk": r.bias_risk,
+        }
+        for r in recs
+    ]
+
+    # 2. Merchant distribution: count and share per merchant
+    merchant_distribution = {}
+    for m in unique_merchants:
+        count = merchants.count(m)
+        share = count / len(recs)
+        merchant_distribution[m] = {
+            "count": count,
+            "share": share,
+            "share_squared": share**2,  # For HHI verification
+        }
+
+    # 3. Price bucket counts
+    price_bucket_counts = {
+        "low": buckets.count("low"),
+        "mid": buckets.count("mid"),
+        "high": buckets.count("high"),
+    }
+
+    # 4. Price bucket shares (for HHI verification)
+    price_bucket_shares = {}
+    for b in ["low", "mid", "high"]:
+        count = price_bucket_counts[b]
+        if count > 0:
+            share = count / len(recs)
+            price_bucket_shares[b] = {
+                "count": count,
+                "share": share,
+                "share_squared": share**2,
+            }
+
+    # 5. Price evidence: price per recommendation (for bucket verification)
+    price_evidence = [
+        {
+            "rec_id": r.id,
+            "price": r.price,
+            "bucket": bucket_price(r.price),
+        }
+        for r in recs
+    ]
+
+    evidence = {
+        "affiliate_evidence": affiliate_evidence,
+        "merchant_distribution": merchant_distribution,
+        "price_bucket_counts": price_bucket_counts,
+        "price_bucket_shares": price_bucket_shares,
+        "price_evidence": price_evidence,
+        "total_recommendations": len(recs),
+        "unique_merchants": len(unique_merchants),
+    }
+
     return {
         "affiliate_risk": affiliate_risk,
         "merchant_concentration": merchant_concentration,
         "price_concentration": price_concentration,
         "source_diversity": source_diversity,
         "overall_bias_score": overall_bias_score,
+        "evidence": evidence,
     }
 
 
