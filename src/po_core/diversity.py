@@ -96,20 +96,25 @@ def similarity(a: Rec, b: Rec) -> float:
     return min(sim, 1.0)
 
 
-def mmr_select(cands: list[Rec], k: int, lam: float = 0.65, seed: int = 0) -> list[Rec]:
+def mmr_select(cands: list[Rec], k: int, lam: float = 0.65, beta: float = 1.0, seed: int = 0) -> list[Rec]:
     """
-    Maximal Marginal Relevance selection.
+    Maximal Marginal Relevance selection with bias penalty.
 
-    Balances utility (quality) and diversity (avoid similar candidates).
+    Balances utility (quality), bias risk, and diversity (avoid similar candidates).
 
     Args:
         cands: Candidate recommendations
         k: Number to select
         lam: Utility weight (1.0=pure utility, 0.0=pure diversity)
+        beta: Bias risk penalty coefficient (0.0=ignore bias, 1.0=full penalty)
         seed: Random seed for determinism
 
     Returns:
         Selected recommendations (ordered by selection)
+
+    Note:
+        effective_utility = utility - beta * bias_risk
+        This prevents high-bias recommendations from dominating output.
     """
     if not cands:
         return []
@@ -117,10 +122,17 @@ def mmr_select(cands: list[Rec], k: int, lam: float = 0.65, seed: int = 0) -> li
     rng = random.Random(seed)
     remaining = cands[:]
 
-    # Start with highest utility (break ties randomly)
-    remaining.sort(key=lambda r: r.utility, reverse=True)
-    top_utility = remaining[0].utility
-    tops = [r for r in remaining if abs(r.utility - top_utility) < 1e-9]
+    def effective_utility(r: Rec) -> float:
+        """Compute utility adjusted for bias risk."""
+        u = float(r.utility)
+        b = float(getattr(r, "bias_risk", 0.0) or 0.0)
+        # Clamp to [0, 1] to prevent negative effective utility
+        return max(0.0, min(1.0, u - beta * b))
+
+    # Start with highest effective utility (break ties randomly)
+    remaining.sort(key=effective_utility, reverse=True)
+    top_utility = effective_utility(remaining[0])
+    tops = [r for r in remaining if abs(effective_utility(r) - top_utility) < 1e-9]
     chosen = [rng.choice(tops)]
     remaining = [r for r in remaining if r.id != chosen[0].id]
 
@@ -133,8 +145,8 @@ def mmr_select(cands: list[Rec], k: int, lam: float = 0.65, seed: int = 0) -> li
             # Max similarity to any already chosen
             max_sim = max(similarity(r, c) for c in chosen)
 
-            # MMR score: utility minus similarity penalty
-            score = lam * r.utility - (1 - lam) * max_sim
+            # MMR score: effective utility minus similarity penalty
+            score = lam * effective_utility(r) - (1 - lam) * max_sim
 
             if score > best_score:
                 best_score = score
@@ -416,6 +428,7 @@ def diversify_with_mmr(
     counterfactuals: list[Rec],
     k: int = 5,
     lam: float = 0.65,
+    beta: float = 1.0,
     min_merchants: int = 2,
     min_price_buckets: int = 2,
 ) -> dict[str, Any]:
@@ -423,6 +436,15 @@ def diversify_with_mmr(
     Diversify recommendation set with MMR and compute responsibility boundary.
 
     Full execution gate: audit → diversify → boundary decision → final output.
+
+    Args:
+        original: Original recommendation set
+        counterfactuals: Alternative recommendations for diversification
+        k: Number of recommendations to select
+        lam: Utility weight (1.0=pure utility, 0.0=pure diversity)
+        beta: Bias risk penalty coefficient (0.0=ignore bias, 1.0=full penalty)
+        min_merchants: Minimum number of distinct merchants
+        min_price_buckets: Minimum number of distinct price tiers
 
     Returns:
         Complete audit result with bias scores, diversity reports, and responsibility boundary
@@ -432,8 +454,36 @@ def diversify_with_mmr(
 
     all_candidates = original + counterfactuals
 
-    # Try MMR with default lambda
-    selected = mmr_select(all_candidates, k=k, lam=lam)
+    # Pre-filter: Remove low effective_utility and high-bias candidates (safety gate)
+    # Compute effective utility for each candidate
+    def effective_utility(r: Rec) -> float:
+        u = float(r.utility)
+        b = float(getattr(r, "bias_risk", 0.0) or 0.0)
+        return max(0.0, min(1.0, u - beta * b))
+
+    # Filter out candidates with effective_utility < 0.1 (too biased/low quality)
+    MIN_EFFECTIVE_UTILITY = 0.1
+    filtered_candidates = [
+        r for r in all_candidates if effective_utility(r) >= MIN_EFFECTIVE_UTILITY
+    ]
+
+    # If enough clean candidates exist (>=k), also filter high-bias (>0.7)
+    # This ensures bias removal takes priority over merchant diversity
+    HIGH_BIAS_THRESHOLD = 0.7
+    if len(filtered_candidates) >= k:
+        high_quality = [r for r in filtered_candidates if r.bias_risk <= HIGH_BIAS_THRESHOLD]
+        if len(high_quality) >= k:
+            filtered_candidates = high_quality
+
+    # If filtering removed too many candidates, lower threshold to 0.0 (no filtering)
+    if len(filtered_candidates) < k:
+        filtered_candidates = [r for r in all_candidates if effective_utility(r) > 0.0]
+        # If still not enough, use all (defensive fallback)
+        if len(filtered_candidates) < k:
+            filtered_candidates = all_candidates
+
+    # Try MMR with default lambda and beta (on filtered candidates)
+    selected = mmr_select(filtered_candidates, k=k, lam=lam, beta=beta)
 
     # If diversity constraints not met, reduce lambda (favor diversity)
     attempt = 0
@@ -443,7 +493,7 @@ def diversify_with_mmr(
             # Can't satisfy constraints even with pure diversity
             break
         lam *= 0.8  # Reduce utility weight
-        selected = mmr_select(all_candidates, k=k, lam=lam)
+        selected = mmr_select(filtered_candidates, k=k, lam=lam, beta=beta)
 
     # Compute final bias and diversity
     bias_final = commercial_bias_score(selected)
