@@ -2,45 +2,151 @@
 
 All notable changes to Project Echo will be documented in this file.
 
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
 ## [v0.1.0] - 2026-01-12
 
 ### Added
-- **Cosmic Ethics 39 Evaluator**: 39-dimensional ethical evaluation framework
-  - BaseScorer wrapping existing CosmicEthicsFramework
-  - Philosopher weight aggregation and tension calculation
-  - Blocked options generation based on risk thresholds
-- **5 Philosopher Presets**: Switchable philosopher sets for different ethical perspectives
-  - `cosmic13`: Long-term and cosmological thinkers (13 philosophers)
-  - `east_asia`: East Asian philosophy tradition (7 philosophers)
-  - `kantian`: Deontological and duty-based ethics (6 philosophers)
-  - `existentialist`: Freedom and individual responsibility (5 philosophers)
-  - `classical`: Ancient Greek philosophy (5 philosophers)
-- **CLI Tool**: `po-cosmic` command-line interface
-  - `cosmic-39` subcommand for ethical evaluation
-  - `--scenario` option: agi, mars, digital, seti
-  - `--preset` option: philosopher set selection
-  - `--save` / `--out` options: JSON output
-- **JSON Logging**: Timestamped evaluation results in `runs/` directory
-- **Report Generation**: Markdown reports with run comparison
-  - `reports/latest.md`: Latest run with diff vs previous
-  - `--archive` option: Timestamped reports (e.g., `20260112_042613_Mars_Terraforming.md`)
-- **CI/CD Pipeline**: GitHub Actions with ruff + pytest
-  - Automatic linting and formatting
-  - Smoke tests for core functionality
-- **Explicit cosmic_weights**: 3 philosophers with precise dimensional weights
-  - Kant: universal_rights, direct_responsibility, rational_deliberation
-  - Watsuji: systemic_responsibility, collective_good, local context
-  - Jonas: future_generation, deep_time, irreversible_risk
 
-### Documentation
-- README with philosopher preset comparison demos
-- Demonstration of ethical pluralism through Mars Terraforming scenario
-- Quick start guide with CLI usage examples
+#### Core Features
+- **Commercial Bias Audit**: Receipt-style evidence for bias decisions
+  - Affiliate risk detection (URL pattern matching)
+  - Merchant concentration (Herfindahl index)
+  - Price concentration (bucketing + entropy)
+  - Source diversity metrics
+- **Diversity Enforcement**: MMR algorithm with bias penalty
+  - Lexicographic objective: 1) Bias minimization, 2) Diversity, 3) Utility
+  - Beta=0.8 for false positive robustness
+  - Pre-filtering: effective_utility >= 0.1, high-bias exclusion when clean candidates exist
+- **Execution Gate**: Responsibility boundary with conservative pattern
+  - Priority 1: High bias final (>=0.6) → BLOCK
+  - Priority 2: Low bias original (<0.4) → ALLOW without confirmation
+  - Priority 3: Bias improved → ALLOW with confirmation
+  - Else: Medium bias → ALLOW with confirmation
+- **Echo Mark v2**: HMAC-SHA256 tamper-evident badges
+  - Three labels: ECHO_VERIFIED / ECHO_CHECK / ECHO_BLOCKED
+  - Signature verification CLI: `po-cosmic verify`
+  - Key rotation support with `key_id` field
+
+#### Property-Based Testing
+- **Hypothesis integration**: Adversarial input testing
+  - Merchant name normalization stability (Unicode, whitespace, punctuation, suffixes)
+  - URL canonicalization (scheme, tracking params, query sorting)
+  - Price format robustness (comma, yen symbol, k notation)
+  - MMR bias penalty enforcement
+  - Execution gate conservative behavior
+- **Conditional Invariants**: Test specification with preconditions
+  - Absolute invariants: High-bias exclusion, bias improvement, max bias non-amplification
+  - Conditional invariants: Merchant/price diversity only when clean candidates exist
+- **Adversarial Strategies**: Custom Hypothesis strategies
+  - `adversarial_merchant_variants()`: Name obfuscation patterns
+  - `adversarial_url()`: Tracking parameter injection, redirect chains
+  - `adversarial_price_str()`: Format variations
+
+#### Demo & Documentation
+- **Demo B: Shopping Bias Defense**: 3 realistic scenarios
+  - High-bias affiliate (bias: 0.85 → 0.35)
+  - Clean multi-merchant (maintains diversity)
+  - Mixed contaminated (filters high-bias, preserves utility)
+  - Makefile target: `make demo-shopping`
+  - Output: 6 files (3 × audit.json + badge.json)
+- **Verification Design**: HMAC limitations + public verification strategy
+  - Three-state model: VERIFIED / UNVERIFIED / INVALID
+  - Graceful degradation without secret access
+  - docs/VERIFICATION_DESIGN.md
+- **Ed25519 Migration Design**: Asymmetric cryptography for public verification
+  - 4-phase migration: HMAC-only → Dual → Ed25519-primary → Ed25519-only
+  - Key management, signature generation/verification
+  - Security considerations (key rotation, replay mitigation)
+  - docs/ED25519_MIGRATION.md
+- **Threat Model**: Invariants + design principles
+  - Conservative gate pattern
+  - Lexicographic objective priority
+  - Conditional invariant specification
+  - docs/threat_model.md
+- **Demo Guide**: Shopping bias defense walkthrough
+  - Expected outcomes for 3 scenarios
+  - Technical details (MMR, beta, conditional invariants)
+  - docs/DEMO_SHOPPING.md
+
+#### CLI & Tooling
+- **po-cosmic CLI**: Unified command-line interface
+  - `audit`: Commercial bias audit + diversity enforcement
+  - `badge`: Generate Echo Mark from audit result
+  - `verify`: Verify Echo Mark signature
+  - `cosmic-39`: 39-dimensional ethical evaluation (legacy)
+- **Normalization Functions**: Adversarial input defense
+  - `normalize_merchant()`: Unicode NFC, zero-width removal, corporate suffix removal
+  - `normalize_price()`: Multi-format parsing (comma, yen, k notation)
+  - `canonicalize_url()`: Scheme normalization, tracking param removal, query sorting
+- **Demo Runner**: tools/demo_shopping.py
+  - Loads JSON inputs, runs diversity enforcement, generates badges
+  - Prints summary (bias, diversity, execution gate, label)
+
+#### Testing & CI
+- **24 Property-Based Tests**: 100% passing
+  - 9 normalization tests
+  - 6 diversity tests (conditional invariants)
+  - 5 execution gate tests
+  - 4 Echo Mark integrity tests
+- **GitHub Actions CI**: Automated testing on push/PR
+  - Ruff linting + formatting
+  - Pytest with coverage
+  - Property-based tests with Hypothesis
+
+### Changed
+- **README Rebranding**: "Anti-sponsored AI" positioning
+  - Tagline: "Echo audits AI recommendations, injects diversity noise, and gates execution"
+  - Philosophy: "AI becomes a paid funnel while looking helpful" → systems, not morals
+  - Quickstart: `make demo-shopping` → `po-cosmic verify`
+  - Architecture + Design Principles sections added
+- **Threat Model Updates**: Lexicographic objective and design principles
+  - Invariant 4: MMR with bias penalty (beta=0.8)
+  - Design principle: "Bias minimization dominates diversity when they conflict"
+- **Test Refactoring**: Absolute vs conditional invariants
+  - Clear preconditions for diversity enforcement
+  - Helper functions: `is_clean()`, `is_high_bias()`
+  - Constants: BETA=0.8, MIN_EFFECTIVE_UTILITY=0.1, HIGH_BIAS_THRESHOLD=0.7
+
+### Fixed
+- **P0 Bug: recommendation_boundary()**: Conservative gate violation
+  - **Before**: Checked `bias_original < 0.4` before `bias_final >= 0.6`
+  - **After**: Checks `bias_final >= 0.6` FIRST (safety-first pattern)
+  - Verified with property-based tests (Hypothesis found falsifying example)
+- **MMR Advertising Device Risk**: High-utility high-bias dominance
+  - Added `effective_utility = utility - beta * bias_risk` (beta=0.8)
+  - Pre-filter: Remove candidates with effective_utility < 0.1
+  - Additional filter: If clean+low-bias >= k, remove high-bias (>0.7)
 
 ### Infrastructure
 - MIT License
-- pyproject.toml with ruff and pytest configuration
-- Makefile with development tasks (run/test/lint/format/ci)
-- .gitignore for runs/, reports/, and Python artifacts
+- pyproject.toml with Hypothesis dependency
+- Makefile: `make demo-shopping`, `make test`
+- .gitignore: runs/, reports/, .keys/
+
+### Legacy (Preserved for Compatibility)
+- **Cosmic Ethics 39**: 39-dimensional ethical evaluation framework
+  - 39 philosophers (Western, Eastern, Modern)
+  - 5 philosopher presets (cosmic13, east_asia, kantian, existentialist, classical)
+  - Responsibility boundary protocol
+  - Marked as (legacy) in documentation
+
+---
+
+## Future Roadmap
+
+### v0.2.0 (Planned)
+- Ed25519 signature implementation (Phase 2: Dual signature)
+- Public key registry
+- Replay attack mitigation (timestamp validation)
+- Extended property-based tests (regression suite)
+
+### v0.3.0 (Planned)
+- Real-world integration examples (browser extension, API proxy)
+- Performance benchmarks (10k recommendations)
+- Multi-language support (i18n)
+
+---
 
 [v0.1.0]: https://github.com/hiroshitanaka-creator/project-echo/releases/tag/v0.1.0

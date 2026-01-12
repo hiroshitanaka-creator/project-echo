@@ -1,5 +1,9 @@
 # Project Echo
 **Anti-sponsored AI.**
+
+[![Release](https://img.shields.io/github/v/release/hiroshitanaka-creator/project-echo?label=Release)](https://github.com/hiroshitanaka-creator/project-echo/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Echo audits AI recommendations, injects diversity noise, and gates execution — with tamper-evident badges.
 
 Echo prevents "convenience capture": AI outputs quietly collapsing into sponsored, bid-driven, or monopolistic choices by enforcing **Audit → Diversity Noise → Execution Gate → Tamper-evident Badge**.
