@@ -201,6 +201,139 @@ def diversity_report(recs: list[Rec]) -> dict[str, Any]:
     }
 
 
+def commercial_bias_score(recs: list[Rec]) -> dict[str, Any]:
+    """
+    Compute commercial bias score with evidence (receipt).
+
+    Returns weighted evidence of commercial bias:
+    - affiliate_risk: Avg bias_risk in recommendations
+    - merchant_concentration: Single merchant dominance
+    - price_concentration: Single price tier dominance
+    - source_diversity: Lack of diverse sources
+    - overall_bias_score: Weighted sum (0..1, higher = more biased)
+    """
+    if not recs:
+        return {
+            "affiliate_risk": 0.0,
+            "merchant_concentration": 0.0,
+            "price_concentration": 0.0,
+            "source_diversity": 1.0,
+            "overall_bias_score": 0.0,
+        }
+
+    # Affiliate risk (average bias_risk)
+    affiliate_risk = sum(r.bias_risk for r in recs) / len(recs)
+
+    # Merchant concentration (Herfindahl-Hirschman Index style)
+    merchants = [r.merchant for r in recs]
+    unique_merchants = set(merchants)
+    merchant_shares = [merchants.count(m) / len(recs) for m in unique_merchants]
+    merchant_concentration = sum(s**2 for s in merchant_shares)
+
+    # Price concentration (single price bucket dominance)
+    buckets = [bucket_price(r.price) for r in recs]
+    unique_buckets = set(buckets)
+    bucket_shares = [buckets.count(b) / len(recs) for b in unique_buckets]
+    price_concentration = sum(s**2 for s in bucket_shares)
+
+    # Source diversity (inverse of merchant count, normalized)
+    source_diversity = min(len(unique_merchants) / len(recs), 1.0)
+
+    # Overall bias score (weighted sum)
+    # Weights: affiliate=0.4, merchant=0.3, price=0.2, source_diversity=0.1
+    overall_bias_score = (
+        0.4 * affiliate_risk
+        + 0.3 * merchant_concentration
+        + 0.2 * price_concentration
+        + 0.1 * (1 - source_diversity)
+    )
+
+    return {
+        "affiliate_risk": affiliate_risk,
+        "merchant_concentration": merchant_concentration,
+        "price_concentration": price_concentration,
+        "source_diversity": source_diversity,
+        "overall_bias_score": overall_bias_score,
+    }
+
+
+def recommendation_boundary(
+    bias_original: dict[str, Any],
+    bias_final: dict[str, Any],
+    diversity_original: dict[str, Any],
+    diversity_final: dict[str, Any],
+) -> dict[str, Any]:
+    """
+    Compute responsibility boundary for recommendations.
+
+    Decision logic:
+    - If bias improved significantly after diversification → allow with confirmation
+    - If bias still high after diversification → block
+    - If bias was low originally → allow
+
+    Returns:
+        responsibility_boundary with execution_allowed, requires_human_confirm, reasons
+    """
+    bias_orig = bias_original["overall_bias_score"]
+    bias_fin = bias_final["overall_bias_score"]
+    bias_improvement = bias_orig - bias_fin
+
+    reasons = []
+    execution_allowed = False
+    requires_human_confirm = True
+
+    # High bias threshold
+    HIGH_BIAS = 0.6
+    MEDIUM_BIAS = 0.4
+    SIGNIFICANT_IMPROVEMENT = 0.2
+
+    if bias_orig < MEDIUM_BIAS:
+        # Low bias originally - allow
+        execution_allowed = True
+        requires_human_confirm = False
+        reasons.append("low_bias_originally")
+    elif bias_fin < MEDIUM_BIAS and bias_improvement > SIGNIFICANT_IMPROVEMENT:
+        # Bias improved significantly - allow with confirmation
+        execution_allowed = True
+        requires_human_confirm = True
+        reasons.append("bias_improved_significantly")
+    elif bias_fin >= HIGH_BIAS:
+        # High bias even after diversification - block
+        execution_allowed = False
+        requires_human_confirm = True
+        reasons.append("high_bias_after_diversification")
+    else:
+        # Medium bias - allow with confirmation
+        execution_allowed = True
+        requires_human_confirm = True
+        reasons.append("medium_bias_requires_confirmation")
+
+    # Check merchant concentration
+    if diversity_final["merchant_concentration"] > 0.6:
+        reasons.append("merchant_monopoly_detected")
+        requires_human_confirm = True
+
+    # Check price diversity
+    if diversity_final["price_buckets"] < 2:
+        reasons.append("insufficient_price_diversity")
+        requires_human_confirm = True
+
+    return {
+        "execution_allowed": execution_allowed,
+        "requires_human_confirm": requires_human_confirm,
+        "ai_recommends": False,  # Policy: never recommend
+        "liability_mode": "audit-only",
+        "reasons": reasons,
+        "signals": {
+            "bias_original": bias_orig,
+            "bias_final": bias_fin,
+            "bias_improvement": bias_improvement,
+            "merchants_final": diversity_final["merchants"],
+            "price_buckets_final": diversity_final["price_buckets"],
+        },
+    }
+
+
 def diversify_with_mmr(
     original: list[Rec],
     counterfactuals: list[Rec],
@@ -210,14 +343,16 @@ def diversify_with_mmr(
     min_price_buckets: int = 2,
 ) -> dict[str, Any]:
     """
-    Diversify recommendation set with MMR.
+    Diversify recommendation set with MMR and compute responsibility boundary.
 
-    If initial selection doesn't meet diversity constraints, reduces lambda
-    (favors diversity over utility) and retries.
+    Full execution gate: audit → diversify → boundary decision → final output.
 
     Returns:
-        Dictionary with original_set, counterfactual_set, final_set, diversity_report
+        Complete audit result with bias scores, diversity reports, and responsibility boundary
     """
+    # Compute bias scores
+    bias_original = commercial_bias_score(original)
+
     all_candidates = original + counterfactuals
 
     # Try MMR with default lambda
@@ -233,12 +368,23 @@ def diversify_with_mmr(
         lam *= 0.8  # Reduce utility weight
         selected = mmr_select(all_candidates, k=k, lam=lam)
 
+    # Compute final bias and diversity
+    bias_final = commercial_bias_score(selected)
+    diversity_orig = diversity_report(original)
+    diversity_fin = diversity_report(selected)
+
+    # Compute responsibility boundary
+    boundary = recommendation_boundary(bias_original, bias_final, diversity_orig, diversity_fin)
+
     return {
         "original_set": [r.to_dict() for r in original],
         "counterfactual_set": [r.to_dict() for r in counterfactuals],
         "final_set": [r.to_dict() for r in selected],
-        "diversity_report_original": diversity_report(original),
-        "diversity_report_final": diversity_report(selected),
+        "commercial_bias_original": bias_original,
+        "commercial_bias_final": bias_final,
+        "diversity_report_original": diversity_orig,
+        "diversity_report_final": diversity_fin,
+        "responsibility_boundary": boundary,
         "mmr_lambda": lam,
         "diversity_enforced": enforce_min_diversity(selected, min_merchants, min_price_buckets),
     }

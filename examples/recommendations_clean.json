@@ -1,0 +1,60 @@
+{
+  "recommendations": [
+    {
+      "id": "r1",
+      "title": "Local Sushi Shop - Direct Booking",
+      "merchant": "DirectBooking",
+      "category": "restaurant",
+      "price": 5000,
+      "tags": ["sushi", "local", "tokyo", "nakano"],
+      "utility": 0.85,
+      "ethics": 0.9,
+      "bias_risk": 0.1
+    },
+    {
+      "id": "r2",
+      "title": "Family Izakaya - Tabelog Recommended",
+      "merchant": "Tabelog",
+      "category": "restaurant",
+      "price": 3500,
+      "tags": ["izakaya", "family", "tokyo", "kichijoji"],
+      "utility": 0.82,
+      "ethics": 0.92,
+      "bias_risk": 0.12
+    },
+    {
+      "id": "r3",
+      "title": "Mid-Range Sushi Restaurant - Google Maps",
+      "merchant": "Google",
+      "category": "restaurant",
+      "price": 8000,
+      "tags": ["sushi", "casual", "tokyo", "ikebukuro"],
+      "utility": 0.88,
+      "ethics": 0.88,
+      "bias_risk": 0.08
+    },
+    {
+      "id": "r4",
+      "title": "Traditional Kaiseki - Yelp Listed",
+      "merchant": "Yelp",
+      "category": "restaurant",
+      "price": 12000,
+      "tags": ["kaiseki", "traditional", "tokyo", "meguro"],
+      "utility": 0.9,
+      "ethics": 0.91,
+      "bias_risk": 0.05
+    },
+    {
+      "id": "r5",
+      "title": "Neighborhood Ramen - OpenRice",
+      "merchant": "OpenRice",
+      "category": "restaurant",
+      "price": 1200,
+      "tags": ["ramen", "casual", "tokyo", "nakano"],
+      "utility": 0.8,
+      "ethics": 0.95,
+      "bias_risk": 0.03
+    }
+  ],
+  "counterfactuals": []
+}
