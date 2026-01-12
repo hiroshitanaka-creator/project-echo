@@ -17,7 +17,7 @@ Key Concepts:
 10. Zen Influence - Integration of Zen Buddhist insight with Western philosophy
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -33,10 +33,10 @@ class Nishida(Philosopher):
     def __init__(self) -> None:
         super().__init__(
             name="西田幾多郎 (Nishida Kitarō)",
-            description="Founder of Kyoto School - Pure Experience, Absolute Nothingness, Place (basho), and self-contradictory identity"
+            description="Founder of Kyoto School - Pure Experience, Absolute Nothingness, Place (basho), and self-contradictory identity",
         )
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Analyze the prompt from Nishida's perspective.
 
@@ -67,11 +67,11 @@ class Nishida(Philosopher):
             "metadata": {
                 "philosopher": self.name,
                 "approach": "Pure Experience and Absolute Nothingness",
-                "focus": "場所 (basho), 絶対無 (zettai mu), and self-contradictory identity"
-            }
+                "focus": "場所 (basho), 絶対無 (zettai mu), and self-contradictory identity",
+            },
         }
 
-    def _analyze_nishida(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_nishida(self, prompt: str) -> dict[str, Any]:
         """
         Perform comprehensive Nishidaian analysis.
 
@@ -100,8 +100,12 @@ class Nishida(Philosopher):
 
         # Construct comprehensive reasoning
         reasoning = self._construct_reasoning(
-            pure_experience, absolute_nothingness, basho,
-            self_contradictory_identity, acting_intuition, zen_influence
+            pure_experience,
+            absolute_nothingness,
+            basho,
+            self_contradictory_identity,
+            acting_intuition,
+            zen_influence,
         )
 
         return {
@@ -116,10 +120,10 @@ class Nishida(Philosopher):
             "religious_consciousness": religious_consciousness,
             "historical_world": historical_world,
             "zen_influence": zen_influence,
-            "tension": tension
+            "tension": tension,
         }
 
-    def _analyze_pure_experience(self, text: str) -> Dict[str, Any]:
+    def _analyze_pure_experience(self, text: str) -> dict[str, Any]:
         """
         Analyze Pure Experience (純粋経験, junsui keiken).
 
@@ -130,23 +134,57 @@ class Nishida(Philosopher):
         text_lower = text.lower()
 
         # Pure experience indicators - immediacy, unity, pre-reflective
-        immediate_words = ["immediate", "direct", "now", "present", "moment",
-                          "experience", "felt", "lived", "raw", "pure"]
+        immediate_words = [
+            "immediate",
+            "direct",
+            "now",
+            "present",
+            "moment",
+            "experience",
+            "felt",
+            "lived",
+            "raw",
+            "pure",
+        ]
         immediate_count = sum(1 for word in immediate_words if word in text_lower)
 
         # Unity/wholeness indicators (before division)
-        unity_words = ["unity", "unified", "whole", "integrated", "undivided",
-                      "one", "totality", "complete", "seamless"]
+        unity_words = [
+            "unity",
+            "unified",
+            "whole",
+            "integrated",
+            "undivided",
+            "one",
+            "totality",
+            "complete",
+            "seamless",
+        ]
         unity_count = sum(1 for word in unity_words if word in text_lower)
 
         # Pre-reflective indicators
-        prereflective_words = ["before thought", "pre-cognitive", "intuitive",
-                              "non-conceptual", "wordless", "beyond words"]
+        prereflective_words = [
+            "before thought",
+            "pre-cognitive",
+            "intuitive",
+            "non-conceptual",
+            "wordless",
+            "beyond words",
+        ]
         prereflective_count = sum(1 for phrase in prereflective_words if phrase in text_lower)
 
         # Subject-object split indicators (opposed to pure experience)
-        dualism_words = ["subject", "object", "observer", "observed", "separation",
-                        "divided", "split", "dualism", "distinction"]
+        dualism_words = [
+            "subject",
+            "object",
+            "observer",
+            "observed",
+            "separation",
+            "divided",
+            "split",
+            "dualism",
+            "distinction",
+        ]
         dualism_count = sum(1 for word in dualism_words if word in text_lower)
 
         # Determine status
@@ -177,10 +215,10 @@ class Nishida(Philosopher):
             "unity_score": unity_count,
             "prereflective_score": prereflective_count,
             "dualism_score": dualism_count,
-            "principle": "純粋経験 - Pure experience precedes all subject-object division"
+            "principle": "純粋経験 - Pure experience precedes all subject-object division",
         }
 
-    def _analyze_absolute_nothingness(self, text: str) -> Dict[str, Any]:
+    def _analyze_absolute_nothingness(self, text: str) -> dict[str, Any]:
         """
         Analyze Absolute Nothingness (絶対無, zettai mu).
 
@@ -192,18 +230,43 @@ class Nishida(Philosopher):
         text_lower = text.lower()
 
         # Nothingness/void indicators
-        nothing_words = ["nothing", "nothingness", "void", "emptiness", "mu",
-                        "sunyata", "śūnyatā", "empty", "null", "absence"]
+        nothing_words = [
+            "nothing",
+            "nothingness",
+            "void",
+            "emptiness",
+            "mu",
+            "sunyata",
+            "śūnyatā",
+            "empty",
+            "null",
+            "absence",
+        ]
         nothing_count = sum(1 for word in nothing_words if word in text_lower)
 
         # Absolute/ultimate indicators
-        absolute_words = ["absolute", "ultimate", "fundamental", "ground",
-                         "foundation", "basis", "source", "origin"]
+        absolute_words = [
+            "absolute",
+            "ultimate",
+            "fundamental",
+            "ground",
+            "foundation",
+            "basis",
+            "source",
+            "origin",
+        ]
         absolute_count = sum(1 for word in absolute_words if word in text_lower)
 
         # Paradox indicators (nothingness that enables being)
-        paradox_words = ["paradox", "contradiction", "both", "neither",
-                        "beyond", "transcend", "ineffable"]
+        paradox_words = [
+            "paradox",
+            "contradiction",
+            "both",
+            "neither",
+            "beyond",
+            "transcend",
+            "ineffable",
+        ]
         paradox_count = sum(1 for word in paradox_words if word in text_lower)
 
         # Being/existence indicators
@@ -217,7 +280,9 @@ class Nishida(Philosopher):
             mode = "Nothingness as ground of being"
         elif nothing_count >= 1 and being_count >= 1 and paradox_count >= 1:
             presence = "Dialectic of Being and Nothingness"
-            description = "Tension between nothingness and being, pointing toward Absolute Nothingness"
+            description = (
+                "Tension between nothingness and being, pointing toward Absolute Nothingness"
+            )
             mode = "Dialectical awareness"
         elif nothing_count >= 2:
             presence = "Relative Nothingness"
@@ -240,10 +305,10 @@ class Nishida(Philosopher):
             "absolute_score": absolute_count,
             "paradox_score": paradox_count,
             "being_score": being_count,
-            "principle": "絶対無 - Absolute Nothingness is the ground enabling all being"
+            "principle": "絶対無 - Absolute Nothingness is the ground enabling all being",
         }
 
-    def _analyze_basho(self, text: str) -> Dict[str, Any]:
+    def _analyze_basho(self, text: str) -> dict[str, Any]:
         """
         Analyze Place (場所, basho).
 
@@ -254,18 +319,45 @@ class Nishida(Philosopher):
         text_lower = text.lower()
 
         # Place/space/field indicators
-        place_words = ["place", "space", "field", "locus", "topos", "where",
-                      "location", "site", "ground", "context", "domain"]
+        place_words = [
+            "place",
+            "space",
+            "field",
+            "locus",
+            "topos",
+            "where",
+            "location",
+            "site",
+            "ground",
+            "context",
+            "domain",
+        ]
         place_count = sum(1 for word in place_words if word in text_lower)
 
         # Determining/containing indicators (basho determines what is in it)
-        determine_words = ["determine", "contain", "hold", "embrace", "allow",
-                          "enable", "make possible", "let be", "ground"]
+        determine_words = [
+            "determine",
+            "contain",
+            "hold",
+            "embrace",
+            "allow",
+            "enable",
+            "make possible",
+            "let be",
+            "ground",
+        ]
         determine_count = sum(1 for word in determine_words if word in text_lower)
 
         # Relationality indicators (basho is relational, not substantial)
-        relation_words = ["relation", "between", "context", "environment",
-                         "situated", "embedded", "within"]
+        relation_words = [
+            "relation",
+            "between",
+            "context",
+            "environment",
+            "situated",
+            "embedded",
+            "within",
+        ]
         relation_count = sum(1 for word in relation_words if word in text_lower)
 
         # Self-determination indicators (self-aware place)
@@ -300,10 +392,10 @@ class Nishida(Philosopher):
             "determining_score": determine_count,
             "relational_score": relation_count,
             "self_aware": self_count >= 1,
-            "principle": "場所 - The place that determines all beings; ultimate basho is Absolute Nothingness"
+            "principle": "場所 - The place that determines all beings; ultimate basho is Absolute Nothingness",
         }
 
-    def _analyze_self_contradictory_identity(self, text: str) -> Dict[str, Any]:
+    def _analyze_self_contradictory_identity(self, text: str) -> dict[str, Any]:
         """
         Analyze Self-contradictory Identity (絶対矛盾的自己同一, zettai mujun-teki jiko dōitsu).
 
@@ -315,13 +407,29 @@ class Nishida(Philosopher):
         text_lower = text.lower()
 
         # Contradiction/opposition indicators
-        contradiction_words = ["contradiction", "contradictory", "opposite", "paradox",
-                              "opposed", "contrary", "conflict", "tension"]
+        contradiction_words = [
+            "contradiction",
+            "contradictory",
+            "opposite",
+            "paradox",
+            "opposed",
+            "contrary",
+            "conflict",
+            "tension",
+        ]
         contradiction_count = sum(1 for word in contradiction_words if word in text_lower)
 
         # Unity/identity indicators
-        identity_words = ["identity", "same", "one", "unity", "unified",
-                         "identical", "equal", "together"]
+        identity_words = [
+            "identity",
+            "same",
+            "one",
+            "unity",
+            "unified",
+            "identical",
+            "equal",
+            "together",
+        ]
         identity_count = sum(1 for word in identity_words if word in text_lower)
 
         # Both/and indicators (not either/or)
@@ -337,8 +445,12 @@ class Nishida(Philosopher):
         absolute_count = sum(1 for word in absolute_words if word in text_lower)
 
         # Determine presence of self-contradictory identity
-        if (contradiction_count >= 1 and identity_count >= 1 and
-            both_count >= 1 and either_count <= 1):
+        if (
+            contradiction_count >= 1
+            and identity_count >= 1
+            and both_count >= 1
+            and either_count <= 1
+        ):
             presence = "絶対矛盾的自己同一 (Self-contradictory Identity)"
             description = "Unity of absolute contradictions - opposites are identical in their very opposition"
             logic = "Dialectical unity"
@@ -368,10 +480,10 @@ class Nishida(Philosopher):
             "both_and": both_count,
             "either_or": either_count,
             "absolute": absolute_count >= 1,
-            "principle": "絶対矛盾的自己同一 - The self-identity of absolute contradictions"
+            "principle": "絶対矛盾的自己同一 - The self-identity of absolute contradictions",
         }
 
-    def _analyze_acting_intuition(self, text: str) -> Dict[str, Any]:
+    def _analyze_acting_intuition(self, text: str) -> dict[str, Any]:
         """
         Analyze Acting Intuition (行為的直観, kōi-teki chokkan).
 
@@ -382,23 +494,57 @@ class Nishida(Philosopher):
         text_lower = text.lower()
 
         # Action/doing indicators
-        action_words = ["act", "action", "do", "doing", "practice", "perform",
-                       "engage", "work", "make", "create", "accomplish"]
+        action_words = [
+            "act",
+            "action",
+            "do",
+            "doing",
+            "practice",
+            "perform",
+            "engage",
+            "work",
+            "make",
+            "create",
+            "accomplish",
+        ]
         action_count = sum(1 for word in action_words if word in text_lower)
 
         # Intuition/knowledge indicators
-        knowledge_words = ["know", "knowledge", "understand", "insight",
-                          "intuition", "realize", "grasp", "comprehend", "see"]
+        knowledge_words = [
+            "know",
+            "knowledge",
+            "understand",
+            "insight",
+            "intuition",
+            "realize",
+            "grasp",
+            "comprehend",
+            "see",
+        ]
         knowledge_count = sum(1 for word in knowledge_words if word in text_lower)
 
         # Unity of theory and practice indicators
-        unity_words = ["through action", "by doing", "in practice", "realized in",
-                      "embodied", "enacted", "lived knowledge"]
+        unity_words = [
+            "through action",
+            "by doing",
+            "in practice",
+            "realized in",
+            "embodied",
+            "enacted",
+            "lived knowledge",
+        ]
         unity_count = sum(1 for phrase in unity_words if phrase in text_lower)
 
         # Passive contemplation indicators (opposed to acting intuition)
-        passive_words = ["observe", "watch", "contemplate", "think about",
-                        "theorize", "abstract", "detached"]
+        passive_words = [
+            "observe",
+            "watch",
+            "contemplate",
+            "think about",
+            "theorize",
+            "abstract",
+            "detached",
+        ]
         passive_count = sum(1 for word in passive_words if word in text_lower)
 
         # Determine presence of acting intuition
@@ -431,10 +577,10 @@ class Nishida(Philosopher):
             "knowledge_score": knowledge_count,
             "unity_score": unity_count,
             "passive_score": passive_count,
-            "principle": "行為的直観 - True knowledge is realized in and through action"
+            "principle": "行為的直観 - True knowledge is realized in and through action",
         }
 
-    def _analyze_self_not_self(self, text: str) -> Dict[str, Any]:
+    def _analyze_self_not_self(self, text: str) -> dict[str, Any]:
         """
         Analyze The Self that is Not a Self.
 
@@ -450,18 +596,40 @@ class Nishida(Philosopher):
         ego_count = sum(1 for word in ego_words if word in text_lower)
 
         # Self-negation indicators
-        negation_words = ["no self", "not i", "selfless", "egoless", "empty",
-                         "void", "transcend self", "beyond ego", "death of self"]
+        negation_words = [
+            "no self",
+            "not i",
+            "selfless",
+            "egoless",
+            "empty",
+            "void",
+            "transcend self",
+            "beyond ego",
+            "death of self",
+        ]
         negation_count = sum(1 for phrase in negation_words if phrase in text_lower)
 
         # Self-realization through negation
-        realization_words = ["realize", "awaken", "enlighten", "discover",
-                            "find", "become", "transform"]
+        realization_words = [
+            "realize",
+            "awaken",
+            "enlighten",
+            "discover",
+            "find",
+            "become",
+            "transform",
+        ]
         realization_count = sum(1 for word in realization_words if word in text_lower)
 
         # Subject-object dissolution indicators
-        dissolution_words = ["no separation", "unity", "oneness", "non-dual",
-                            "beyond subject and object", "dissolve"]
+        dissolution_words = [
+            "no separation",
+            "unity",
+            "oneness",
+            "non-dual",
+            "beyond subject and object",
+            "dissolve",
+        ]
         dissolution_count = sum(1 for phrase in dissolution_words if phrase in text_lower)
 
         # Determine status
@@ -494,10 +662,10 @@ class Nishida(Philosopher):
             "negation_score": negation_count,
             "realization_score": realization_count,
             "dissolution_score": dissolution_count,
-            "principle": "True self is realized through self-negation - the self that is not a self"
+            "principle": "True self is realized through self-negation - the self that is not a self",
         }
 
-    def _analyze_logic_of_place(self, text: str) -> Dict[str, Any]:
+    def _analyze_logic_of_place(self, text: str) -> dict[str, Any]:
         """
         Analyze Logic of Place (場所の論理, basho no ronri).
 
@@ -509,23 +677,51 @@ class Nishida(Philosopher):
         text_lower = text.lower()
 
         # Place/context-based logic indicators
-        place_logic_words = ["context", "place", "field", "situated", "embedded",
-                            "within", "environment", "determined by"]
+        place_logic_words = [
+            "context",
+            "place",
+            "field",
+            "situated",
+            "embedded",
+            "within",
+            "environment",
+            "determined by",
+        ]
         place_logic_count = sum(1 for word in place_logic_words if word in text_lower)
 
         # Substance logic indicators (traditional)
-        substance_words = ["substance", "essence", "is", "being", "entity",
-                          "thing in itself", "inherent"]
+        substance_words = [
+            "substance",
+            "essence",
+            "is",
+            "being",
+            "entity",
+            "thing in itself",
+            "inherent",
+        ]
         substance_count = sum(1 for word in substance_words if word in text_lower)
 
         # Relational logic indicators
-        relation_words = ["relation", "relative", "dependent", "relational",
-                         "between", "connection", "network"]
+        relation_words = [
+            "relation",
+            "relative",
+            "dependent",
+            "relational",
+            "between",
+            "connection",
+            "network",
+        ]
         relation_count = sum(1 for word in relation_words if word in text_lower)
 
         # Predication/determination indicators
-        predicate_words = ["predicate", "attribute", "property", "quality",
-                          "characteristic", "determine"]
+        predicate_words = [
+            "predicate",
+            "attribute",
+            "property",
+            "quality",
+            "characteristic",
+            "determine",
+        ]
         predicate_count = sum(1 for word in predicate_words if word in text_lower)
 
         # Determine logical framework
@@ -558,10 +754,10 @@ class Nishida(Philosopher):
             "substance_score": substance_count,
             "relation_score": relation_count,
             "predicate_score": predicate_count,
-            "principle": "場所の論理 - Logic of the determining place, not of substance"
+            "principle": "場所の論理 - Logic of the determining place, not of substance",
         }
 
-    def _analyze_religious_consciousness(self, text: str) -> Dict[str, Any]:
+    def _analyze_religious_consciousness(self, text: str) -> dict[str, Any]:
         """
         Analyze Religious Consciousness.
 
@@ -572,23 +768,45 @@ class Nishida(Philosopher):
         text_lower = text.lower()
 
         # Religious/spiritual indicators
-        religious_words = ["god", "divine", "sacred", "holy", "spiritual",
-                          "religious", "transcendent", "eternal", "ultimate"]
+        religious_words = [
+            "god",
+            "divine",
+            "sacred",
+            "holy",
+            "spiritual",
+            "religious",
+            "transcendent",
+            "eternal",
+            "ultimate",
+        ]
         religious_count = sum(1 for word in religious_words if word in text_lower)
 
         # Awakening/enlightenment indicators
-        awakening_words = ["awaken", "enlighten", "realize", "satori",
-                          "illumination", "revelation", "epiphany"]
+        awakening_words = [
+            "awaken",
+            "enlighten",
+            "realize",
+            "satori",
+            "illumination",
+            "revelation",
+            "epiphany",
+        ]
         awakening_count = sum(1 for word in awakening_words if word in text_lower)
 
         # Ego-death indicators
-        death_words = ["death", "die", "perish", "annihilate", "negate",
-                      "empty", "void", "nothing"]
+        death_words = ["death", "die", "perish", "annihilate", "negate", "empty", "void", "nothing"]
         death_count = sum(1 for word in death_words if word in text_lower)
 
         # Transformation indicators
-        transform_words = ["transform", "convert", "rebirth", "new", "change",
-                          "become", "metamorphosis"]
+        transform_words = [
+            "transform",
+            "convert",
+            "rebirth",
+            "new",
+            "change",
+            "become",
+            "metamorphosis",
+        ]
         transform_count = sum(1 for word in transform_words if word in text_lower)
 
         # Determine religious consciousness level
@@ -621,10 +839,10 @@ class Nishida(Philosopher):
             "awakening_score": awakening_count,
             "death_score": death_count,
             "transformation_score": transform_count,
-            "principle": "Religious consciousness is direct encounter with Absolute Nothingness"
+            "principle": "Religious consciousness is direct encounter with Absolute Nothingness",
         }
 
-    def _analyze_historical_world(self, text: str) -> Dict[str, Any]:
+    def _analyze_historical_world(self, text: str) -> dict[str, Any]:
         """
         Analyze Historical World (歴史的世界, rekishi-teki sekai).
 
@@ -636,29 +854,63 @@ class Nishida(Philosopher):
         text_lower = text.lower()
 
         # Historical indicators
-        history_words = ["history", "historical", "past", "tradition",
-                        "heritage", "epoch", "era", "time", "temporal"]
+        history_words = [
+            "history",
+            "historical",
+            "past",
+            "tradition",
+            "heritage",
+            "epoch",
+            "era",
+            "time",
+            "temporal",
+        ]
         history_count = sum(1 for word in history_words if word in text_lower)
 
         # Creative/making indicators
-        creative_words = ["create", "make", "form", "shape", "produce",
-                         "generate", "construct", "build", "express"]
+        creative_words = [
+            "create",
+            "make",
+            "form",
+            "shape",
+            "produce",
+            "generate",
+            "construct",
+            "build",
+            "express",
+        ]
         creative_count = sum(1 for word in creative_words if word in text_lower)
 
         # World/collective indicators
-        world_words = ["world", "society", "culture", "civilization",
-                      "collective", "community", "humanity"]
+        world_words = [
+            "world",
+            "society",
+            "culture",
+            "civilization",
+            "collective",
+            "community",
+            "humanity",
+        ]
         world_count = sum(1 for word in world_words if word in text_lower)
 
         # Individual-world unity indicators
-        unity_words = ["participate", "contribute", "engage", "involved",
-                      "part of", "within", "express"]
+        unity_words = [
+            "participate",
+            "contribute",
+            "engage",
+            "involved",
+            "part of",
+            "within",
+            "express",
+        ]
         unity_count = sum(1 for word in unity_words if word in text_lower)
 
         # Determine historical consciousness
         if history_count >= 1 and creative_count >= 1 and world_count >= 1:
             consciousness = "歴史的世界 (Historical World)"
-            description = "History as creative self-expression - individual and world united in making"
+            description = (
+                "History as creative self-expression - individual and world united in making"
+            )
             mode = "Active historical creation"
         elif history_count >= 2:
             consciousness = "Historical Awareness"
@@ -685,10 +937,10 @@ class Nishida(Philosopher):
             "creative_score": creative_count,
             "world_score": world_count,
             "unity_score": unity_count,
-            "principle": "歴史的世界 - Historical world as self-expression of Absolute Nothingness"
+            "principle": "歴史的世界 - Historical world as self-expression of Absolute Nothingness",
         }
 
-    def _analyze_zen_influence(self, text: str) -> Dict[str, Any]:
+    def _analyze_zen_influence(self, text: str) -> dict[str, Any]:
         """
         Analyze Zen Buddhist Influence.
 
@@ -702,28 +954,58 @@ class Nishida(Philosopher):
         text_lower = text.lower()
 
         # Zen-specific terms
-        zen_terms = ["zen", "zazen", "satori", "koan", "mu", "buddha",
-                    "dharma", "sutra", "monk", "monastery", "meditation"]
+        zen_terms = [
+            "zen",
+            "zazen",
+            "satori",
+            "koan",
+            "mu",
+            "buddha",
+            "dharma",
+            "sutra",
+            "monk",
+            "monastery",
+            "meditation",
+        ]
         zen_count = sum(1 for word in zen_terms if word in text_lower)
 
         # Non-dualism indicators
-        nondual_words = ["non-dual", "not-two", "oneness", "unity",
-                        "no separation", "beyond duality"]
+        nondual_words = [
+            "non-dual",
+            "not-two",
+            "oneness",
+            "unity",
+            "no separation",
+            "beyond duality",
+        ]
         nondual_count = sum(1 for phrase in nondual_words if phrase in text_lower)
 
         # Emptiness/void indicators (śūnyatā)
-        emptiness_words = ["empty", "emptiness", "void", "nothing", "mu",
-                          "sunyata", "śūnyatā"]
+        emptiness_words = ["empty", "emptiness", "void", "nothing", "mu", "sunyata", "śūnyatā"]
         emptiness_count = sum(1 for word in emptiness_words if word in text_lower)
 
         # Immediate/direct experience indicators (Zen emphasis)
-        immediate_words = ["immediate", "direct", "now", "here", "present",
-                          "this moment", "just this"]
+        immediate_words = [
+            "immediate",
+            "direct",
+            "now",
+            "here",
+            "present",
+            "this moment",
+            "just this",
+        ]
         immediate_count = sum(1 for word in immediate_words if word in text_lower)
 
         # Paradox/kōan-like indicators
-        paradox_words = ["paradox", "contradiction", "both", "neither",
-                        "beyond", "ineffable", "unspeakable"]
+        paradox_words = [
+            "paradox",
+            "contradiction",
+            "both",
+            "neither",
+            "beyond",
+            "ineffable",
+            "unspeakable",
+        ]
         paradox_count = sum(1 for word in paradox_words if word in text_lower)
 
         # Determine Zen influence level
@@ -768,17 +1050,17 @@ class Nishida(Philosopher):
             "emptiness_score": emptiness_count,
             "immediate_score": immediate_count,
             "paradox_score": paradox_count,
-            "principle": "Zen insight: Direct awakening to emptiness and non-duality"
+            "principle": "Zen insight: Direct awakening to emptiness and non-duality",
         }
 
     def _construct_reasoning(
         self,
-        pure_experience: Dict[str, Any],
-        absolute_nothingness: Dict[str, Any],
-        basho: Dict[str, Any],
-        self_contradictory_identity: Dict[str, Any],
-        acting_intuition: Dict[str, Any],
-        zen_influence: Dict[str, Any]
+        pure_experience: dict[str, Any],
+        absolute_nothingness: dict[str, Any],
+        basho: dict[str, Any],
+        self_contradictory_identity: dict[str, Any],
+        acting_intuition: dict[str, Any],
+        zen_influence: dict[str, Any],
     ) -> str:
         """Construct comprehensive Nishidaian reasoning."""
         reasoning = (
@@ -801,10 +1083,12 @@ class Nishida(Philosopher):
         )
 
         # Add acting intuition
-        reasoning += f"Concerning 行為的直観 (acting intuition): {acting_intuition['description']}. "
+        reasoning += (
+            f"Concerning 行為的直観 (acting intuition): {acting_intuition['description']}. "
+        )
 
         # Add Zen influence if significant
-        if zen_influence['zen_score'] >= 1 or zen_influence['nondual_score'] >= 1:
+        if zen_influence["zen_score"] >= 1 or zen_influence["nondual_score"] >= 1:
             reasoning += f"Zen influence: {zen_influence['description']}. "
 
         # Conclude with Nishida's core insight
@@ -820,10 +1104,10 @@ class Nishida(Philosopher):
 
     def _calculate_tension(
         self,
-        pure_experience: Dict[str, Any],
-        absolute_nothingness: Dict[str, Any],
-        self_contradictory_identity: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        pure_experience: dict[str, Any],
+        absolute_nothingness: dict[str, Any],
+        self_contradictory_identity: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Calculate philosophical tension based on Nishidaian analysis.
 
@@ -837,26 +1121,26 @@ class Nishida(Philosopher):
         tension_elements = []
 
         # Check pure experience
-        if pure_experience['level'] == "Low":
+        if pure_experience["level"] == "Low":
             tension_score += 2
             tension_elements.append("Subject-object dualism obscures pure experience")
-        elif pure_experience['level'] == "Medium":
+        elif pure_experience["level"] == "Medium":
             tension_score += 1
             tension_elements.append("Partial subject-object division")
 
         # Check Absolute Nothingness
-        if absolute_nothingness['mode'] == "Substantialist":
+        if absolute_nothingness["mode"] == "Substantialist":
             tension_score += 2
             tension_elements.append("Being without ground in Absolute Nothingness")
-        elif absolute_nothingness['mode'] == "Negative nothingness":
+        elif absolute_nothingness["mode"] == "Negative nothingness":
             tension_score += 1
             tension_elements.append("Nothingness as mere negation, not absolute ground")
 
         # Check self-contradictory identity
-        if self_contradictory_identity['logic'] == "Law of non-contradiction":
+        if self_contradictory_identity["logic"] == "Law of non-contradiction":
             tension_score += 2
             tension_elements.append("Aristotelian logic prevents dialectical unity")
-        elif self_contradictory_identity['logic'] == "Unresolved tension":
+        elif self_contradictory_identity["logic"] == "Unresolved tension":
             tension_score += 1
             tension_elements.append("Contradictions unreconciled")
 
@@ -881,5 +1165,5 @@ class Nishida(Philosopher):
             "level": level,
             "score": tension_score,
             "description": description,
-            "elements": tension_elements if tension_elements else ["No significant tensions"]
+            "elements": tension_elements if tension_elements else ["No significant tensions"],
         }

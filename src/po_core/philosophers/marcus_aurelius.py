@@ -16,7 +16,7 @@ Key concepts:
 - Ataraxia: Tranquility of mind
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -52,7 +52,7 @@ class MarcusAurelius(Philosopher):
             "nature",
         ]
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Apply Stoic reasoning to the prompt.
 
@@ -85,7 +85,7 @@ class MarcusAurelius(Philosopher):
             },
         }
 
-    def _analyze_stoic_wisdom(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_stoic_wisdom(self, prompt: str) -> dict[str, Any]:
         """Comprehensive Stoic analysis of the prompt."""
         virtue = self._analyze_virtue(prompt)
         control = self._analyze_dichotomy_of_control(prompt)
@@ -100,8 +100,17 @@ class MarcusAurelius(Philosopher):
         practical_wisdom = self._derive_practical_wisdom(prompt)
 
         reasoning = self._construct_reasoning(
-            prompt, virtue, control, logos, prohairesis, amor_fati,
-            memento_mori, cosmopolitanism, present, indifferents, ataraxia
+            prompt,
+            virtue,
+            control,
+            logos,
+            prohairesis,
+            amor_fati,
+            memento_mori,
+            cosmopolitanism,
+            present,
+            indifferents,
+            ataraxia,
         )
 
         return {
@@ -119,7 +128,7 @@ class MarcusAurelius(Philosopher):
             "practical_wisdom": practical_wisdom,
         }
 
-    def _analyze_virtue(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_virtue(self, prompt: str) -> dict[str, Any]:
         """
         Analyze through the four cardinal virtues.
 
@@ -154,7 +163,7 @@ class MarcusAurelius(Philosopher):
             "unity": "The virtues are unified; one cannot truly possess one without all",
         }
 
-    def _analyze_dichotomy_of_control(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_dichotomy_of_control(self, prompt: str) -> dict[str, Any]:
         """
         Apply the fundamental Stoic distinction.
 
@@ -192,7 +201,7 @@ class MarcusAurelius(Philosopher):
             ],
         }
 
-    def _analyze_logos(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_logos(self, prompt: str) -> dict[str, Any]:
         """
         Examine alignment with universal reason.
 
@@ -220,7 +229,7 @@ class MarcusAurelius(Philosopher):
             "application": "How does this situation reflect the rational order?",
         }
 
-    def _analyze_prohairesis(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_prohairesis(self, prompt: str) -> dict[str, Any]:
         """
         Examine the faculty of moral choice.
 
@@ -248,7 +257,7 @@ class MarcusAurelius(Philosopher):
             "application": "What choice of character does this moment offer?",
         }
 
-    def _analyze_amor_fati(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_amor_fati(self, prompt: str) -> dict[str, Any]:
         """
         Explore the love of fate.
 
@@ -275,7 +284,7 @@ class MarcusAurelius(Philosopher):
             "application": "How can I embrace what is happening?",
         }
 
-    def _analyze_memento_mori(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_memento_mori(self, prompt: str) -> dict[str, Any]:
         """
         Contemplate mortality as philosophical practice.
 
@@ -306,7 +315,7 @@ class MarcusAurelius(Philosopher):
             "application": "How does mortality illuminate this situation?",
         }
 
-    def _analyze_cosmopolitanism(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_cosmopolitanism(self, prompt: str) -> dict[str, Any]:
         """
         Consider the universal human community.
 
@@ -337,7 +346,7 @@ class MarcusAurelius(Philosopher):
             "application": "How does this affect the broader human community?",
         }
 
-    def _analyze_present_moment(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_present_moment(self, prompt: str) -> dict[str, Any]:
         """
         Focus on the present as the only reality.
 
@@ -369,7 +378,7 @@ class MarcusAurelius(Philosopher):
             "application": "What does this present moment require?",
         }
 
-    def _analyze_indifferents(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_indifferents(self, prompt: str) -> dict[str, Any]:
         """
         Examine things that are neither good nor bad in themselves.
 
@@ -401,7 +410,7 @@ class MarcusAurelius(Philosopher):
             "application": "What externals am I mistaking for true goods or evils?",
         }
 
-    def _analyze_ataraxia(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_ataraxia(self, prompt: str) -> dict[str, Any]:
         """
         Consider the goal of tranquility.
 
@@ -432,7 +441,7 @@ class MarcusAurelius(Philosopher):
             "application": "What disturbs my tranquility here? Is the judgment correct?",
         }
 
-    def _derive_practical_wisdom(self, prompt: str) -> Dict[str, Any]:
+    def _derive_practical_wisdom(self, prompt: str) -> dict[str, Any]:
         """
         Extract practical guidance for action.
 
@@ -469,62 +478,71 @@ class MarcusAurelius(Philosopher):
         }
 
     def _construct_reasoning(
-        self, prompt: str, virtue: Dict, control: Dict, logos: Dict,
-        prohairesis: Dict, amor_fati: Dict, memento_mori: Dict,
-        cosmopolitanism: Dict, present: Dict, indifferents: Dict, ataraxia: Dict
+        self,
+        prompt: str,
+        virtue: dict,
+        control: dict,
+        logos: dict,
+        prohairesis: dict,
+        amor_fati: dict,
+        memento_mori: dict,
+        cosmopolitanism: dict,
+        present: dict,
+        indifferents: dict,
+        ataraxia: dict,
     ) -> str:
         """Construct comprehensive Stoic reasoning."""
         return f"""Stoic Meditation on: "{prompt}"
 
 DICHOTOMY OF CONTROL
 First, we must distinguish what is up to us from what is not.
-{control['up_to_us']['description']}. In this situation, I must identify
+{control["up_to_us"]["description"]}. In this situation, I must identify
 what is truly within my power - my judgments, choices, and responses -
 and release attachment to external outcomes.
 
 VIRTUE AS THE SOLE GOOD
-{virtue['wisdom']['description']}. The question is not what will happen,
-but how I will respond with virtue. {virtue['unity']}
+{virtue["wisdom"]["description"]}. The question is not what will happen,
+but how I will respond with virtue. {virtue["unity"]}
 
 ALIGNMENT WITH LOGOS
-{logos['cosmic_order']['description']}. Whatever happens is part of
-the rational order of the universe. {logos['living_according_to_nature']['universal']}
+{logos["cosmic_order"]["description"]}. Whatever happens is part of
+the rational order of the universe. {logos["living_according_to_nature"]["universal"]}
 
 THE RULING FACULTY
-{prohairesis['nature']['description']}. Nothing external can harm my
+{prohairesis["nature"]["description"]}. Nothing external can harm my
 prohairesis without my consent. The discipline of assent, desire, and
 action protects the inner citadel.
 
 AMOR FATI
-{amor_fati['transformation']['description']}. {amor_fati['transformation']['wisdom']}
+{amor_fati["transformation"]["description"]}. {amor_fati["transformation"]["wisdom"]}
 Whatever obstacle appears becomes material for virtue.
 
 MEMENTO MORI
-{memento_mori['awareness']['description']}. If this were my last day,
+{memento_mori["awareness"]["description"]}. If this were my last day,
 how would I act? This awareness strips away the trivial and reveals
 what truly matters.
 
 COSMOPOLITAN PERSPECTIVE
-{cosmopolitanism['universal_citizenship']['description']}. My actions
-affect the whole human community. {cosmopolitanism['social_nature']['description']}
+{cosmopolitanism["universal_citizenship"]["description"]}. My actions
+affect the whole human community. {cosmopolitanism["social_nature"]["description"]}
 
 THE PRESENT MOMENT
-{present['temporal_reality']['description']}. All power and virtue
+{present["temporal_reality"]["description"]}. All power and virtue
 exist only in this moment. What does the present require of me?
 
 REGARDING INDIFFERENTS
-{indifferents['doctrine']['description']}. I must not mistake externals
+{indifferents["doctrine"]["description"]}. I must not mistake externals
 for true goods or evils. They are material for demonstrating character.
 
 PATH TO ATARAXIA
-{ataraxia['nature']['description']}. Through right judgment and
+{ataraxia["nature"]["description"]}. Through right judgment and
 acceptance of nature, the soul finds its proper tranquility.
-{ataraxia['inner_citadel']['description']}
+{ataraxia["inner_citadel"]["description"]}
 
 Thus reason and nature counsel: Focus on virtue, accept what comes,
 act for the common good, and maintain the inner citadel of tranquility."""
 
-    def _calculate_tension(self, analysis: Dict[str, Any]) -> float:
+    def _calculate_tension(self, analysis: dict[str, Any]) -> float:
         """
         Calculate philosophical tension.
 

@@ -20,7 +20,7 @@ Key Concepts:
 - Reversibility (réversibilité): Touching-touched, seeing-seen
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -36,10 +36,10 @@ class MerleauPonty(Philosopher):
     def __init__(self) -> None:
         super().__init__(
             name="Maurice Merleau-Ponty",
-            description="Phenomenologist focused on embodiment, perception, and the lived body"
+            description="Phenomenologist focused on embodiment, perception, and the lived body",
         )
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Analyze the prompt from Merleau-Ponty's phenomenological perspective.
 
@@ -68,11 +68,11 @@ class MerleauPonty(Philosopher):
             "metadata": {
                 "philosopher": self.name,
                 "approach": "Phenomenology of perception and embodied experience",
-                "focus": "Lived body, perception, flesh, and ambiguity"
-            }
+                "focus": "Lived body, perception, flesh, and ambiguity",
+            },
         }
 
-    def _analyze_embodiment(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_embodiment(self, prompt: str) -> dict[str, Any]:
         """
         Perform Merleau-Pontian phenomenological analysis.
 
@@ -110,9 +110,7 @@ class MerleauPonty(Philosopher):
         intersubjectivity = self._check_intersubjectivity(prompt)
 
         # Construct reasoning
-        reasoning = self._construct_reasoning(
-            lived_body, perception, flesh, ambiguity
-        )
+        reasoning = self._construct_reasoning(lived_body, perception, flesh, ambiguity)
 
         return {
             "reasoning": reasoning,
@@ -124,10 +122,10 @@ class MerleauPonty(Philosopher):
             "being_in_world": being_in_world,
             "gestalt": gestalt,
             "reversibility": reversibility,
-            "intersubjectivity": intersubjectivity
+            "intersubjectivity": intersubjectivity,
         }
 
-    def _assess_lived_body(self, text: str) -> Dict[str, Any]:
+    def _assess_lived_body(self, text: str) -> dict[str, Any]:
         """
         Assess the lived body (le corps propre).
 
@@ -186,10 +184,10 @@ class MerleauPonty(Philosopher):
             "status": status,
             "description": description,
             "mode": mode,
-            "principle": "Lived body (corps propre) is body as subject, not object"
+            "principle": "Lived body (corps propre) is body as subject, not object",
         }
 
-    def _evaluate_perception(self, text: str) -> Dict[str, Any]:
+    def _evaluate_perception(self, text: str) -> dict[str, Any]:
         """
         Evaluate perception.
 
@@ -252,10 +250,10 @@ class MerleauPonty(Philosopher):
             "status": status,
             "description": description,
             "character": character,
-            "principle": "Perception is primary, pre-reflective access to the world"
+            "principle": "Perception is primary, pre-reflective access to the world",
         }
 
-    def _detect_flesh(self, text: str) -> Dict[str, Any]:
+    def _detect_flesh(self, text: str) -> dict[str, Any]:
         """
         Detect the flesh (la chair).
 
@@ -306,10 +304,10 @@ class MerleauPonty(Philosopher):
             "presence": presence,
             "description": description,
             "nature": nature,
-            "principle": "Flesh is reversible element - sensible and sentient intertwined"
+            "principle": "Flesh is reversible element - sensible and sentient intertwined",
         }
 
-    def _assess_chiasm(self, text: str) -> Dict[str, Any]:
+    def _assess_chiasm(self, text: str) -> dict[str, Any]:
         """
         Assess chiasm (le chiasme).
 
@@ -355,10 +353,10 @@ class MerleauPonty(Philosopher):
             "status": status,
             "description": description,
             "structure": structure,
-            "principle": "Chiasm: intertwining of seer/seen, toucher/touched"
+            "principle": "Chiasm: intertwining of seer/seen, toucher/touched",
         }
 
-    def _check_ambiguity(self, text: str) -> Dict[str, Any]:
+    def _check_ambiguity(self, text: str) -> dict[str, Any]:
         """
         Check for ambiguity (ambiguïté).
 
@@ -409,10 +407,10 @@ class MerleauPonty(Philosopher):
             "presence": presence,
             "description": description,
             "character": character,
-            "principle": "Ambiguity is fundamental to embodied perceptual experience"
+            "principle": "Ambiguity is fundamental to embodied perceptual experience",
         }
 
-    def _evaluate_being_in_world(self, text: str) -> Dict[str, Any]:
+    def _evaluate_being_in_world(self, text: str) -> dict[str, Any]:
         """
         Evaluate being-in-the-world.
 
@@ -463,10 +461,10 @@ class MerleauPonty(Philosopher):
             "status": status,
             "description": description,
             "mode": mode,
-            "principle": "Being-in-the-world: primordial embodied engagement, not detached consciousness"
+            "principle": "Being-in-the-world: primordial embodied engagement, not detached consciousness",
         }
 
-    def _detect_gestalt(self, text: str) -> Dict[str, Any]:
+    def _detect_gestalt(self, text: str) -> dict[str, Any]:
         """
         Detect gestalt structures.
 
@@ -517,10 +515,10 @@ class MerleauPonty(Philosopher):
             "presence": presence,
             "description": description,
             "character": character,
-            "principle": "Perception involves gestalt structures - organized wholes, not atomic sensations"
+            "principle": "Perception involves gestalt structures - organized wholes, not atomic sensations",
         }
 
-    def _assess_reversibility(self, text: str) -> Dict[str, Any]:
+    def _assess_reversibility(self, text: str) -> dict[str, Any]:
         """
         Assess reversibility (réversibilité).
 
@@ -571,10 +569,10 @@ class MerleauPonty(Philosopher):
             "status": status,
             "description": description,
             "structure": structure,
-            "principle": "Reversibility: my body is both sensing and sensible - touching-touched"
+            "principle": "Reversibility: my body is both sensing and sensible - touching-touched",
         }
 
-    def _check_intersubjectivity(self, text: str) -> Dict[str, Any]:
+    def _check_intersubjectivity(self, text: str) -> dict[str, Any]:
         """
         Check intersubjectivity.
 
@@ -625,15 +623,15 @@ class MerleauPonty(Philosopher):
             "status": status,
             "description": description,
             "mode": mode,
-            "principle": "Intersubjectivity through direct embodied perception of other bodies"
+            "principle": "Intersubjectivity through direct embodied perception of other bodies",
         }
 
     def _construct_reasoning(
         self,
-        lived_body: Dict[str, Any],
-        perception: Dict[str, Any],
-        flesh: Dict[str, Any],
-        ambiguity: Dict[str, Any]
+        lived_body: dict[str, Any],
+        perception: dict[str, Any],
+        flesh: dict[str, Any],
+        ambiguity: dict[str, Any],
     ) -> str:
         """Construct Merleau-Pontian phenomenological reasoning."""
         reasoning = (

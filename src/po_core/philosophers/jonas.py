@@ -16,7 +16,7 @@ Key concepts:
 - Ecological Ethics: Responsibility for nature
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -52,7 +52,7 @@ class Jonas(Philosopher):
             "preservation",
         ]
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Apply Jonas's responsibility ethics to the prompt.
 
@@ -83,7 +83,7 @@ class Jonas(Philosopher):
             },
         }
 
-    def _analyze_jonas(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_jonas(self, prompt: str) -> dict[str, Any]:
         """Comprehensive Jonas analysis of the prompt."""
         responsibility = self._analyze_responsibility(prompt)
         future = self._analyze_future_generations(prompt)
@@ -96,8 +96,15 @@ class Jonas(Philosopher):
         practical = self._derive_practical_guidance(prompt)
 
         reasoning = self._construct_reasoning(
-            prompt, responsibility, future, fear, technology,
-            life, ontological_ethics, vulnerability, ecological
+            prompt,
+            responsibility,
+            future,
+            fear,
+            technology,
+            life,
+            ontological_ethics,
+            vulnerability,
+            ecological,
         )
 
         return {
@@ -113,7 +120,7 @@ class Jonas(Philosopher):
             "practical": practical,
         }
 
-    def _analyze_responsibility(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_responsibility(self, prompt: str) -> dict[str, Any]:
         """
         Analyze through the imperative of responsibility.
 
@@ -145,7 +152,7 @@ class Jonas(Philosopher):
             "application": "What responsibility arises from this situation?",
         }
 
-    def _analyze_future_generations(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_future_generations(self, prompt: str) -> dict[str, Any]:
         """
         Examine obligations to those not yet born.
 
@@ -176,7 +183,7 @@ class Jonas(Philosopher):
             "application": "How does this affect future generations?",
         }
 
-    def _analyze_heuristics_of_fear(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_heuristics_of_fear(self, prompt: str) -> dict[str, Any]:
         """
         Apply fear as a guide to responsibility.
 
@@ -207,7 +214,7 @@ class Jonas(Philosopher):
             "application": "What catastrophic possibilities should guide us here?",
         }
 
-    def _analyze_technology(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_technology(self, prompt: str) -> dict[str, Any]:
         """
         Examine the ethical challenges of technological power.
 
@@ -239,7 +246,7 @@ class Jonas(Philosopher):
             "application": "What technological powers and responsibilities are at stake?",
         }
 
-    def _analyze_life(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_life(self, prompt: str) -> dict[str, Any]:
         """
         Examine the phenomenology of living organisms.
 
@@ -270,7 +277,7 @@ class Jonas(Philosopher):
             "application": "What forms of life are affected here?",
         }
 
-    def _analyze_being_and_ought(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_being_and_ought(self, prompt: str) -> dict[str, Any]:
         """
         Examine the grounding of ethics in ontology.
 
@@ -301,7 +308,7 @@ class Jonas(Philosopher):
             "application": "What ontological grounds for ethics are relevant?",
         }
 
-    def _analyze_vulnerability(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_vulnerability(self, prompt: str) -> dict[str, Any]:
         """
         Examine the ethics of protecting the vulnerable.
 
@@ -332,7 +339,7 @@ class Jonas(Philosopher):
             "application": "What vulnerability requires protection here?",
         }
 
-    def _analyze_ecological_ethics(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_ecological_ethics(self, prompt: str) -> dict[str, Any]:
         """
         Examine responsibility for the natural world.
 
@@ -363,7 +370,7 @@ class Jonas(Philosopher):
             "application": "What ecological responsibilities arise here?",
         }
 
-    def _derive_practical_guidance(self, prompt: str) -> Dict[str, Any]:
+    def _derive_practical_guidance(self, prompt: str) -> dict[str, Any]:
         """Extract practical guidance from Jonas's framework."""
         return {
             "precautionary_principle": {
@@ -389,49 +396,56 @@ class Jonas(Philosopher):
         }
 
     def _construct_reasoning(
-        self, prompt: str, responsibility: Dict, future: Dict, fear: Dict,
-        technology: Dict, life: Dict, ontological_ethics: Dict,
-        vulnerability: Dict, ecological: Dict
+        self,
+        prompt: str,
+        responsibility: dict,
+        future: dict,
+        fear: dict,
+        technology: dict,
+        life: dict,
+        ontological_ethics: dict,
+        vulnerability: dict,
+        ecological: dict,
     ) -> str:
         """Construct comprehensive Jonas reasoning."""
         return f"""Analysis through Jonas's Ethics of Responsibility: "{prompt}"
 
 THE IMPERATIVE OF RESPONSIBILITY
-{responsibility['new_imperative']['formulation']}. {responsibility['new_imperative']['scope']}
+{responsibility["new_imperative"]["formulation"]}. {responsibility["new_imperative"]["scope"]}
 Our technological power demands an ethics commensurate with our capacity to affect the future.
 
 FUTURE GENERATIONS
-{future['existence_of_obligation']['ground']}. {future['content_of_obligation']['preservation']}
+{future["existence_of_obligation"]["ground"]}. {future["content_of_obligation"]["preservation"]}
 We bear responsibility for those not yet born who cannot speak for themselves.
 
 HEURISTICS OF FEAR
-{fear['role_of_fear']['function']}. {fear['primacy_of_bad_prognosis']['principle']}
+{fear["role_of_fear"]["function"]}. {fear["primacy_of_bad_prognosis"]["principle"]}
 When the stakes are existential, caution is wisdom.
 
 TECHNOLOGY AND POWER
-{technology['changed_condition']['description']}. {technology['characteristics']['irreversible']}
+{technology["changed_condition"]["description"]}. {technology["characteristics"]["irreversible"]}
 The novelty of our power requires a new kind of ethical thinking.
 
 THE PHENOMENOLOGY OF LIFE
-{life['metabolism']['description']}. {life['needful_freedom']['tension']}
+{life["metabolism"]["description"]}. {life["needful_freedom"]["tension"]}
 Life itself embodies value and purposiveness.
 
 BEING AND OUGHT
-{ontological_ethics['life_as_value']['claim']}. {ontological_ethics['the_ought_in_being']['argument']}
+{ontological_ethics["life_as_value"]["claim"]}. {ontological_ethics["the_ought_in_being"]["argument"]}
 Ethics is grounded in the being of life itself.
 
 VULNERABILITY AND CARE
-{vulnerability['vulnerability_and_responsibility']['description']}.
-{vulnerability['nature_as_vulnerable']['description']}. {vulnerability['nature_as_vulnerable']['responsibility']}
+{vulnerability["vulnerability_and_responsibility"]["description"]}.
+{vulnerability["nature_as_vulnerable"]["description"]}. {vulnerability["nature_as_vulnerable"]["responsibility"]}
 
 ECOLOGICAL RESPONSIBILITY
-{ecological['nature_as_end']['description']}. {ecological['holistic_responsibility']['stewardship']}
-{ecological['sustainable_existence']['goal']}
+{ecological["nature_as_end"]["description"]}. {ecological["holistic_responsibility"]["stewardship"]}
+{ecological["sustainable_existence"]["goal"]}
 
 Thus the imperative of responsibility demands: preserve the conditions for
 genuine human life and the integrity of nature for all time to come."""
 
-    def _calculate_tension(self, analysis: Dict[str, Any]) -> float:
+    def _calculate_tension(self, analysis: dict[str, Any]) -> float:
         """
         Calculate philosophical tension.
 

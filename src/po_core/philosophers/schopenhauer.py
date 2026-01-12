@@ -17,7 +17,7 @@ Key Concepts:
 - Nothingness: The goal of will-denial - better than existence
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -33,10 +33,10 @@ class Schopenhauer(Philosopher):
     def __init__(self) -> None:
         super().__init__(
             name="Arthur Schopenhauer",
-            description="Pessimist philosopher focused on the Will, suffering, compassion, and denial"
+            description="Pessimist philosopher focused on the Will, suffering, compassion, and denial",
         )
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Analyze the prompt from Schopenhauer's pessimistic perspective.
 
@@ -70,11 +70,11 @@ class Schopenhauer(Philosopher):
             "metadata": {
                 "philosopher": self.name,
                 "approach": "Pessimistic metaphysics and ethics of compassion",
-                "focus": "The Will, suffering, aesthetic redemption, and negation"
-            }
+                "focus": "The Will, suffering, aesthetic redemption, and negation",
+            },
         }
 
-    def _analyze_will_and_suffering(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_will_and_suffering(self, prompt: str) -> dict[str, Any]:
         """
         Perform comprehensive Schopenhauerian analysis.
 
@@ -130,10 +130,10 @@ class Schopenhauer(Philosopher):
             "principium_individuationis": principium_individuationis,
             "music": music,
             "suffering_boredom": suffering_boredom,
-            "nothingness": nothingness
+            "nothingness": nothingness,
         }
 
-    def _analyze_will(self, text: str) -> Dict[str, Any]:
+    def _analyze_will(self, text: str) -> dict[str, Any]:
         """
         Analyze the Will (Wille).
 
@@ -188,10 +188,10 @@ class Schopenhauer(Philosopher):
             "presence": presence,
             "description": description,
             "type": type_will,
-            "principle": "The Will is the blind, irrational thing-in-itself - endless striving without purpose"
+            "principle": "The Will is the blind, irrational thing-in-itself - endless striving without purpose",
         }
 
-    def _analyze_representation(self, text: str) -> Dict[str, Any]:
+    def _analyze_representation(self, text: str) -> dict[str, Any]:
         """
         Analyze Representation (Vorstellung).
 
@@ -246,10 +246,10 @@ class Schopenhauer(Philosopher):
             "level": level,
             "has_subject_object": has_subject and has_object,
             "causality_present": has_causality >= 1,
-            "principle": "The world is my representation - appearance structured by subject's forms"
+            "principle": "The world is my representation - appearance structured by subject's forms",
         }
 
-    def _assess_pessimism(self, text: str) -> Dict[str, Any]:
+    def _assess_pessimism(self, text: str) -> dict[str, Any]:
         """
         Assess pessimism.
 
@@ -264,11 +264,22 @@ class Schopenhauer(Philosopher):
         has_suffering = sum(1 for word in suffering_words if word in text_lower)
 
         # Pessimistic conclusions
-        pessimistic_phrases = ["not worth", "better not", "should not have", "regret being", "curse"]
+        pessimistic_phrases = [
+            "not worth",
+            "better not",
+            "should not have",
+            "regret being",
+            "curse",
+        ]
         has_pessimistic = sum(1 for phrase in pessimistic_phrases if phrase in text_lower)
 
         # Life-denying indicators
-        life_denial = ["life is suffering", "existence is bad", "not worth living", "better to not exist"]
+        life_denial = [
+            "life is suffering",
+            "existence is bad",
+            "not worth living",
+            "better to not exist",
+        ]
         has_life_denial = sum(1 for phrase in life_denial if phrase in text_lower)
 
         # Optimism indicators (opposed to Schopenhauer)
@@ -304,10 +315,10 @@ class Schopenhauer(Philosopher):
             "orientation": orientation,
             "description": description,
             "stance": stance,
-            "principle": "Life is suffering - optimism is absurd; existence itself is the problem"
+            "principle": "Life is suffering - optimism is absurd; existence itself is the problem",
         }
 
-    def _evaluate_aesthetic_contemplation(self, text: str) -> Dict[str, Any]:
+    def _evaluate_aesthetic_contemplation(self, text: str) -> dict[str, Any]:
         """
         Evaluate aesthetic contemplation.
 
@@ -360,10 +371,10 @@ class Schopenhauer(Philosopher):
             "level": level,
             "will_less": has_escape >= 1,
             "temporary": has_temporary >= 1,
-            "principle": "Art provides temporary liberation - pure will-less contemplation of Ideas"
+            "principle": "Art provides temporary liberation - pure will-less contemplation of Ideas",
         }
 
-    def _assess_compassion(self, text: str) -> Dict[str, Any]:
+    def _assess_compassion(self, text: str) -> dict[str, Any]:
         """
         Assess compassion (Mitleid).
 
@@ -382,7 +393,13 @@ class Schopenhauer(Philosopher):
         has_others_suffering = sum(1 for phrase in others_suffering if phrase in text_lower)
 
         # Identification with others
-        identification_words = ["same as me", "like me", "no different", "one with", "recognize myself"]
+        identification_words = [
+            "same as me",
+            "like me",
+            "no different",
+            "one with",
+            "recognize myself",
+        ]
         has_identification = sum(1 for phrase in identification_words if phrase in text_lower)
 
         # Unity/oneness indicators
@@ -418,10 +435,10 @@ class Schopenhauer(Philosopher):
             "presence": presence,
             "description": description,
             "moral_basis": moral_basis,
-            "principle": "Compassion is the basis of morality - recognizing the same Will in all beings"
+            "principle": "Compassion is the basis of morality - recognizing the same Will in all beings",
         }
 
-    def _check_denial_of_will(self, text: str) -> Dict[str, Any]:
+    def _check_denial_of_will(self, text: str) -> dict[str, Any]:
         """
         Check denial of the will to live.
 
@@ -436,7 +453,14 @@ class Schopenhauer(Philosopher):
         has_denial = sum(1 for word in denial_words if word in text_lower)
 
         # Asceticism indicators
-        ascetic_words = ["ascetic", "abstain", "celibacy", "poverty", "self-denial", "mortification"]
+        ascetic_words = [
+            "ascetic",
+            "abstain",
+            "celibacy",
+            "poverty",
+            "self-denial",
+            "mortification",
+        ]
         has_ascetic = sum(1 for word in ascetic_words if word in text_lower)
 
         # Resignation indicators
@@ -480,10 +504,10 @@ class Schopenhauer(Philosopher):
             "status": status,
             "description": description,
             "path": path,
-            "principle": "Denial of the will to live is the only salvation from suffering"
+            "principle": "Denial of the will to live is the only salvation from suffering",
         }
 
-    def _analyze_principium_individuationis(self, text: str) -> Dict[str, Any]:
+    def _analyze_principium_individuationis(self, text: str) -> dict[str, Any]:
         """
         Analyze principium individuationis.
 
@@ -534,10 +558,10 @@ class Schopenhauer(Philosopher):
             "status": status,
             "description": description,
             "level": level,
-            "principle": "Principium individuationis is Maya's veil - illusion of multiplicity created by space and time"
+            "principle": "Principium individuationis is Maya's veil - illusion of multiplicity created by space and time",
         }
 
-    def _evaluate_music(self, text: str) -> Dict[str, Any]:
+    def _evaluate_music(self, text: str) -> dict[str, Any]:
         """
         Evaluate music as direct expression of the Will.
 
@@ -588,10 +612,10 @@ class Schopenhauer(Philosopher):
             "status": status,
             "description": description,
             "significance": significance,
-            "principle": "Music is a direct copy of the Will itself - the highest of all arts"
+            "principle": "Music is a direct copy of the Will itself - the highest of all arts",
         }
 
-    def _assess_suffering_boredom(self, text: str) -> Dict[str, Any]:
+    def _assess_suffering_boredom(self, text: str) -> dict[str, Any]:
         """
         Assess the pendulum between suffering and boredom.
 
@@ -654,10 +678,10 @@ class Schopenhauer(Philosopher):
             "status": status,
             "description": description,
             "condition": condition,
-            "principle": "Life is a pendulum between pain and boredom - no positive happiness"
+            "principle": "Life is a pendulum between pain and boredom - no positive happiness",
         }
 
-    def _check_nothingness(self, text: str) -> Dict[str, Any]:
+    def _check_nothingness(self, text: str) -> dict[str, Any]:
         """
         Check relation to nothingness.
 
@@ -712,16 +736,16 @@ class Schopenhauer(Philosopher):
             "orientation": orientation,
             "description": description,
             "stance": stance,
-            "principle": "Nothingness is the goal of will-denial - better than the suffering of existence"
+            "principle": "Nothingness is the goal of will-denial - better than the suffering of existence",
         }
 
     def _construct_reasoning(
         self,
-        will: Dict[str, Any],
-        pessimism: Dict[str, Any],
-        aesthetic_contemplation: Dict[str, Any],
-        compassion: Dict[str, Any],
-        denial_of_will: Dict[str, Any]
+        will: dict[str, Any],
+        pessimism: dict[str, Any],
+        aesthetic_contemplation: dict[str, Any],
+        compassion: dict[str, Any],
+        denial_of_will: dict[str, Any],
     ) -> str:
         """Construct Schopenhauerian pessimistic reasoning."""
         reasoning = (
@@ -742,7 +766,7 @@ class Schopenhauer(Philosopher):
 
         return reasoning
 
-    def _calculate_tension(self, analysis: Dict[str, Any]) -> Dict[str, Any]:
+    def _calculate_tension(self, analysis: dict[str, Any]) -> dict[str, Any]:
         """
         Calculate philosophical tension based on Schopenhauerian analysis.
 
@@ -813,5 +837,5 @@ class Schopenhauer(Philosopher):
         return {
             "level": level,
             "description": description,
-            "elements": tension_elements if tension_elements else ["No significant tensions"]
+            "elements": tension_elements if tension_elements else ["No significant tensions"],
         }

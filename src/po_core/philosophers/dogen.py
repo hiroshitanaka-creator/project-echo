@@ -39,7 +39,7 @@ Key Concepts:
     sitting itself is the manifestation of Buddha. The practice is the realization.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -57,10 +57,10 @@ class Dogen(Philosopher):
     def __init__(self):
         super().__init__(
             name="Dogen Zenji (道元禅師)",
-            description="Zen Buddhist philosophy emphasizing practice-enlightenment unity (修証一如), being-time (有時), Buddha-nature (仏性), and just-sitting (只管打坐)"
+            description="Zen Buddhist philosophy emphasizing practice-enlightenment unity (修証一如), being-time (有時), Buddha-nature (仏性), and just-sitting (只管打坐)",
         )
 
-    def reason(self, text: str, context: Dict[str, Any] | None = None) -> Dict[str, Any]:
+    def reason(self, text: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Analyze text through Dogen's Zen Buddhist philosophy.
 
@@ -95,16 +95,23 @@ class Dogen(Philosopher):
                 "mountains_waters_sutra": mountains_waters,
                 "impermanence": impermanence,
                 "non_thinking": non_thinking,
-                "zazen_as_buddha": zazen_buddha
+                "zazen_as_buddha": zazen_buddha,
             },
             "summary": self._generate_summary(
-                being_time, buddha_nature, shikantaza, practice_enlightenment,
-                genjo_koan, dropping_body_mind, mountains_waters, impermanence,
-                non_thinking, zazen_buddha
-            )
+                being_time,
+                buddha_nature,
+                shikantaza,
+                practice_enlightenment,
+                genjo_koan,
+                dropping_body_mind,
+                mountains_waters,
+                impermanence,
+                non_thinking,
+                zazen_buddha,
+            ),
         }
 
-    def _assess_being_time(self, text: str) -> Dict[str, Any]:
+    def _assess_being_time(self, text: str) -> dict[str, Any]:
         """
         Assess Being-Time (有時/Uji) - Time and existence are identical.
 
@@ -114,17 +121,39 @@ class Dogen(Philosopher):
         text_lower = text.lower()
 
         being_time_words = [
-            "time", "being", "existence", "moment", "now", "present",
-            "duration", "temporal", "eternity", "instant", "passage",
-            "past", "future", "when", "always", "never", "continuous",
-            "simultaneous", "interpenetrate", "identity"
+            "time",
+            "being",
+            "existence",
+            "moment",
+            "now",
+            "present",
+            "duration",
+            "temporal",
+            "eternity",
+            "instant",
+            "passage",
+            "past",
+            "future",
+            "when",
+            "always",
+            "never",
+            "continuous",
+            "simultaneous",
+            "interpenetrate",
+            "identity",
         ]
 
         # Look for time-existence connection
         time_being_phrases = [
-            "time is", "being and time", "existence and time",
-            "moment of being", "being in time", "temporal existence",
-            "time itself", "every moment", "this moment"
+            "time is",
+            "being and time",
+            "existence and time",
+            "moment of being",
+            "being in time",
+            "temporal existence",
+            "time itself",
+            "every moment",
+            "this moment",
         ]
 
         has_being_time_words = sum(1 for word in being_time_words if word in text_lower)
@@ -132,10 +161,17 @@ class Dogen(Philosopher):
         being_time_present = has_being_time_words >= 3 or has_connection >= 1
 
         # Check for temporal non-duality
-        non_dual_time = any(phrase in text_lower for phrase in [
-            "past and future", "all time", "eternal now",
-            "timeless", "beyond time", "time and being"
-        ])
+        non_dual_time = any(
+            phrase in text_lower
+            for phrase in [
+                "past and future",
+                "all time",
+                "eternal now",
+                "timeless",
+                "beyond time",
+                "time and being",
+            ]
+        )
 
         if being_time_present and non_dual_time:
             level = "Strong"
@@ -145,7 +181,9 @@ class Dogen(Philosopher):
             interpretation = "Text engages with temporality and being, suggesting the interpenetration of time and existence."
         else:
             level = "Weak"
-            interpretation = "Limited engagement with being-time; time and existence treated separately."
+            interpretation = (
+                "Limited engagement with being-time; time and existence treated separately."
+            )
 
         return {
             "being_time_present": being_time_present,
@@ -153,10 +191,10 @@ class Dogen(Philosopher):
             "non_dual_temporality": non_dual_time,
             "level": level,
             "interpretation": interpretation,
-            "principle": "有時 (Uji): All beings are time; all time is being. The firewood is its time, the ash is its time."
+            "principle": "有時 (Uji): All beings are time; all time is being. The firewood is its time, the ash is its time.",
         }
 
-    def _assess_buddha_nature(self, text: str) -> Dict[str, Any]:
+    def _assess_buddha_nature(self, text: str) -> dict[str, Any]:
         """
         Assess Buddha-Nature (仏性) - All beings ARE Buddha-nature.
 
@@ -166,22 +204,46 @@ class Dogen(Philosopher):
         text_lower = text.lower()
 
         buddha_nature_words = [
-            "buddha", "nature", "awakening", "enlightenment", "original",
-            "inherent", "essential", "true nature", "self-nature",
-            "universal", "all beings", "everything", "totality"
+            "buddha",
+            "nature",
+            "awakening",
+            "enlightenment",
+            "original",
+            "inherent",
+            "essential",
+            "true nature",
+            "self-nature",
+            "universal",
+            "all beings",
+            "everything",
+            "totality",
         ]
 
         # Specific Buddha-nature phrases
         buddha_nature_phrases = [
-            "buddha nature", "buddha-nature", "all beings",
-            "inherent nature", "original nature", "true self",
-            "enlightened nature", "awakened", "buddhahood"
+            "buddha nature",
+            "buddha-nature",
+            "all beings",
+            "inherent nature",
+            "original nature",
+            "true self",
+            "enlightened nature",
+            "awakened",
+            "buddhahood",
         ]
 
         # Universal/immanent indicators
         universal_words = [
-            "all", "every", "everything", "everywhere", "universal",
-            "complete", "whole", "total", "throughout", "pervades"
+            "all",
+            "every",
+            "everything",
+            "everywhere",
+            "universal",
+            "complete",
+            "whole",
+            "total",
+            "throughout",
+            "pervades",
         ]
 
         has_bn_words = sum(1 for word in buddha_nature_words if word in text_lower)
@@ -191,10 +253,22 @@ class Dogen(Philosopher):
         buddha_nature_present = has_bn_phrases >= 1 or (has_bn_words >= 3 and has_universal >= 1)
 
         # Check for radical immanence (grasses, trees, walls, tiles)
-        radical_immanence = any(word in text_lower for word in [
-            "grass", "tree", "stone", "mountain", "river", "wall",
-            "tile", "earth", "sky", "cloud", "rain"
-        ])
+        radical_immanence = any(
+            word in text_lower
+            for word in [
+                "grass",
+                "tree",
+                "stone",
+                "mountain",
+                "river",
+                "wall",
+                "tile",
+                "earth",
+                "sky",
+                "cloud",
+                "rain",
+            ]
+        )
 
         if buddha_nature_present and radical_immanence and has_universal >= 2:
             level = "Complete"
@@ -216,10 +290,10 @@ class Dogen(Philosopher):
             "universality": has_universal >= 1,
             "level": level,
             "interpretation": interpretation,
-            "principle": "仏性 (Busshō): All beings are Buddha-nature. Not 'have' but 'are' - this is Dogen's radical teaching."
+            "principle": "仏性 (Busshō): All beings are Buddha-nature. Not 'have' but 'are' - this is Dogen's radical teaching.",
         }
 
-    def _assess_shikantaza(self, text: str) -> Dict[str, Any]:
+    def _assess_shikantaza(self, text: str) -> dict[str, Any]:
         """
         Assess Shikantaza (只管打坐) - Just sitting, without object or goal.
 
@@ -229,36 +303,72 @@ class Dogen(Philosopher):
         text_lower = text.lower()
 
         shikantaza_words = [
-            "sit", "sitting", "zazen", "meditation", "just",
-            "only", "simply", "bare", "pure", "direct",
-            "without", "goalless", "aimless", "purposeless"
+            "sit",
+            "sitting",
+            "zazen",
+            "meditation",
+            "just",
+            "only",
+            "simply",
+            "bare",
+            "pure",
+            "direct",
+            "without",
+            "goalless",
+            "aimless",
+            "purposeless",
         ]
 
         # Just-sitting phrases
         just_sitting_phrases = [
-            "just sit", "just sitting", "simply sit", "only sit",
-            "sitting itself", "pure sitting", "zazen", "shikantaza",
-            "without goal", "without aim", "no purpose", "for its own sake"
+            "just sit",
+            "just sitting",
+            "simply sit",
+            "only sit",
+            "sitting itself",
+            "pure sitting",
+            "zazen",
+            "shikantaza",
+            "without goal",
+            "without aim",
+            "no purpose",
+            "for its own sake",
         ]
 
         # Non-gaining indicators
         non_gaining_words = [
-            "without seeking", "no goal", "no aim", "nothing to attain",
-            "no gaining", "not seeking", "goalless", "aimless",
-            "just as it is", "as is", "without object"
+            "without seeking",
+            "no goal",
+            "no aim",
+            "nothing to attain",
+            "no gaining",
+            "not seeking",
+            "goalless",
+            "aimless",
+            "just as it is",
+            "as is",
+            "without object",
         ]
 
         has_shikantaza_words = sum(1 for word in shikantaza_words if word in text_lower)
         has_just_sitting = sum(1 for phrase in just_sitting_phrases if phrase in text_lower)
         has_non_gaining = sum(1 for phrase in non_gaining_words if phrase in text_lower)
 
-        shikantaza_present = has_just_sitting >= 1 or (has_shikantaza_words >= 3 and has_non_gaining >= 1)
+        shikantaza_present = has_just_sitting >= 1 or (
+            has_shikantaza_words >= 3 and has_non_gaining >= 1
+        )
 
         # Check for practice-without-object
-        without_object = any(phrase in text_lower for phrase in [
-            "without object", "no object", "objectless",
-            "nothing to achieve", "nothing to gain"
-        ])
+        without_object = any(
+            phrase in text_lower
+            for phrase in [
+                "without object",
+                "no object",
+                "objectless",
+                "nothing to achieve",
+                "nothing to gain",
+            ]
+        )
 
         if shikantaza_present and has_non_gaining >= 2:
             level = "Pure"
@@ -280,10 +390,10 @@ class Dogen(Philosopher):
             "without_object": without_object,
             "level": level,
             "interpretation": interpretation,
-            "principle": "只管打坐 (Shikantaza): Just sitting - zazen without object, goal, or expectation. Practice for practice's sake."
+            "principle": "只管打坐 (Shikantaza): Just sitting - zazen without object, goal, or expectation. Practice for practice's sake.",
         }
 
-    def _assess_practice_enlightenment(self, text: str) -> Dict[str, Any]:
+    def _assess_practice_enlightenment(self, text: str) -> dict[str, Any]:
         """
         Assess Practice-Enlightenment Unity (修証一如) - Practice IS enlightenment.
 
@@ -293,27 +403,56 @@ class Dogen(Philosopher):
         text_lower = text.lower()
 
         practice_words = [
-            "practice", "practicing", "cultivation", "training",
-            "discipline", "effort", "doing", "action", "work"
+            "practice",
+            "practicing",
+            "cultivation",
+            "training",
+            "discipline",
+            "effort",
+            "doing",
+            "action",
+            "work",
         ]
 
         enlightenment_words = [
-            "enlightenment", "awakening", "realization", "satori",
-            "kensho", "bodhi", "nirvana", "liberation", "freedom"
+            "enlightenment",
+            "awakening",
+            "realization",
+            "satori",
+            "kensho",
+            "bodhi",
+            "nirvana",
+            "liberation",
+            "freedom",
         ]
 
         # Unity/identity indicators
         unity_words = [
-            "is", "are", "identical", "same", "unity", "one",
-            "non-dual", "inseparable", "together", "simultaneously"
+            "is",
+            "are",
+            "identical",
+            "same",
+            "unity",
+            "one",
+            "non-dual",
+            "inseparable",
+            "together",
+            "simultaneously",
         ]
 
         # Non-duality of means/ends
         non_dual_phrases = [
-            "practice is enlightenment", "enlightenment is practice",
-            "not separate", "already enlightened", "original enlightenment",
-            "no gap", "no distance", "immediate", "direct",
-            "practice and realization", "cultivation and verification"
+            "practice is enlightenment",
+            "enlightenment is practice",
+            "not separate",
+            "already enlightened",
+            "original enlightenment",
+            "no gap",
+            "no distance",
+            "immediate",
+            "direct",
+            "practice and realization",
+            "cultivation and verification",
         ]
 
         has_practice = sum(1 for word in practice_words if word in text_lower)
@@ -321,16 +460,23 @@ class Dogen(Philosopher):
         has_unity = sum(1 for word in unity_words if word in text_lower)
         has_non_dual = sum(1 for phrase in non_dual_phrases if phrase in text_lower)
 
-        practice_enlightenment_unity = (
-            has_non_dual >= 1 or
-            (has_practice >= 1 and has_enlightenment >= 1 and has_unity >= 2)
+        practice_enlightenment_unity = has_non_dual >= 1 or (
+            has_practice >= 1 and has_enlightenment >= 1 and has_unity >= 2
         )
 
         # Check for rejection of gradual path
-        rejects_gradual = any(phrase in text_lower for phrase in [
-            "not gradual", "no stages", "immediate", "sudden",
-            "already", "from the beginning", "originally"
-        ])
+        rejects_gradual = any(
+            phrase in text_lower
+            for phrase in [
+                "not gradual",
+                "no stages",
+                "immediate",
+                "sudden",
+                "already",
+                "from the beginning",
+                "originally",
+            ]
+        )
 
         if practice_enlightenment_unity and has_non_dual >= 1:
             level = "Complete"
@@ -340,7 +486,9 @@ class Dogen(Philosopher):
             interpretation = "Text expresses the non-duality of practice and realization."
         elif has_practice >= 1 and has_enlightenment >= 1:
             level = "Moderate"
-            interpretation = "Text mentions both practice and enlightenment but their relationship is unclear."
+            interpretation = (
+                "Text mentions both practice and enlightenment but their relationship is unclear."
+            )
         else:
             level = "Weak"
             interpretation = "Limited engagement with practice-enlightenment relationship."
@@ -352,10 +500,10 @@ class Dogen(Philosopher):
             "has_both": has_practice >= 1 and has_enlightenment >= 1,
             "level": level,
             "interpretation": interpretation,
-            "principle": "修証一如 (Shushō-ittō): Practice-enlightenment unity. Practice is not a means to enlightenment; practice IS enlightenment manifesting."
+            "principle": "修証一如 (Shushō-ittō): Practice-enlightenment unity. Practice is not a means to enlightenment; practice IS enlightenment manifesting.",
         }
 
-    def _assess_genjo_koan(self, text: str) -> Dict[str, Any]:
+    def _assess_genjo_koan(self, text: str) -> dict[str, Any]:
         """
         Assess Genjo Koan (現成公案) - Actualizing the fundamental point.
 
@@ -365,29 +513,64 @@ class Dogen(Philosopher):
         text_lower = text.lower()
 
         genjo_koan_words = [
-            "actual", "actualize", "manifest", "present", "now",
-            "reality", "truth", "fundamental", "as it is", "as is",
-            "suchness", "thusness", "just this", "here and now",
-            "everyday", "ordinary", "immediate", "direct"
+            "actual",
+            "actualize",
+            "manifest",
+            "present",
+            "now",
+            "reality",
+            "truth",
+            "fundamental",
+            "as it is",
+            "as is",
+            "suchness",
+            "thusness",
+            "just this",
+            "here and now",
+            "everyday",
+            "ordinary",
+            "immediate",
+            "direct",
         ]
 
         # Present moment indicators
         present_moment_phrases = [
-            "present moment", "here and now", "right now",
-            "this moment", "immediate", "directly",
-            "as it is", "just as", "just this"
+            "present moment",
+            "here and now",
+            "right now",
+            "this moment",
+            "immediate",
+            "directly",
+            "as it is",
+            "just as",
+            "just this",
         ]
 
         # Reality-as-is indicators
         reality_words = [
-            "reality", "actuality", "real", "true", "truth",
-            "things as they are", "suchness", "thusness", "is-ness"
+            "reality",
+            "actuality",
+            "real",
+            "true",
+            "truth",
+            "things as they are",
+            "suchness",
+            "thusness",
+            "is-ness",
         ]
 
         # Everyday/ordinary indicators
         everyday_words = [
-            "everyday", "ordinary", "common", "mundane", "daily",
-            "simple", "plain", "usual", "normal", "regular"
+            "everyday",
+            "ordinary",
+            "common",
+            "mundane",
+            "daily",
+            "simple",
+            "plain",
+            "usual",
+            "normal",
+            "regular",
         ]
 
         has_genjo_words = sum(1 for word in genjo_koan_words if word in text_lower)
@@ -396,22 +579,25 @@ class Dogen(Philosopher):
         has_everyday = sum(1 for word in everyday_words if word in text_lower)
 
         genjo_koan_present = (
-            has_present >= 1 or
-            (has_genjo_words >= 3 and has_reality >= 1) or
-            (has_everyday >= 1 and has_reality >= 1)
+            has_present >= 1
+            or (has_genjo_words >= 3 and has_reality >= 1)
+            or (has_everyday >= 1 and has_reality >= 1)
         )
 
         # Check for sacred-in-ordinary
-        sacred_ordinary = (has_everyday >= 1 and any(word in text_lower for word in [
-            "sacred", "holy", "divine", "buddha", "enlightenment", "awakening"
-        ]))
+        sacred_ordinary = has_everyday >= 1 and any(
+            word in text_lower
+            for word in ["sacred", "holy", "divine", "buddha", "enlightenment", "awakening"]
+        )
 
         if genjo_koan_present and sacred_ordinary:
             level = "Complete"
             interpretation = "Text embodies genjo koan - the actualization of truth in ordinary, everyday reality. The sacred manifests in the mundane."
         elif genjo_koan_present and has_present >= 1:
             level = "Strong"
-            interpretation = "Text expresses the immediate manifestation of truth in the present moment."
+            interpretation = (
+                "Text expresses the immediate manifestation of truth in the present moment."
+            )
         elif genjo_koan_present:
             level = "Moderate"
             interpretation = "Text engages with reality as it is, or everyday actuality."
@@ -426,10 +612,10 @@ class Dogen(Philosopher):
             "sacred_ordinary": sacred_ordinary,
             "level": level,
             "interpretation": interpretation,
-            "principle": "現成公案 (Genjō Kōan): Actualizing the fundamental point. Reality as koan, truth manifesting in the immediate present."
+            "principle": "現成公案 (Genjō Kōan): Actualizing the fundamental point. Reality as koan, truth manifesting in the immediate present.",
         }
 
-    def _assess_dropping_body_mind(self, text: str) -> Dict[str, Any]:
+    def _assess_dropping_body_mind(self, text: str) -> dict[str, Any]:
         """
         Assess Dropping Body and Mind (身心脱落) - Non-dual realization.
 
@@ -439,27 +625,60 @@ class Dogen(Philosopher):
         text_lower = text.lower()
 
         dropping_words = [
-            "drop", "dropping", "let go", "release", "abandon",
-            "fall away", "cast off", "shed", "relinquish", "forget"
+            "drop",
+            "dropping",
+            "let go",
+            "release",
+            "abandon",
+            "fall away",
+            "cast off",
+            "shed",
+            "relinquish",
+            "forget",
         ]
 
         body_mind_words = [
-            "body", "mind", "self", "ego", "i", "me", "myself",
-            "subject", "object", "consciousness", "awareness"
+            "body",
+            "mind",
+            "self",
+            "ego",
+            "i",
+            "me",
+            "myself",
+            "subject",
+            "object",
+            "consciousness",
+            "awareness",
         ]
 
         # Non-dual indicators
         non_dual_words = [
-            "non-dual", "nondual", "not two", "unity", "one",
-            "no separation", "no distinction", "no boundary",
-            "subject and object", "self and other"
+            "non-dual",
+            "nondual",
+            "not two",
+            "unity",
+            "one",
+            "no separation",
+            "no distinction",
+            "no boundary",
+            "subject and object",
+            "self and other",
         ]
 
         # Letting go phrases
         letting_go_phrases = [
-            "let go", "letting go", "drop", "dropping",
-            "release", "cast off", "fall away", "falling away",
-            "give up", "abandon", "forget self", "no self"
+            "let go",
+            "letting go",
+            "drop",
+            "dropping",
+            "release",
+            "cast off",
+            "fall away",
+            "falling away",
+            "give up",
+            "abandon",
+            "forget self",
+            "no self",
         ]
 
         has_dropping = sum(1 for word in dropping_words if word in text_lower)
@@ -468,22 +687,34 @@ class Dogen(Philosopher):
         has_letting_go = sum(1 for phrase in letting_go_phrases if phrase in text_lower)
 
         dropping_present = (
-            has_letting_go >= 1 or
-            (has_dropping >= 1 and has_body_mind >= 2) or
-            has_non_dual >= 2
+            has_letting_go >= 1 or (has_dropping >= 1 and has_body_mind >= 2) or has_non_dual >= 2
         )
 
         # Check for self-forgetting
-        self_forgetting = any(phrase in text_lower for phrase in [
-            "forget self", "forgetting self", "no self", "selfless",
-            "loss of self", "self drops", "self falls"
-        ])
+        self_forgetting = any(
+            phrase in text_lower
+            for phrase in [
+                "forget self",
+                "forgetting self",
+                "no self",
+                "selfless",
+                "loss of self",
+                "self drops",
+                "self falls",
+            ]
+        )
 
         # Check for subject-object collapse
-        subject_object_collapse = any(phrase in text_lower for phrase in [
-            "subject and object", "subject-object", "distinction falls",
-            "duality dissolves", "boundary dissolves"
-        ])
+        subject_object_collapse = any(
+            phrase in text_lower
+            for phrase in [
+                "subject and object",
+                "subject-object",
+                "distinction falls",
+                "duality dissolves",
+                "boundary dissolves",
+            ]
+        )
 
         if dropping_present and self_forgetting and has_non_dual >= 1:
             level = "Complete"
@@ -506,10 +737,10 @@ class Dogen(Philosopher):
             "non_dual": has_non_dual >= 1,
             "level": level,
             "interpretation": interpretation,
-            "principle": "身心脱落 (Shinjin-datsuraku): Dropping body and mind. Complete letting go where subject-object distinction falls away."
+            "principle": "身心脱落 (Shinjin-datsuraku): Dropping body and mind. Complete letting go where subject-object distinction falls away.",
         }
 
-    def _assess_mountains_waters(self, text: str) -> Dict[str, Any]:
+    def _assess_mountains_waters(self, text: str) -> dict[str, Any]:
         """
         Assess Mountains and Waters Sutra (山水経) - Nature as dharma teaching.
 
@@ -519,23 +750,60 @@ class Dogen(Philosopher):
         text_lower = text.lower()
 
         nature_words = [
-            "mountain", "mountains", "water", "waters", "river", "stream",
-            "tree", "trees", "forest", "grass", "sky", "cloud", "rain",
-            "earth", "stone", "rock", "valley", "peak", "ocean", "sea",
-            "wind", "air", "sun", "moon", "star", "nature", "natural"
+            "mountain",
+            "mountains",
+            "water",
+            "waters",
+            "river",
+            "stream",
+            "tree",
+            "trees",
+            "forest",
+            "grass",
+            "sky",
+            "cloud",
+            "rain",
+            "earth",
+            "stone",
+            "rock",
+            "valley",
+            "peak",
+            "ocean",
+            "sea",
+            "wind",
+            "air",
+            "sun",
+            "moon",
+            "star",
+            "nature",
+            "natural",
         ]
 
         # Animate nature indicators
         animate_phrases = [
-            "mountain walks", "mountains walk", "water speaks",
-            "waters speak", "nature teaches", "earth speaks",
-            "stones preach", "trees teach", "wind speaks"
+            "mountain walks",
+            "mountains walk",
+            "water speaks",
+            "waters speak",
+            "nature teaches",
+            "earth speaks",
+            "stones preach",
+            "trees teach",
+            "wind speaks",
         ]
 
         # Sacred nature indicators
         sacred_nature_words = [
-            "sacred", "holy", "divine", "buddha", "dharma",
-            "teaching", "sermon", "sutra", "wisdom", "truth"
+            "sacred",
+            "holy",
+            "divine",
+            "buddha",
+            "dharma",
+            "teaching",
+            "sermon",
+            "sutra",
+            "wisdom",
+            "truth",
         ]
 
         has_nature = sum(1 for word in nature_words if word in text_lower)
@@ -543,25 +811,31 @@ class Dogen(Philosopher):
         has_sacred = sum(1 for word in sacred_nature_words if word in text_lower)
 
         # Nature-teaching connection
-        nature_teaching = (
-            has_animate >= 1 or
-            (has_nature >= 3 and has_sacred >= 1)
-        )
+        nature_teaching = has_animate >= 1 or (has_nature >= 3 and has_sacred >= 1)
 
         mountains_waters_present = has_nature >= 2
 
         # Check for nature-as-teacher
-        nature_as_teacher = any(phrase in text_lower for phrase in [
-            "nature teaches", "learn from nature", "nature reveals",
-            "natural world", "nature shows", "nature speaks"
-        ])
+        nature_as_teacher = any(
+            phrase in text_lower
+            for phrase in [
+                "nature teaches",
+                "learn from nature",
+                "nature reveals",
+                "natural world",
+                "nature shows",
+                "nature speaks",
+            ]
+        )
 
         if mountains_waters_present and has_animate >= 1:
             level = "Complete"
             interpretation = "Text embodies 山水経 - mountains walk, waters speak. Nature itself is alive, teaching the dharma directly."
         elif mountains_waters_present and nature_teaching:
             level = "Strong"
-            interpretation = "Text recognizes nature as sacred teacher, revealing truth through its very being."
+            interpretation = (
+                "Text recognizes nature as sacred teacher, revealing truth through its very being."
+            )
         elif mountains_waters_present and has_sacred >= 1:
             level = "Moderate"
             interpretation = "Text acknowledges the sacred dimension of the natural world."
@@ -580,10 +854,10 @@ class Dogen(Philosopher):
             "nature_as_teacher": nature_as_teacher,
             "level": level,
             "interpretation": interpretation,
-            "principle": "山水経 (Sansui-kyō): Mountains and Waters Sutra. Nature itself preaches dharma; mountains walk, waters speak truth."
+            "principle": "山水経 (Sansui-kyō): Mountains and Waters Sutra. Nature itself preaches dharma; mountains walk, waters speak truth.",
         }
 
-    def _assess_impermanence(self, text: str) -> Dict[str, Any]:
+    def _assess_impermanence(self, text: str) -> dict[str, Any]:
         """
         Assess Impermanence (無常) - Everything flows, nothing is permanent.
 
@@ -593,25 +867,57 @@ class Dogen(Philosopher):
         text_lower = text.lower()
 
         impermanence_words = [
-            "impermanent", "impermanence", "change", "changing",
-            "flux", "flow", "flowing", "transient", "fleeting",
-            "temporary", "passing", "ephemeral", "unstable",
-            "transform", "transformation", "shift", "shifting",
-            "dissolve", "vanish", "disappear", "fade", "decay"
+            "impermanent",
+            "impermanence",
+            "change",
+            "changing",
+            "flux",
+            "flow",
+            "flowing",
+            "transient",
+            "fleeting",
+            "temporary",
+            "passing",
+            "ephemeral",
+            "unstable",
+            "transform",
+            "transformation",
+            "shift",
+            "shifting",
+            "dissolve",
+            "vanish",
+            "disappear",
+            "fade",
+            "decay",
         ]
 
         # Nothing-fixed indicators
         nothing_fixed_phrases = [
-            "nothing permanent", "nothing fixed", "nothing stable",
-            "nothing lasts", "everything changes", "all things change",
-            "constant change", "always changing", "never fixed",
-            "no permanence", "impermanent"
+            "nothing permanent",
+            "nothing fixed",
+            "nothing stable",
+            "nothing lasts",
+            "everything changes",
+            "all things change",
+            "constant change",
+            "always changing",
+            "never fixed",
+            "no permanence",
+            "impermanent",
         ]
 
         # Flow/process indicators
         flow_words = [
-            "flow", "flowing", "stream", "current", "river",
-            "process", "becoming", "arising", "ceasing", "passing"
+            "flow",
+            "flowing",
+            "stream",
+            "current",
+            "river",
+            "process",
+            "becoming",
+            "arising",
+            "ceasing",
+            "passing",
         ]
 
         has_impermanence = sum(1 for word in impermanence_words if word in text_lower)
@@ -619,21 +925,28 @@ class Dogen(Philosopher):
         has_flow = sum(1 for word in flow_words if word in text_lower)
 
         impermanence_present = (
-            has_nothing_fixed >= 1 or
-            has_impermanence >= 2 or
-            (has_impermanence >= 1 and has_flow >= 1)
+            has_nothing_fixed >= 1
+            or has_impermanence >= 2
+            or (has_impermanence >= 1 and has_flow >= 1)
         )
 
         # Check for impermanence-as-buddha-nature
-        impermanence_is_nature = any(phrase in text_lower for phrase in [
-            "impermanence is", "change is", "flux is",
-            "impermanent nature", "nature of change"
-        ])
+        impermanence_is_nature = any(
+            phrase in text_lower
+            for phrase in [
+                "impermanence is",
+                "change is",
+                "flux is",
+                "impermanent nature",
+                "nature of change",
+            ]
+        )
 
         # Check for radical acceptance
-        accepts_impermanence = any(word in text_lower for word in [
-            "accept", "embrace", "welcome", "acknowledge"
-        ]) and has_impermanence >= 1
+        accepts_impermanence = (
+            any(word in text_lower for word in ["accept", "embrace", "welcome", "acknowledge"])
+            and has_impermanence >= 1
+        )
 
         if impermanence_present and impermanence_is_nature:
             level = "Complete"
@@ -655,10 +968,10 @@ class Dogen(Philosopher):
             "accepts_impermanence": accepts_impermanence,
             "level": level,
             "interpretation": interpretation,
-            "principle": "無常 (Mujō): Impermanence. Everything flows, nothing is fixed. Impermanence itself is Buddha-nature."
+            "principle": "無常 (Mujō): Impermanence. Everything flows, nothing is fixed. Impermanence itself is Buddha-nature.",
         }
 
-    def _assess_non_thinking(self, text: str) -> Dict[str, Any]:
+    def _assess_non_thinking(self, text: str) -> dict[str, Any]:
         """
         Assess Non-Thinking (非思量) - Beyond thinking and not-thinking.
 
@@ -668,27 +981,51 @@ class Dogen(Philosopher):
         text_lower = text.lower()
 
         thinking_words = [
-            "think", "thinking", "thought", "thoughts", "mind",
-            "mental", "cognition", "reason", "reasoning", "intellect"
+            "think",
+            "thinking",
+            "thought",
+            "thoughts",
+            "mind",
+            "mental",
+            "cognition",
+            "reason",
+            "reasoning",
+            "intellect",
         ]
 
         non_thinking_words = [
-            "non-thinking", "not thinking", "without thought",
-            "thoughtless", "beyond thought", "transcend thought",
-            "no thought", "mindless", "empty mind"
+            "non-thinking",
+            "not thinking",
+            "without thought",
+            "thoughtless",
+            "beyond thought",
+            "transcend thought",
+            "no thought",
+            "mindless",
+            "empty mind",
         ]
 
         # Beyond duality indicators
         beyond_duality_phrases = [
-            "beyond thinking", "beyond thought",
-            "neither thinking nor", "not thinking and not",
-            "transcend", "before thought", "prior to thought"
+            "beyond thinking",
+            "beyond thought",
+            "neither thinking nor",
+            "not thinking and not",
+            "transcend",
+            "before thought",
+            "prior to thought",
         ]
 
         # Direct/immediate indicators
         direct_words = [
-            "direct", "immediate", "unmediated", "without",
-            "before", "prior", "pre-conceptual", "non-conceptual"
+            "direct",
+            "immediate",
+            "unmediated",
+            "without",
+            "before",
+            "prior",
+            "pre-conceptual",
+            "non-conceptual",
         ]
 
         has_thinking = sum(1 for word in thinking_words if word in text_lower)
@@ -697,16 +1034,22 @@ class Dogen(Philosopher):
         has_direct = sum(1 for word in direct_words if word in text_lower)
 
         non_thinking_present = (
-            has_non_thinking >= 1 or
-            has_beyond >= 1 or
-            (has_thinking >= 1 and has_direct >= 2)
+            has_non_thinking >= 1 or has_beyond >= 1 or (has_thinking >= 1 and has_direct >= 2)
         )
 
         # Check for zazen consciousness
-        zazen_consciousness = any(phrase in text_lower for phrase in [
-            "zazen", "meditation", "sitting", "awareness",
-            "consciousness", "presence", "attention"
-        ])
+        zazen_consciousness = any(
+            phrase in text_lower
+            for phrase in [
+                "zazen",
+                "meditation",
+                "sitting",
+                "awareness",
+                "consciousness",
+                "presence",
+                "attention",
+            ]
+        )
 
         # Check for neither-nor structure
         neither_nor = "neither" in text_lower and "nor" in text_lower
@@ -732,10 +1075,10 @@ class Dogen(Philosopher):
             "neither_nor": neither_nor,
             "level": level,
             "interpretation": interpretation,
-            "principle": "非思量 (Hi-shiryō): Non-thinking. Beyond both thinking (思量) and not-thinking (不思量). The consciousness of zazen."
+            "principle": "非思量 (Hi-shiryō): Non-thinking. Beyond both thinking (思量) and not-thinking (不思量). The consciousness of zazen.",
         }
 
-    def _assess_zazen_buddha(self, text: str) -> Dict[str, Any]:
+    def _assess_zazen_buddha(self, text: str) -> dict[str, Any]:
         """
         Assess Zazen as Buddha - Sitting IS Buddha, not becoming Buddha.
 
@@ -745,26 +1088,49 @@ class Dogen(Philosopher):
         text_lower = text.lower()
 
         zazen_words = [
-            "zazen", "sitting", "sit", "meditation", "meditate",
-            "practice", "shikantaza"
+            "zazen",
+            "sitting",
+            "sit",
+            "meditation",
+            "meditate",
+            "practice",
+            "shikantaza",
         ]
 
         buddha_words = [
-            "buddha", "awakened", "enlightened", "enlightenment",
-            "awakening", "bodhi", "realization"
+            "buddha",
+            "awakened",
+            "enlightened",
+            "enlightenment",
+            "awakening",
+            "bodhi",
+            "realization",
         ]
 
         # Identity/manifestation indicators
         identity_words = [
-            "is", "are", "being", "manifestation", "expression",
-            "embodiment", "itself", "same as", "identical"
+            "is",
+            "are",
+            "being",
+            "manifestation",
+            "expression",
+            "embodiment",
+            "itself",
+            "same as",
+            "identical",
         ]
 
         # Non-attainment indicators
         non_attainment_phrases = [
-            "not for", "not to become", "already",
-            "not seeking", "without gaining", "no attainment",
-            "nothing to attain", "not a means", "is itself"
+            "not for",
+            "not to become",
+            "already",
+            "not seeking",
+            "without gaining",
+            "no attainment",
+            "nothing to attain",
+            "not a means",
+            "is itself",
         ]
 
         has_zazen = sum(1 for word in zazen_words if word in text_lower)
@@ -773,18 +1139,24 @@ class Dogen(Philosopher):
         has_non_attainment = sum(1 for phrase in non_attainment_phrases if phrase in text_lower)
 
         # Check for zazen-buddha identity
-        zazen_buddha_identity = (
-            (has_zazen >= 1 and has_buddha >= 1 and has_identity >= 2) or
-            (has_zazen >= 1 and has_non_attainment >= 1)
+        zazen_buddha_identity = (has_zazen >= 1 and has_buddha >= 1 and has_identity >= 2) or (
+            has_zazen >= 1 and has_non_attainment >= 1
         )
 
         zazen_buddha_present = has_zazen >= 1 and has_buddha >= 1
 
         # Check for practice-as-realization
-        practice_is_realization = any(phrase in text_lower for phrase in [
-            "practice is", "sitting is", "meditation is",
-            "already enlightened", "already awakened", "already buddha"
-        ])
+        practice_is_realization = any(
+            phrase in text_lower
+            for phrase in [
+                "practice is",
+                "sitting is",
+                "meditation is",
+                "already enlightened",
+                "already awakened",
+                "already buddha",
+            ]
+        )
 
         if zazen_buddha_identity and practice_is_realization:
             level = "Complete"
@@ -810,21 +1182,21 @@ class Dogen(Philosopher):
             "non_attainment": has_non_attainment >= 1,
             "level": level,
             "interpretation": interpretation,
-            "principle": "Zazen as Buddha: Sitting meditation is not a means to become Buddha. Zazen itself is Buddha manifesting. Practice IS realization."
+            "principle": "Zazen as Buddha: Sitting meditation is not a means to become Buddha. Zazen itself is Buddha manifesting. Practice IS realization.",
         }
 
     def _generate_summary(
         self,
-        being_time: Dict[str, Any],
-        buddha_nature: Dict[str, Any],
-        shikantaza: Dict[str, Any],
-        practice_enlightenment: Dict[str, Any],
-        genjo_koan: Dict[str, Any],
-        dropping_body_mind: Dict[str, Any],
-        mountains_waters: Dict[str, Any],
-        impermanence: Dict[str, Any],
-        non_thinking: Dict[str, Any],
-        zazen_buddha: Dict[str, Any]
+        being_time: dict[str, Any],
+        buddha_nature: dict[str, Any],
+        shikantaza: dict[str, Any],
+        practice_enlightenment: dict[str, Any],
+        genjo_koan: dict[str, Any],
+        dropping_body_mind: dict[str, Any],
+        mountains_waters: dict[str, Any],
+        impermanence: dict[str, Any],
+        non_thinking: dict[str, Any],
+        zazen_buddha: dict[str, Any],
     ) -> str:
         """Generate a comprehensive Zen Buddhist summary of the analysis."""
         parts = []
@@ -839,7 +1211,9 @@ class Dogen(Philosopher):
             parts.append(f"Shikantaza (只管打坐) is evident: {shikantaza['interpretation']}")
 
         if practice_enlightenment["unity_present"]:
-            parts.append(f"Practice-enlightenment unity (修証一如): {practice_enlightenment['interpretation']}")
+            parts.append(
+                f"Practice-enlightenment unity (修証一如): {practice_enlightenment['interpretation']}"
+            )
 
         if genjo_koan["genjo_koan_present"]:
             parts.append(f"Genjo koan (現成公案) manifests: {genjo_koan['interpretation']}")
@@ -860,6 +1234,8 @@ class Dogen(Philosopher):
             parts.append(f"Zazen as Buddha: {zazen_buddha['interpretation']}")
 
         if not parts:
-            parts.append("Text shows limited engagement with core Zen Buddhist themes from Dogen's teaching.")
+            parts.append(
+                "Text shows limited engagement with core Zen Buddhist themes from Dogen's teaching."
+            )
 
         return " ".join(parts)

@@ -23,7 +23,7 @@ Key Concepts:
 - Aletheia: Truth as unconcealment
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -39,10 +39,10 @@ class Heidegger(Philosopher):
     def __init__(self) -> None:
         super().__init__(
             name="Martin Heidegger",
-            description="Phenomenologist focused on Being, Time, Dasein, care, and the ontological difference"
+            description="Phenomenologist focused on Being, Time, Dasein, care, and the ontological difference",
         )
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Analyze the prompt from Heidegger's phenomenological perspective.
 
@@ -81,11 +81,11 @@ class Heidegger(Philosopher):
             "metadata": {
                 "philosopher": self.name,
                 "approach": "Being and Time analysis / Later Heidegger",
-                "focus": "Dasein, temporality, care, authenticity, and the question of Being"
-            }
+                "focus": "Dasein, temporality, care, authenticity, and the question of Being",
+            },
         }
 
-    def _analyze_being(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_being(self, prompt: str) -> dict[str, Any]:
         """
         Perform comprehensive Heideggerian existential analysis.
 
@@ -116,8 +116,15 @@ class Heidegger(Philosopher):
 
         # Construct comprehensive reasoning
         reasoning = self._construct_reasoning(
-            temporality, authenticity, thrownness, care,
-            attunement, angst, being_toward_death, das_man, concepts
+            temporality,
+            authenticity,
+            thrownness,
+            care,
+            attunement,
+            angst,
+            being_toward_death,
+            das_man,
+            concepts,
         )
 
         return {
@@ -136,10 +143,10 @@ class Heidegger(Philosopher):
             "gelassenheit": gelassenheit,
             "lichtung": lichtung,
             "technology": technology,
-            "aletheia": aletheia
+            "aletheia": aletheia,
         }
 
-    def _analyze_temporality(self, text: str) -> Dict[str, Any]:
+    def _analyze_temporality(self, text: str) -> dict[str, Any]:
         """
         Analyze temporal dimensions (ecstatic temporality).
 
@@ -151,18 +158,51 @@ class Heidegger(Philosopher):
         text_lower = text.lower()
 
         # Past (Having-been) indicators
-        past_words = ["was", "were", "had", "before", "past", "memory", "history",
-                      "tradition", "heritage", "origin", "already", "thrown"]
+        past_words = [
+            "was",
+            "were",
+            "had",
+            "before",
+            "past",
+            "memory",
+            "history",
+            "tradition",
+            "heritage",
+            "origin",
+            "already",
+            "thrown",
+        ]
         past_count = sum(1 for word in past_words if word in text_lower)
 
         # Future (Coming-toward) indicators
-        future_words = ["will", "shall", "future", "tomorrow", "anticipate", "project",
-                        "possibility", "potential", "become", "ahead", "goal"]
+        future_words = [
+            "will",
+            "shall",
+            "future",
+            "tomorrow",
+            "anticipate",
+            "project",
+            "possibility",
+            "potential",
+            "become",
+            "ahead",
+            "goal",
+        ]
         future_count = sum(1 for word in future_words if word in text_lower)
 
         # Present (Making-present) indicators
-        present_words = ["is", "are", "now", "today", "currently", "present",
-                         "immediate", "here", "moment", "instant"]
+        present_words = [
+            "is",
+            "are",
+            "now",
+            "today",
+            "currently",
+            "present",
+            "immediate",
+            "here",
+            "moment",
+            "instant",
+        ]
         present_count = sum(1 for word in present_words if word in text_lower)
 
         # Determine temporal mode
@@ -180,7 +220,9 @@ class Heidegger(Philosopher):
             description = "Unified temporality - past, present, and future interpenetrate"
 
         # Check for authentic vs inauthentic temporality
-        if future_count >= 1 and any(word in text_lower for word in ["death", "mortality", "finite"]):
+        if future_count >= 1 and any(
+            word in text_lower for word in ["death", "mortality", "finite"]
+        ):
             temporal_authenticity = "Authentic"
             note = "Being-toward-death opens authentic temporality"
         elif present_count > future_count + past_count:
@@ -201,12 +243,12 @@ class Heidegger(Philosopher):
             "ecstases": {
                 "having_been": past_count,
                 "making_present": present_count,
-                "coming_toward": future_count
+                "coming_toward": future_count,
             },
-            "principle": "Ecstatic temporality: past, present, future as unified structure of care"
+            "principle": "Ecstatic temporality: past, present, future as unified structure of care",
         }
 
-    def _assess_authenticity(self, text: str) -> Dict[str, Any]:
+    def _assess_authenticity(self, text: str) -> dict[str, Any]:
         """
         Assess authenticity (Eigentlichkeit) vs inauthenticity (Uneigentlichkeit).
 
@@ -216,15 +258,41 @@ class Heidegger(Philosopher):
         text_lower = text.lower()
 
         # Authenticity indicators
-        auth_words = ["choice", "responsibility", "freedom", "own", "myself",
-                      "decide", "resolve", "authentic", "genuine", "individual",
-                      "unique", "mortality", "finite", "death"]
+        auth_words = [
+            "choice",
+            "responsibility",
+            "freedom",
+            "own",
+            "myself",
+            "decide",
+            "resolve",
+            "authentic",
+            "genuine",
+            "individual",
+            "unique",
+            "mortality",
+            "finite",
+            "death",
+        ]
         auth_count = sum(1 for word in auth_words if word in text_lower)
 
         # Inauthenticity indicators
-        inauth_words = ["they", "everyone", "always", "supposed to", "one does",
-                        "people say", "normal", "average", "conformity", "distraction",
-                        "busy", "idle talk", "curiosity", "ambiguity"]
+        inauth_words = [
+            "they",
+            "everyone",
+            "always",
+            "supposed to",
+            "one does",
+            "people say",
+            "normal",
+            "average",
+            "conformity",
+            "distraction",
+            "busy",
+            "idle talk",
+            "curiosity",
+            "ambiguity",
+        ]
         inauth_count = sum(1 for word in inauth_words if word in text_lower)
 
         # Resoluteness indicators (Entschlossenheit)
@@ -256,10 +324,10 @@ class Heidegger(Philosopher):
             "authenticity_score": auth_count,
             "inauthenticity_score": inauth_count,
             "resoluteness": has_resolve >= 1,
-            "principle": "Authenticity is owning one's ownmost being-toward-death"
+            "principle": "Authenticity is owning one's ownmost being-toward-death",
         }
 
-    def _assess_thrownness(self, text: str) -> Dict[str, Any]:
+    def _assess_thrownness(self, text: str) -> dict[str, Any]:
         """
         Assess Geworfenheit (thrownness).
 
@@ -269,14 +337,38 @@ class Heidegger(Philosopher):
         text_lower = text.lower()
 
         # Thrownness indicators
-        thrown_words = ["thrown", "given", "born into", "found myself", "already",
-                        "heritage", "tradition", "culture", "circumstance", "fate",
-                        "destined", "situation", "condition", "background", "history"]
+        thrown_words = [
+            "thrown",
+            "given",
+            "born into",
+            "found myself",
+            "already",
+            "heritage",
+            "tradition",
+            "culture",
+            "circumstance",
+            "fate",
+            "destined",
+            "situation",
+            "condition",
+            "background",
+            "history",
+        ]
         thrown_count = sum(1 for word in thrown_words if word in text_lower)
 
         # Facticity indicators
-        facticity_words = ["fact", "reality", "is", "cannot change", "given",
-                           "body", "gender", "nationality", "family", "era"]
+        facticity_words = [
+            "fact",
+            "reality",
+            "is",
+            "cannot change",
+            "given",
+            "body",
+            "gender",
+            "nationality",
+            "family",
+            "era",
+        ]
         facticity_count = sum(1 for word in facticity_words if word in text_lower)
 
         # Projection indicators (thrown projection)
@@ -302,10 +394,10 @@ class Heidegger(Philosopher):
             "thrownness_score": thrown_count,
             "facticity_score": facticity_count,
             "projection_score": projection_count,
-            "principle": "Geworfenheit: We are thrown into existence, not self-created"
+            "principle": "Geworfenheit: We are thrown into existence, not self-created",
         }
 
-    def _analyze_care(self, text: str) -> Dict[str, Any]:
+    def _analyze_care(self, text: str) -> dict[str, Any]:
         """
         Analyze Sorge (care) - the fundamental structure of Dasein.
 
@@ -314,8 +406,19 @@ class Heidegger(Philosopher):
         text_lower = text.lower()
 
         # Care/concern indicators
-        care_words = ["care", "concern", "worry", "matter", "important", "significant",
-                      "meaning", "purpose", "stake", "involved", "engaged"]
+        care_words = [
+            "care",
+            "concern",
+            "worry",
+            "matter",
+            "important",
+            "significant",
+            "meaning",
+            "purpose",
+            "stake",
+            "involved",
+            "engaged",
+        ]
         care_count = sum(1 for word in care_words if word in text_lower)
 
         # Ahead-of-itself (future projection)
@@ -351,12 +454,12 @@ class Heidegger(Philosopher):
             "moments": {
                 "ahead_of_itself": ahead_count,
                 "already_in": already_count,
-                "being_alongside": alongside_count
+                "being_alongside": alongside_count,
             },
-            "principle": "Sorge (Care): The fundamental structure of Dasein's being"
+            "principle": "Sorge (Care): The fundamental structure of Dasein's being",
         }
 
-    def _assess_attunement(self, text: str) -> Dict[str, Any]:
+    def _assess_attunement(self, text: str) -> dict[str, Any]:
         """
         Assess Befindlichkeit (attunement/mood/state-of-mind).
 
@@ -374,7 +477,7 @@ class Heidegger(Philosopher):
             "wonder": ["wonder", "awe", "amazed", "astonished", "marveled"],
             "melancholy": ["sad", "melancholy", "grief", "sorrow", "depressed"],
             "hope": ["hope", "hopeful", "optimistic", "anticipate"],
-            "dread": ["dread", "foreboding", "ominous", "doom"]
+            "dread": ["dread", "foreboding", "ominous", "doom"],
         }
 
         detected_moods = []
@@ -383,7 +486,9 @@ class Heidegger(Philosopher):
                 detected_moods.append(mood)
 
         # Check for fundamental moods (Grundstimmung)
-        is_fundamental = "anxiety" in detected_moods or "boredom" in detected_moods or "wonder" in detected_moods
+        is_fundamental = (
+            "anxiety" in detected_moods or "boredom" in detected_moods or "wonder" in detected_moods
+        )
 
         if is_fundamental and "anxiety" in detected_moods:
             primary_mood = "Anxiety (Angst)"
@@ -412,10 +517,10 @@ class Heidegger(Philosopher):
             "disclosure": disclosure,
             "detected_moods": detected_moods,
             "is_fundamental": is_fundamental,
-            "principle": "Befindlichkeit: We always find ourselves in a mood that discloses the world"
+            "principle": "Befindlichkeit: We always find ourselves in a mood that discloses the world",
         }
 
-    def _assess_fallenness(self, text: str) -> Dict[str, Any]:
+    def _assess_fallenness(self, text: str) -> dict[str, Any]:
         """
         Assess Verfallen (fallenness) - absorption in the everyday world.
 
@@ -427,18 +532,40 @@ class Heidegger(Philosopher):
         text_lower = text.lower()
 
         # Idle talk indicators
-        idle_talk_words = ["they say", "people think", "rumor", "gossip", "chat",
-                           "everyone knows", "it is said", "supposedly"]
+        idle_talk_words = [
+            "they say",
+            "people think",
+            "rumor",
+            "gossip",
+            "chat",
+            "everyone knows",
+            "it is said",
+            "supposedly",
+        ]
         idle_talk_count = sum(1 for phrase in idle_talk_words if phrase in text_lower)
 
         # Curiosity (negative sense) indicators
-        curiosity_words = ["curious", "novelty", "news", "distraction", "entertainment",
-                           "trending", "latest", "sensation"]
+        curiosity_words = [
+            "curious",
+            "novelty",
+            "news",
+            "distraction",
+            "entertainment",
+            "trending",
+            "latest",
+            "sensation",
+        ]
         curiosity_count = sum(1 for word in curiosity_words if word in text_lower)
 
         # Ambiguity indicators
-        ambiguity_words = ["obvious", "everyone understands", "clearly", "of course",
-                           "naturally", "goes without saying"]
+        ambiguity_words = [
+            "obvious",
+            "everyone understands",
+            "clearly",
+            "of course",
+            "naturally",
+            "goes without saying",
+        ]
         ambiguity_count = sum(1 for phrase in ambiguity_words if phrase in text_lower)
 
         # Busy-ness indicators
@@ -467,13 +594,13 @@ class Heidegger(Philosopher):
                 "idle_talk": idle_talk_count,
                 "curiosity": curiosity_count,
                 "ambiguity": ambiguity_count,
-                "busy_ness": busy_count
+                "busy_ness": busy_count,
             },
             "total_score": total_fallen,
-            "principle": "Verfallen: Tendency to fall into the world and lose oneself"
+            "principle": "Verfallen: Tendency to fall into the world and lose oneself",
         }
 
-    def _analyze_angst(self, text: str) -> Dict[str, Any]:
+    def _analyze_angst(self, text: str) -> dict[str, Any]:
         """
         Analyze Angst (anxiety) - the fundamental mood.
 
@@ -486,8 +613,18 @@ class Heidegger(Philosopher):
         text_lower = text.lower()
 
         # Angst indicators
-        angst_words = ["anxiety", "anxious", "uncanny", "unheimlich", "homeless",
-                       "nowhere", "nothing", "dread", "groundless", "abyss"]
+        angst_words = [
+            "anxiety",
+            "anxious",
+            "uncanny",
+            "unheimlich",
+            "homeless",
+            "nowhere",
+            "nothing",
+            "dread",
+            "groundless",
+            "abyss",
+        ]
         angst_count = sum(1 for word in angst_words if word in text_lower)
 
         # Fear indicators (distinct from angst)
@@ -527,10 +664,10 @@ class Heidegger(Philosopher):
             "fear_score": fear_count,
             "nothing_revealed": nothing_count >= 1,
             "uncanny": uncanny_count >= 1,
-            "principle": "Angst reveals the nothing and individualizes Dasein"
+            "principle": "Angst reveals the nothing and individualizes Dasein",
         }
 
-    def _assess_being_toward_death(self, text: str) -> Dict[str, Any]:
+    def _assess_being_toward_death(self, text: str) -> dict[str, Any]:
         """
         Assess Sein-zum-Tode (being-toward-death).
 
@@ -546,18 +683,41 @@ class Heidegger(Philosopher):
         text_lower = text.lower()
 
         # Death/mortality indicators
-        death_words = ["death", "die", "dying", "mortal", "mortality", "finite",
-                       "end", "perish", "demise", "final"]
+        death_words = [
+            "death",
+            "die",
+            "dying",
+            "mortal",
+            "mortality",
+            "finite",
+            "end",
+            "perish",
+            "demise",
+            "final",
+        ]
         death_count = sum(1 for word in death_words if word in text_lower)
 
         # Authentic anticipation indicators
-        anticipation_words = ["anticipate", "face death", "accept mortality",
-                              "finite", "my death", "ownmost"]
+        anticipation_words = [
+            "anticipate",
+            "face death",
+            "accept mortality",
+            "finite",
+            "my death",
+            "ownmost",
+        ]
         anticipation_count = sum(1 for phrase in anticipation_words if phrase in text_lower)
 
         # Inauthentic fleeing indicators
-        fleeing_words = ["one dies", "everybody dies", "someday", "not yet",
-                         "don't think about", "avoid", "distract"]
+        fleeing_words = [
+            "one dies",
+            "everybody dies",
+            "someday",
+            "not yet",
+            "don't think about",
+            "avoid",
+            "distract",
+        ]
         fleeing_count = sum(1 for phrase in fleeing_words if phrase in text_lower)
 
         if death_count >= 1 and anticipation_count >= 1:
@@ -584,10 +744,10 @@ class Heidegger(Philosopher):
             "death_count": death_count,
             "anticipation": anticipation_count >= 1,
             "fleeing": fleeing_count >= 1,
-            "principle": "Sein-zum-Tode: Death is ownmost, non-relational, not to be outstripped"
+            "principle": "Sein-zum-Tode: Death is ownmost, non-relational, not to be outstripped",
         }
 
-    def _assess_das_man(self, text: str) -> Dict[str, Any]:
+    def _assess_das_man(self, text: str) -> dict[str, Any]:
         """
         Assess das Man (the 'they' / the 'one').
 
@@ -597,19 +757,48 @@ class Heidegger(Philosopher):
         text_lower = text.lower()
 
         # Das Man indicators
-        das_man_words = ["they", "everyone", "people", "one does", "normal",
-                         "average", "typical", "common", "public", "society",
-                         "expected", "supposed to", "should", "must"]
+        das_man_words = [
+            "they",
+            "everyone",
+            "people",
+            "one does",
+            "normal",
+            "average",
+            "typical",
+            "common",
+            "public",
+            "society",
+            "expected",
+            "supposed to",
+            "should",
+            "must",
+        ]
         das_man_count = sum(1 for word in das_man_words if word in text_lower)
 
         # Individual/authentic indicators (counter das Man)
-        individual_words = ["i", "myself", "my own", "individual", "unique",
-                            "personal", "authentic", "genuine"]
+        individual_words = [
+            "i",
+            "myself",
+            "my own",
+            "individual",
+            "unique",
+            "personal",
+            "authentic",
+            "genuine",
+        ]
         individual_count = sum(1 for word in individual_words if word in text_lower)
 
         # Conformity indicators
-        conformity_words = ["conform", "fit in", "belong", "follow", "obey",
-                            "rules", "norms", "expectations"]
+        conformity_words = [
+            "conform",
+            "fit in",
+            "belong",
+            "follow",
+            "obey",
+            "rules",
+            "norms",
+            "expectations",
+        ]
         conformity_count = sum(1 for word in conformity_words if word in text_lower)
 
         if das_man_count > individual_count + 2:
@@ -636,10 +825,10 @@ class Heidegger(Philosopher):
             "das_man_score": das_man_count,
             "individual_score": individual_count,
             "conformity_score": conformity_count,
-            "principle": "Das Man: The anonymous 'they' that levels down and disperses Dasein"
+            "principle": "Das Man: The anonymous 'they' that levels down and disperses Dasein",
         }
 
-    def _assess_gelassenheit(self, text: str) -> Dict[str, Any]:
+    def _assess_gelassenheit(self, text: str) -> dict[str, Any]:
         """
         Assess Gelassenheit (releasement/letting-be).
 
@@ -649,18 +838,45 @@ class Heidegger(Philosopher):
         text_lower = text.lower()
 
         # Gelassenheit indicators
-        release_words = ["let", "allow", "release", "accept", "surrender",
-                         "openness", "receptive", "patient", "wait", "listen"]
+        release_words = [
+            "let",
+            "allow",
+            "release",
+            "accept",
+            "surrender",
+            "openness",
+            "receptive",
+            "patient",
+            "wait",
+            "listen",
+        ]
         release_count = sum(1 for word in release_words if word in text_lower)
 
         # Control/will indicators (opposite)
-        control_words = ["control", "master", "dominate", "force", "impose",
-                         "manipulate", "exploit", "demand", "insist", "will"]
+        control_words = [
+            "control",
+            "master",
+            "dominate",
+            "force",
+            "impose",
+            "manipulate",
+            "exploit",
+            "demand",
+            "insist",
+            "will",
+        ]
         control_count = sum(1 for word in control_words if word in text_lower)
 
         # Meditative thinking indicators
-        meditative_words = ["meditate", "contemplate", "ponder", "dwell",
-                            "thoughtful", "reflective", "quiet"]
+        meditative_words = [
+            "meditate",
+            "contemplate",
+            "ponder",
+            "dwell",
+            "thoughtful",
+            "reflective",
+            "quiet",
+        ]
         meditative_count = sum(1 for word in meditative_words if word in text_lower)
 
         if release_count > control_count and meditative_count >= 1:
@@ -687,10 +903,10 @@ class Heidegger(Philosopher):
             "release_score": release_count,
             "control_score": control_count,
             "meditative": meditative_count >= 1,
-            "principle": "Gelassenheit: Letting beings be - releasement toward things"
+            "principle": "Gelassenheit: Letting beings be - releasement toward things",
         }
 
-    def _assess_lichtung(self, text: str) -> Dict[str, Any]:
+    def _assess_lichtung(self, text: str) -> dict[str, Any]:
         """
         Assess Lichtung (clearing/lighting).
 
@@ -700,13 +916,31 @@ class Heidegger(Philosopher):
         text_lower = text.lower()
 
         # Clearing/openness indicators
-        clearing_words = ["clearing", "open", "light", "reveal", "disclose",
-                          "manifest", "appear", "presence", "luminous"]
+        clearing_words = [
+            "clearing",
+            "open",
+            "light",
+            "reveal",
+            "disclose",
+            "manifest",
+            "appear",
+            "presence",
+            "luminous",
+        ]
         clearing_count = sum(1 for word in clearing_words if word in text_lower)
 
         # Concealment indicators
-        conceal_words = ["hidden", "conceal", "withdraw", "mystery", "obscure",
-                         "shadow", "darkness", "secret", "cover"]
+        conceal_words = [
+            "hidden",
+            "conceal",
+            "withdraw",
+            "mystery",
+            "obscure",
+            "shadow",
+            "darkness",
+            "secret",
+            "cover",
+        ]
         conceal_count = sum(1 for word in conceal_words if word in text_lower)
 
         # Interplay of revealing/concealing
@@ -732,10 +966,10 @@ class Heidegger(Philosopher):
             "clearing_score": clearing_count,
             "concealment_score": conceal_count,
             "interplay": clearing_count >= 1 and conceal_count >= 1,
-            "principle": "Lichtung: The clearing where Being reveals and conceals itself"
+            "principle": "Lichtung: The clearing where Being reveals and conceals itself",
         }
 
-    def _analyze_technology(self, text: str) -> Dict[str, Any]:
+    def _analyze_technology(self, text: str) -> dict[str, Any]:
         """
         Analyze the question of technology (Technik).
 
@@ -745,18 +979,46 @@ class Heidegger(Philosopher):
         text_lower = text.lower()
 
         # Technology indicators
-        tech_words = ["technology", "technical", "machine", "computer", "digital",
-                      "system", "device", "apparatus", "instrument", "efficient"]
+        tech_words = [
+            "technology",
+            "technical",
+            "machine",
+            "computer",
+            "digital",
+            "system",
+            "device",
+            "apparatus",
+            "instrument",
+            "efficient",
+        ]
         tech_count = sum(1 for word in tech_words if word in text_lower)
 
         # Enframing (Gestell) indicators
-        enframing_words = ["resource", "exploit", "optimize", "efficient",
-                           "useful", "productive", "demand", "order", "stock"]
+        enframing_words = [
+            "resource",
+            "exploit",
+            "optimize",
+            "efficient",
+            "useful",
+            "productive",
+            "demand",
+            "order",
+            "stock",
+        ]
         enframing_count = sum(1 for word in enframing_words if word in text_lower)
 
         # Alternative revealing (poiesis) indicators
-        poiesis_words = ["craft", "art", "create", "bring forth", "grow",
-                         "nurture", "cultivate", "poetic", "dwell"]
+        poiesis_words = [
+            "craft",
+            "art",
+            "create",
+            "bring forth",
+            "grow",
+            "nurture",
+            "cultivate",
+            "poetic",
+            "dwell",
+        ]
         poiesis_count = sum(1 for word in poiesis_words if word in text_lower)
 
         # Saving power indicators
@@ -792,10 +1054,10 @@ class Heidegger(Philosopher):
             "enframing_score": enframing_count,
             "poiesis_score": poiesis_count,
             "saving_power": saving_count >= 1,
-            "principle": "Where danger is, the saving power also grows"
+            "principle": "Where danger is, the saving power also grows",
         }
 
-    def _assess_aletheia(self, text: str) -> Dict[str, Any]:
+    def _assess_aletheia(self, text: str) -> dict[str, Any]:
         """
         Assess Aletheia (truth as unconcealment).
 
@@ -805,18 +1067,41 @@ class Heidegger(Philosopher):
         text_lower = text.lower()
 
         # Truth/unconcealment indicators
-        truth_words = ["truth", "true", "reveal", "disclose", "uncover",
-                       "discover", "bring to light", "manifest", "appear"]
+        truth_words = [
+            "truth",
+            "true",
+            "reveal",
+            "disclose",
+            "uncover",
+            "discover",
+            "bring to light",
+            "manifest",
+            "appear",
+        ]
         truth_count = sum(1 for word in truth_words if word in text_lower)
 
         # Concealment indicators
-        conceal_words = ["hidden", "conceal", "cover", "obscure", "secret",
-                         "veil", "mystery", "latent"]
+        conceal_words = [
+            "hidden",
+            "conceal",
+            "cover",
+            "obscure",
+            "secret",
+            "veil",
+            "mystery",
+            "latent",
+        ]
         conceal_count = sum(1 for word in conceal_words if word in text_lower)
 
         # Correspondence theory indicators
-        correspond_words = ["correspond", "match", "accurate", "correct",
-                            "representation", "reflect reality"]
+        correspond_words = [
+            "correspond",
+            "match",
+            "accurate",
+            "correct",
+            "representation",
+            "reflect reality",
+        ]
         correspond_count = sum(1 for phrase in correspond_words if phrase in text_lower)
 
         if truth_count >= 1 and conceal_count >= 1:
@@ -847,10 +1132,10 @@ class Heidegger(Philosopher):
             "truth_score": truth_count,
             "concealment_score": conceal_count,
             "correspondence": correspond_count >= 1,
-            "principle": "Aletheia: Truth as unconcealment, emergence from hiddenness"
+            "principle": "Aletheia: Truth as unconcealment, emergence from hiddenness",
         }
 
-    def _identify_concepts(self, text: str) -> List[str]:
+    def _identify_concepts(self, text: str) -> list[str]:
         """Identify key Heideggerian concepts in the text."""
         text_lower = text.lower()
         concepts = []
@@ -868,7 +1153,7 @@ class Heidegger(Philosopher):
             "World": ["world", "environment", "things", "equipment"],
             "Clearing (Lichtung)": ["clear", "open", "light", "reveal"],
             "Technology (Gestell)": ["technology", "machine", "efficient", "resource"],
-            "Gelassenheit": ["let", "release", "accept", "openness"]
+            "Gelassenheit": ["let", "release", "accept", "openness"],
         }
 
         for concept, keywords in concept_map.items():
@@ -880,7 +1165,7 @@ class Heidegger(Philosopher):
 
         return concepts
 
-    def _generate_questions(self, text: str, concepts: List[str]) -> List[str]:
+    def _generate_questions(self, text: str, concepts: list[str]) -> list[str]:
         """Generate Heideggerian questions based on the analysis."""
         questions = []
 
@@ -905,15 +1190,15 @@ class Heidegger(Philosopher):
 
     def _construct_reasoning(
         self,
-        temporality: Dict[str, Any],
-        authenticity: Dict[str, Any],
-        thrownness: Dict[str, Any],
-        care: Dict[str, Any],
-        attunement: Dict[str, Any],
-        angst: Dict[str, Any],
-        being_toward_death: Dict[str, Any],
-        das_man: Dict[str, Any],
-        concepts: List[str]
+        temporality: dict[str, Any],
+        authenticity: dict[str, Any],
+        thrownness: dict[str, Any],
+        care: dict[str, Any],
+        attunement: dict[str, Any],
+        angst: dict[str, Any],
+        being_toward_death: dict[str, Any],
+        das_man: dict[str, Any],
+        concepts: list[str],
     ) -> str:
         """Construct comprehensive Heideggerian reasoning."""
         reasoning = (
@@ -929,11 +1214,11 @@ class Heidegger(Philosopher):
         reasoning += f"Care (Sorge): {care['structure']}. "
 
         # Add attunement
-        if attunement['detected_moods']:
+        if attunement["detected_moods"]:
             reasoning += f"Attunement: {attunement['primary_mood']} - {attunement['description']}. "
 
         # Add angst if present
-        if angst['presence'] != "No Angst Evident":
+        if angst["presence"] != "No Angst Evident":
             reasoning += f"Angst: {angst['description']}. "
 
         # Add being-toward-death
@@ -955,7 +1240,7 @@ class Heidegger(Philosopher):
 
         return reasoning
 
-    def _calculate_tension(self, analysis: Dict[str, Any]) -> Dict[str, Any]:
+    def _calculate_tension(self, analysis: dict[str, Any]) -> dict[str, Any]:
         """
         Calculate philosophical tension based on Heideggerian analysis.
 
@@ -1035,5 +1320,5 @@ class Heidegger(Philosopher):
             "level": level,
             "score": tension_score,
             "description": description,
-            "elements": tension_elements if tension_elements else ["No significant tensions"]
+            "elements": tension_elements if tension_elements else ["No significant tensions"],
         }

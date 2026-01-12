@@ -24,7 +24,7 @@ Key Concepts:
 - Condemned to freedom: The weight of absolute freedom
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -40,10 +40,10 @@ class Sartre(Philosopher):
     def __init__(self) -> None:
         super().__init__(
             name="Jean-Paul Sartre",
-            description="Existentialist focused on freedom, responsibility, and 'existence precces essence'"
+            description="Existentialist focused on freedom, responsibility, and 'existence precces essence'",
         )
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Analyze the prompt from Sartre's existentialist perspective.
 
@@ -82,11 +82,11 @@ class Sartre(Philosopher):
             "metadata": {
                 "philosopher": self.name,
                 "approach": "Existentialist analysis",
-                "focus": "Freedom, choice, responsibility, and bad faith"
-            }
+                "focus": "Freedom, choice, responsibility, and bad faith",
+            },
         }
 
-    def _analyze_existence(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_existence(self, prompt: str) -> dict[str, Any]:
         """
         Perform Sartrean existentialist analysis.
 
@@ -143,8 +143,17 @@ class Sartre(Philosopher):
 
         # Construct reasoning
         reasoning = self._construct_reasoning(
-            freedom, responsibility, bad_faith, mode_of_being, engagement, anguish,
-            the_look, nausea, facticity_transcendence, being_for_others, shame_pride
+            freedom,
+            responsibility,
+            bad_faith,
+            mode_of_being,
+            engagement,
+            anguish,
+            the_look,
+            nausea,
+            facticity_transcendence,
+            being_for_others,
+            shame_pride,
         )
 
         return {
@@ -163,10 +172,10 @@ class Sartre(Philosopher):
             "body": body,
             "situation": situation,
             "project": project,
-            "condemned_to_freedom": condemned_to_freedom
+            "condemned_to_freedom": condemned_to_freedom,
         }
 
-    def _assess_freedom(self, text: str) -> Dict[str, Any]:
+    def _assess_freedom(self, text: str) -> dict[str, Any]:
         """
         Assess the presence and nature of freedom in the text.
 
@@ -193,7 +202,9 @@ class Sartre(Philosopher):
             level = "Medium"
 
         # Check for radical freedom
-        if "free" in text_lower and any(word in text_lower for word in ["absolutely", "totally", "completely"]):
+        if "free" in text_lower and any(
+            word in text_lower for word in ["absolutely", "totally", "completely"]
+        ):
             radical = True
             status += " (Radical freedom acknowledged)"
         else:
@@ -206,10 +217,10 @@ class Sartre(Philosopher):
             "freedom_score": freedom_count,
             "constraint_score": constraint_count,
             "sartrean_note": "We are condemned to be free - freedom is inescapable",
-            "principle": "Freedom is not something we have; it is what we are"
+            "principle": "Freedom is not something we have; it is what we are",
         }
 
-    def _check_responsibility(self, text: str) -> Dict[str, Any]:
+    def _check_responsibility(self, text: str) -> dict[str, Any]:
         """
         Check for awareness of responsibility.
 
@@ -243,10 +254,10 @@ class Sartre(Philosopher):
             "status": status,
             "authenticity": authenticity,
             "sartrean_note": "To choose is to take responsibility for the entire world",
-            "principle": "In choosing myself, I choose for all humanity"
+            "principle": "In choosing myself, I choose for all humanity",
         }
 
-    def _detect_bad_faith(self, text: str) -> List[str]:
+    def _detect_bad_faith(self, text: str) -> list[str]:
         """
         Detect indicators of bad faith (mauvaise foi).
 
@@ -257,20 +268,31 @@ class Sartre(Philosopher):
         indicators = []
 
         # Type 1: Claiming determinism
-        if any(phrase in text_lower for phrase in ["i am just", "that's just how i am", "i was born", "it's my nature"]):
+        if any(
+            phrase in text_lower
+            for phrase in ["i am just", "that's just how i am", "i was born", "it's my nature"]
+        ):
             indicators.append("Essence before existence - claiming fixed nature (bad faith)")
 
         # Type 2: Blaming others or circumstances
-        if any(phrase in text_lower for phrase in ["they made me", "society", "everyone else", "the system"]):
+        if any(
+            phrase in text_lower
+            for phrase in ["they made me", "society", "everyone else", "the system"]
+        ):
             indicators.append("Blaming external forces - denying agency (bad faith)")
 
         # Type 3: Claiming no choice
-        if any(phrase in text_lower for phrase in ["had no choice", "couldn't do anything", "impossible"]):
+        if any(
+            phrase in text_lower
+            for phrase in ["had no choice", "couldn't do anything", "impossible"]
+        ):
             indicators.append("Denying choice - fleeing from freedom (bad faith)")
 
         # Type 4: Conformity to roles
         if any(word in text_lower for word in ["supposed to", "should", "must", "expected"]):
-            indicators.append("Role-playing - hiding behind social expectations (possible bad faith)")
+            indicators.append(
+                "Role-playing - hiding behind social expectations (possible bad faith)"
+            )
 
         # Type 5: Passive voice / avoiding agency
         if any(phrase in text_lower for phrase in ["it happened", "things are", "that's life"]):
@@ -281,8 +303,13 @@ class Sartre(Philosopher):
             indicators.append("Over-identification with social role (bad faith)")
 
         # Type 7: Spirit of seriousness - treating values as objective
-        if any(phrase in text_lower for phrase in ["objectively", "absolutely right", "obviously wrong"]):
-            indicators.append("Spirit of seriousness - treating values as objective facts (bad faith)")
+        if any(
+            phrase in text_lower
+            for phrase in ["objectively", "absolutely right", "obviously wrong"]
+        ):
+            indicators.append(
+                "Spirit of seriousness - treating values as objective facts (bad faith)"
+            )
 
         if not indicators:
             indicators.append("No obvious bad faith detected - authentic engagement possible")
@@ -321,7 +348,7 @@ class Sartre(Philosopher):
         else:
             return "Mixed - Tension between consciousness and facticity"
 
-    def _assess_engagement(self, text: str) -> Dict[str, Any]:
+    def _assess_engagement(self, text: str) -> dict[str, Any]:
         """
         Assess the level of engagement (commitment to action).
 
@@ -359,10 +386,10 @@ class Sartre(Philosopher):
             "note": note,
             "political_engagement": political_count >= 1,
             "sartrean_principle": "Existence is not given; it must be created through action",
-            "principle": "The intellectual must commit - there is no spectator position"
+            "principle": "The intellectual must commit - there is no spectator position",
         }
 
-    def _check_anguish(self, text: str) -> Dict[str, Any]:
+    def _check_anguish(self, text: str) -> dict[str, Any]:
         """
         Check for the presence of anguish (angoisse).
 
@@ -404,10 +431,10 @@ class Sartre(Philosopher):
             "note": note,
             "intensity": intensity,
             "sartrean_insight": "Anguish is the recognition of absolute freedom and responsibility",
-            "principle": "Anguish: the vertigo that seizes us before our own possibilities"
+            "principle": "Anguish: the vertigo that seizes us before our own possibilities",
         }
 
-    def _analyze_the_look(self, text: str) -> Dict[str, Any]:
+    def _analyze_the_look(self, text: str) -> dict[str, Any]:
         """
         Analyze the Look (le regard) - being seen by the Other.
 
@@ -418,18 +445,39 @@ class Sartre(Philosopher):
         text_lower = text.lower()
 
         # Being seen indicators
-        seen_words = ["seen", "watched", "observed", "gaze", "stare", "look at me",
-                      "eyes", "staring", "watching me"]
+        seen_words = [
+            "seen",
+            "watched",
+            "observed",
+            "gaze",
+            "stare",
+            "look at me",
+            "eyes",
+            "staring",
+            "watching me",
+        ]
         seen_count = sum(1 for phrase in seen_words if phrase in text_lower)
 
         # Objectification indicators
-        object_words = ["judged", "evaluated", "assessed", "labeled", "categorized",
-                        "they think i am", "see me as"]
+        object_words = [
+            "judged",
+            "evaluated",
+            "assessed",
+            "labeled",
+            "categorized",
+            "they think i am",
+            "see me as",
+        ]
         object_count = sum(1 for phrase in object_words if phrase in text_lower)
 
         # Self-consciousness indicators
-        self_conscious_words = ["self-conscious", "aware of myself", "how do i look",
-                                "what do they think", "embarrassed"]
+        self_conscious_words = [
+            "self-conscious",
+            "aware of myself",
+            "how do i look",
+            "what do they think",
+            "embarrassed",
+        ]
         self_conscious_count = sum(1 for phrase in self_conscious_words if phrase in text_lower)
 
         if seen_count >= 2 or object_count >= 2:
@@ -456,10 +504,10 @@ class Sartre(Philosopher):
             "seen_score": seen_count,
             "objectification_score": object_count,
             "self_consciousness": self_conscious_count >= 1,
-            "principle": "The Look: Under the gaze of the Other, I become an object"
+            "principle": "The Look: Under the gaze of the Other, I become an object",
         }
 
-    def _analyze_nausea(self, text: str) -> Dict[str, Any]:
+    def _analyze_nausea(self, text: str) -> dict[str, Any]:
         """
         Analyze nausea (la nausée) - confronting the absurd contingency of existence.
 
@@ -473,13 +521,27 @@ class Sartre(Philosopher):
         nausea_count = sum(1 for word in nausea_words if word in text_lower)
 
         # Contingency indicators
-        contingency_words = ["contingent", "unnecessary", "could not be", "no reason",
-                             "absurd", "meaningless", "pointless", "arbitrary"]
+        contingency_words = [
+            "contingent",
+            "unnecessary",
+            "could not be",
+            "no reason",
+            "absurd",
+            "meaningless",
+            "pointless",
+            "arbitrary",
+        ]
         contingency_count = sum(1 for phrase in contingency_words if phrase in text_lower)
 
         # Superfluousness indicators (de trop)
-        superfluous_words = ["superfluous", "too much", "excess", "unnecessary",
-                             "shouldn't exist", "de trop"]
+        superfluous_words = [
+            "superfluous",
+            "too much",
+            "excess",
+            "unnecessary",
+            "shouldn't exist",
+            "de trop",
+        ]
         superfluous_count = sum(1 for phrase in superfluous_words if phrase in text_lower)
 
         # Viscosity/stickiness indicators (existence as sticky, pasty)
@@ -517,10 +579,10 @@ class Sartre(Philosopher):
             "contingency_score": contingency_count,
             "superfluousness": superfluous_count,
             "viscosity": viscous_count,
-            "principle": "Nausea: the experience of existence as contingent, absurd, de trop"
+            "principle": "Nausea: the experience of existence as contingent, absurd, de trop",
         }
 
-    def _analyze_facticity_transcendence(self, text: str) -> Dict[str, Any]:
+    def _analyze_facticity_transcendence(self, text: str) -> dict[str, Any]:
         """
         Analyze facticity and transcendence - the fundamental tension in human reality.
 
@@ -531,13 +593,33 @@ class Sartre(Philosopher):
         text_lower = text.lower()
 
         # Facticity indicators
-        facticity_words = ["given", "fact", "born", "past", "already", "situation",
-                           "body", "history", "condition", "circumstances"]
+        facticity_words = [
+            "given",
+            "fact",
+            "born",
+            "past",
+            "already",
+            "situation",
+            "body",
+            "history",
+            "condition",
+            "circumstances",
+        ]
         facticity_count = sum(1 for word in facticity_words if word in text_lower)
 
         # Transcendence indicators
-        transcendence_words = ["surpass", "overcome", "beyond", "transcend", "future",
-                               "possibility", "project", "become", "can be", "will be"]
+        transcendence_words = [
+            "surpass",
+            "overcome",
+            "beyond",
+            "transcend",
+            "future",
+            "possibility",
+            "project",
+            "become",
+            "can be",
+            "will be",
+        ]
         transcendence_count = sum(1 for phrase in transcendence_words if phrase in text_lower)
 
         # Tension indicators
@@ -568,10 +650,10 @@ class Sartre(Philosopher):
             "facticity_score": facticity_count,
             "transcendence_score": transcendence_count,
             "tension_explicit": tension_count >= 1,
-            "principle": "We are what we are (facticity) and what we make of what we are (transcendence)"
+            "principle": "We are what we are (facticity) and what we make of what we are (transcendence)",
         }
 
-    def _analyze_being_for_others(self, text: str) -> Dict[str, Any]:
+    def _analyze_being_for_others(self, text: str) -> dict[str, Any]:
         """
         Analyze being-for-others (être-pour-autrui).
 
@@ -582,18 +664,41 @@ class Sartre(Philosopher):
         text_lower = text.lower()
 
         # Other's perspective indicators
-        others_perspective = ["they see me", "how i appear", "others think", "in their eyes",
-                              "they judge", "reputation", "image", "what they think"]
+        others_perspective = [
+            "they see me",
+            "how i appear",
+            "others think",
+            "in their eyes",
+            "they judge",
+            "reputation",
+            "image",
+            "what they think",
+        ]
         others_count = sum(1 for phrase in others_perspective if phrase in text_lower)
 
         # Conflict indicators (Sartre: "Hell is other people")
-        conflict_words = ["conflict", "struggle", "compete", "against", "versus others",
-                          "battle", "dominate", "submit"]
+        conflict_words = [
+            "conflict",
+            "struggle",
+            "compete",
+            "against",
+            "versus others",
+            "battle",
+            "dominate",
+            "submit",
+        ]
         conflict_count = sum(1 for phrase in conflict_words if phrase in text_lower)
 
         # Alienation indicators
-        alienation_words = ["alienated", "estranged", "distant", "separate", "isolated",
-                            "don't understand me", "misunderstood"]
+        alienation_words = [
+            "alienated",
+            "estranged",
+            "distant",
+            "separate",
+            "isolated",
+            "don't understand me",
+            "misunderstood",
+        ]
         alienation_count = sum(1 for phrase in alienation_words if phrase in text_lower)
 
         # Recognition/acknowledgment indicators
@@ -629,10 +734,10 @@ class Sartre(Philosopher):
             "conflict_score": conflict_count,
             "alienation": alienation_count,
             "recognition_seeking": recognition_count,
-            "principle": "L'enfer, c'est les autres - Hell is other people"
+            "principle": "L'enfer, c'est les autres - Hell is other people",
         }
 
-    def _analyze_shame_pride(self, text: str) -> Dict[str, Any]:
+    def _analyze_shame_pride(self, text: str) -> dict[str, Any]:
         """
         Analyze shame and pride - the fundamental responses to the Look.
 
@@ -643,8 +748,15 @@ class Sartre(Philosopher):
         text_lower = text.lower()
 
         # Shame indicators
-        shame_words = ["shame", "ashamed", "embarrassed", "humiliated", "mortified",
-                       "disgrace", "dishonor"]
+        shame_words = [
+            "shame",
+            "ashamed",
+            "embarrassed",
+            "humiliated",
+            "mortified",
+            "disgrace",
+            "dishonor",
+        ]
         shame_count = sum(1 for word in shame_words if word in text_lower)
 
         # Pride indicators
@@ -692,10 +804,10 @@ class Sartre(Philosopher):
             "pride_score": pride_count,
             "guilt_score": guilt_count,
             "judgment_awareness": judgment_count,
-            "principle": "Shame reveals my being-for-others - I am ashamed of myself as I appear"
+            "principle": "Shame reveals my being-for-others - I am ashamed of myself as I appear",
         }
 
-    def _analyze_body(self, text: str) -> Dict[str, Any]:
+    def _analyze_body(self, text: str) -> dict[str, Any]:
         """
         Analyze the three ontological dimensions of the body.
 
@@ -706,18 +818,41 @@ class Sartre(Philosopher):
         text_lower = text.lower()
 
         # Body-for-itself indicators (lived body, phenomenal body)
-        lived_body = ["feel", "sensation", "pain", "pleasure", "movement", "gesture",
-                      "breathing", "heart", "embodied", "bodily"]
+        lived_body = [
+            "feel",
+            "sensation",
+            "pain",
+            "pleasure",
+            "movement",
+            "gesture",
+            "breathing",
+            "heart",
+            "embodied",
+            "bodily",
+        ]
         lived_count = sum(1 for word in lived_body if word in text_lower)
 
         # Body-for-others indicators (body as object)
-        body_object = ["body", "appearance", "physical", "looks", "how i look",
-                       "my body", "physique", "form"]
+        body_object = [
+            "body",
+            "appearance",
+            "physical",
+            "looks",
+            "how i look",
+            "my body",
+            "physique",
+            "form",
+        ]
         body_object_count = sum(1 for phrase in body_object if phrase in text_lower)
 
         # Self-conscious body indicators (body-as-known-by-other)
-        self_conscious_body = ["self-conscious about", "embarrassed by my body",
-                               "they see my body", "ugly", "beautiful"]
+        self_conscious_body = [
+            "self-conscious about",
+            "embarrassed by my body",
+            "they see my body",
+            "ugly",
+            "beautiful",
+        ]
         self_conscious_count = sum(1 for phrase in self_conscious_body if phrase in text_lower)
 
         # Determine dominant dimension
@@ -731,7 +866,9 @@ class Sartre(Philosopher):
 
         if len(dimensions_present) >= 2:
             status = "Multiple Dimensions"
-            description = f"Body experienced in multiple dimensions: {', '.join(dimensions_present)}"
+            description = (
+                f"Body experienced in multiple dimensions: {', '.join(dimensions_present)}"
+            )
         elif "Body-for-itself" in str(dimensions_present):
             status = "Lived Body Emphasized"
             description = "Body as lived experience, not as object"
@@ -752,10 +889,10 @@ class Sartre(Philosopher):
             "lived_body_score": lived_count,
             "body_as_object": body_object_count,
             "self_conscious_body": self_conscious_count,
-            "principle": "The body has three dimensions: for-itself, for-others, and as-known-by-other"
+            "principle": "The body has three dimensions: for-itself, for-others, and as-known-by-other",
         }
 
-    def _analyze_situation(self, text: str) -> Dict[str, Any]:
+    def _analyze_situation(self, text: str) -> dict[str, Any]:
         """
         Analyze situation - the concrete context of freedom.
 
@@ -766,23 +903,52 @@ class Sartre(Philosopher):
         text_lower = text.lower()
 
         # Situation/context indicators
-        situation_words = ["situation", "context", "circumstances", "condition",
-                           "environment", "setting", "place", "time", "where"]
+        situation_words = [
+            "situation",
+            "context",
+            "circumstances",
+            "condition",
+            "environment",
+            "setting",
+            "place",
+            "time",
+            "where",
+        ]
         situation_count = sum(1 for word in situation_words if word in text_lower)
 
         # Historical/social situation indicators
-        historical_words = ["history", "era", "society", "culture", "epoch",
-                            "historical", "social", "political context"]
+        historical_words = [
+            "history",
+            "era",
+            "society",
+            "culture",
+            "epoch",
+            "historical",
+            "social",
+            "political context",
+        ]
         historical_count = sum(1 for phrase in historical_words if phrase in text_lower)
 
         # Resistance/limit indicators
-        resistance_words = ["obstacle", "resistance", "limit", "constraint",
-                            "difficulty", "barrier"]
+        resistance_words = [
+            "obstacle",
+            "resistance",
+            "limit",
+            "constraint",
+            "difficulty",
+            "barrier",
+        ]
         resistance_count = sum(1 for word in resistance_words if word in text_lower)
 
         # Meaning-through-project indicators
-        meaning_words = ["meaningful", "significance", "matters", "important",
-                         "relevant", "purpose"]
+        meaning_words = [
+            "meaningful",
+            "significance",
+            "matters",
+            "important",
+            "relevant",
+            "purpose",
+        ]
         meaning_count = sum(1 for word in meaning_words if word in text_lower)
 
         if situation_count >= 2 and meaning_count >= 1:
@@ -814,10 +980,10 @@ class Sartre(Philosopher):
             "historical_dimension": historical_count,
             "resistance": resistance_count,
             "meaningful_context": meaning_count >= 1,
-            "principle": "Freedom and situation are inseparable - there is no freedom except in situation"
+            "principle": "Freedom and situation are inseparable - there is no freedom except in situation",
         }
 
-    def _analyze_project(self, text: str) -> Dict[str, Any]:
+    def _analyze_project(self, text: str) -> dict[str, Any]:
         """
         Analyze project - the fundamental life project that unifies our choices.
 
@@ -828,18 +994,33 @@ class Sartre(Philosopher):
         text_lower = text.lower()
 
         # Project/goal indicators
-        project_words = ["project", "goal", "aim", "plan", "ambition", "aspiration",
-                         "want to be", "trying to", "working toward"]
+        project_words = [
+            "project",
+            "goal",
+            "aim",
+            "plan",
+            "ambition",
+            "aspiration",
+            "want to be",
+            "trying to",
+            "working toward",
+        ]
         project_count = sum(1 for phrase in project_words if phrase in text_lower)
 
         # Future-oriented indicators
-        future_words = ["will", "future", "become", "going to", "intend",
-                        "hope to", "dream of"]
+        future_words = ["will", "future", "become", "going to", "intend", "hope to", "dream of"]
         future_count = sum(1 for phrase in future_words if phrase in text_lower)
 
         # Fundamental choice indicators
-        fundamental_words = ["fundamental", "essential", "core", "basically",
-                             "at heart", "truly", "really am"]
+        fundamental_words = [
+            "fundamental",
+            "essential",
+            "core",
+            "basically",
+            "at heart",
+            "truly",
+            "really am",
+        ]
         fundamental_count = sum(1 for phrase in fundamental_words if phrase in text_lower)
 
         # Unity of choices indicators
@@ -875,10 +1056,10 @@ class Sartre(Philosopher):
             "future_orientation": future_count,
             "fundamental_awareness": fundamental_count,
             "unity_sense": unity_count,
-            "principle": "Every action expresses a fundamental project - an original choice of being"
+            "principle": "Every action expresses a fundamental project - an original choice of being",
         }
 
-    def _analyze_condemned_to_freedom(self, text: str) -> Dict[str, Any]:
+    def _analyze_condemned_to_freedom(self, text: str) -> dict[str, Any]:
         """
         Analyze the experience of being condemned to freedom.
 
@@ -889,13 +1070,27 @@ class Sartre(Philosopher):
         text_lower = text.lower()
 
         # Condemnation/burden indicators
-        condemned_words = ["condemned", "burden", "weight", "curse", "forced to",
-                           "can't escape", "stuck with", "no escape"]
+        condemned_words = [
+            "condemned",
+            "burden",
+            "weight",
+            "curse",
+            "forced to",
+            "can't escape",
+            "stuck with",
+            "no escape",
+        ]
         condemned_count = sum(1 for phrase in condemned_words if phrase in text_lower)
 
         # Inescapability indicators
-        inescapable_words = ["inescapable", "always", "must", "cannot avoid",
-                             "no way out", "inevitable"]
+        inescapable_words = [
+            "inescapable",
+            "always",
+            "must",
+            "cannot avoid",
+            "no way out",
+            "inevitable",
+        ]
         inescapable_count = sum(1 for phrase in inescapable_words if phrase in text_lower)
 
         # Freedom + necessity together
@@ -930,22 +1125,22 @@ class Sartre(Philosopher):
             "condemned_score": condemned_count,
             "inescapable_score": inescapable_count,
             "paradox_awareness": paradox_count >= 1,
-            "principle": "Man is condemned to be free - we did not choose our freedom"
+            "principle": "Man is condemned to be free - we did not choose our freedom",
         }
 
     def _construct_reasoning(
         self,
-        freedom: Dict[str, Any],
-        responsibility: Dict[str, Any],
-        bad_faith: List[str],
+        freedom: dict[str, Any],
+        responsibility: dict[str, Any],
+        bad_faith: list[str],
         mode_of_being: str,
-        engagement: Dict[str, Any],
-        anguish: Dict[str, Any],
-        the_look: Dict[str, Any],
-        nausea: Dict[str, Any],
-        facticity_transcendence: Dict[str, Any],
-        being_for_others: Dict[str, Any],
-        shame_pride: Dict[str, Any]
+        engagement: dict[str, Any],
+        anguish: dict[str, Any],
+        the_look: dict[str, Any],
+        nausea: dict[str, Any],
+        facticity_transcendence: dict[str, Any],
+        being_for_others: dict[str, Any],
+        shame_pride: dict[str, Any],
     ) -> str:
         """Construct Sartrean existentialist reasoning."""
         reasoning = (
@@ -976,7 +1171,9 @@ class Sartre(Philosopher):
 
         # Add facticity-transcendence tension
         if facticity_transcendence["status"] == "Full Tension":
-            reasoning += f"The human condition is evident: {facticity_transcendence['description']}. "
+            reasoning += (
+                f"The human condition is evident: {facticity_transcendence['description']}. "
+            )
 
         # Add shame/pride if present
         if shame_pride["dominant_affect"] != "None":
@@ -986,8 +1183,8 @@ class Sartre(Philosopher):
         reasoning += f"Engagement level: {engagement['level']}. "
 
         # Add anguish
-        if anguish['present']:
-            reasoning += f"Anguish is present, indicating authentic confrontation with freedom. "
+        if anguish["present"]:
+            reasoning += "Anguish is present, indicating authentic confrontation with freedom. "
         else:
             reasoning += "The absence of anguish may suggest flight from freedom. "
 
@@ -999,7 +1196,7 @@ class Sartre(Philosopher):
 
         return reasoning
 
-    def _calculate_tension(self, analysis: Dict[str, Any]) -> Dict[str, Any]:
+    def _calculate_tension(self, analysis: dict[str, Any]) -> dict[str, Any]:
         """
         Calculate existential tension based on Sartrean analysis.
 
@@ -1086,5 +1283,5 @@ class Sartre(Philosopher):
             "level": level,
             "score": tension_score,
             "description": description,
-            "elements": tension_elements if tension_elements else ["No significant tensions"]
+            "elements": tension_elements if tension_elements else ["No significant tensions"],
         }

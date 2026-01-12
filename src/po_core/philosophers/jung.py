@@ -14,7 +14,7 @@ Key Concepts:
 - Shadow: The repressed, unconscious aspects of personality
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -30,10 +30,10 @@ class Jung(Philosopher):
     def __init__(self) -> None:
         super().__init__(
             name="Carl Gustav Jung",
-            description="Analytical psychologist focused on archetypes, collective unconscious, and individuation"
+            description="Analytical psychologist focused on archetypes, collective unconscious, and individuation",
         )
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Analyze the prompt from Jung's analytical psychology perspective.
 
@@ -60,11 +60,11 @@ class Jung(Philosopher):
             "metadata": {
                 "philosopher": self.name,
                 "approach": "Analytical Psychology",
-                "focus": "Archetypes, individuation, and the collective unconscious"
-            }
+                "focus": "Archetypes, individuation, and the collective unconscious",
+            },
         }
 
-    def _analyze_psyche(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_psyche(self, prompt: str) -> dict[str, Any]:
         """
         Perform Jungian psychological analysis.
 
@@ -108,10 +108,10 @@ class Jung(Philosopher):
             "psych_type": psych_type,
             "shadow": shadow,
             "synchronicity": synchronicity,
-            "self_realization": self_realization
+            "self_realization": self_realization,
         }
 
-    def _detect_archetypes(self, text: str) -> List[Dict[str, str]]:
+    def _detect_archetypes(self, text: str) -> list[dict[str, str]]:
         """
         Detect archetypal patterns in the text.
 
@@ -123,76 +123,121 @@ class Jung(Philosopher):
         # Shadow archetype (repressed, dark side)
         shadow_words = ["dark", "hidden", "secret", "repressed", "deny", "shadow", "evil", "shame"]
         if any(word in text_lower for word in shadow_words):
-            detected.append({
-                "archetype": "Shadow",
-                "description": "The repressed, unconscious aspects - what we refuse to acknowledge"
-            })
+            detected.append(
+                {
+                    "archetype": "Shadow",
+                    "description": "The repressed, unconscious aspects - what we refuse to acknowledge",
+                }
+            )
 
         # Anima/Animus (contrasexual aspect)
         anima_words = ["feminine", "masculine", "inner woman", "inner man", "soul", "muse"]
         if any(word in text_lower for word in anima_words):
-            detected.append({
-                "archetype": "Anima/Animus",
-                "description": "The contrasexual element - bridge to the unconscious"
-            })
+            detected.append(
+                {
+                    "archetype": "Anima/Animus",
+                    "description": "The contrasexual element - bridge to the unconscious",
+                }
+            )
 
         # Hero archetype (quest, transformation)
-        hero_words = ["journey", "quest", "challenge", "overcome", "hero", "battle", "victory", "struggle"]
+        hero_words = [
+            "journey",
+            "quest",
+            "challenge",
+            "overcome",
+            "hero",
+            "battle",
+            "victory",
+            "struggle",
+        ]
         if any(word in text_lower for word in hero_words):
-            detected.append({
-                "archetype": "Hero",
-                "description": "The transformative journey - ego development through trials"
-            })
+            detected.append(
+                {
+                    "archetype": "Hero",
+                    "description": "The transformative journey - ego development through trials",
+                }
+            )
 
         # Wise Old Man/Woman (wisdom, guidance)
-        wisdom_words = ["wisdom", "guide", "teacher", "mentor", "sage", "elder", "know", "understand"]
+        wisdom_words = [
+            "wisdom",
+            "guide",
+            "teacher",
+            "mentor",
+            "sage",
+            "elder",
+            "know",
+            "understand",
+        ]
         if any(word in text_lower for word in wisdom_words):
-            detected.append({
-                "archetype": "Wise Old Man/Woman",
-                "description": "The voice of wisdom - knowledge and guidance from the unconscious"
-            })
+            detected.append(
+                {
+                    "archetype": "Wise Old Man/Woman",
+                    "description": "The voice of wisdom - knowledge and guidance from the unconscious",
+                }
+            )
 
         # Mother archetype (nurturing, origin)
-        mother_words = ["mother", "birth", "nurture", "care", "origin", "womb", "fertile", "nourish"]
+        mother_words = [
+            "mother",
+            "birth",
+            "nurture",
+            "care",
+            "origin",
+            "womb",
+            "fertile",
+            "nourish",
+        ]
         if any(word in text_lower for word in mother_words):
-            detected.append({
-                "archetype": "Mother",
-                "description": "The Great Mother - source of life, nurturing, and containment"
-            })
+            detected.append(
+                {
+                    "archetype": "Mother",
+                    "description": "The Great Mother - source of life, nurturing, and containment",
+                }
+            )
 
         # Trickster archetype (chaos, disruption)
         trickster_words = ["trick", "chaos", "disrupt", "fool", "joke", "paradox", "absurd"]
         if any(word in text_lower for word in trickster_words):
-            detected.append({
-                "archetype": "Trickster",
-                "description": "The agent of chaos - disrupts order to enable transformation"
-            })
+            detected.append(
+                {
+                    "archetype": "Trickster",
+                    "description": "The agent of chaos - disrupts order to enable transformation",
+                }
+            )
 
         # Self archetype (wholeness, integration)
         self_words = ["whole", "complete", "unity", "integrated", "center", "balance", "harmony"]
         if any(word in text_lower for word in self_words):
-            detected.append({
-                "archetype": "Self",
-                "description": "The archetype of wholeness - totality of the psyche"
-            })
+            detected.append(
+                {
+                    "archetype": "Self",
+                    "description": "The archetype of wholeness - totality of the psyche",
+                }
+            )
 
         # Persona (social mask)
         persona_words = ["mask", "role", "public", "appearance", "pretend", "act", "performance"]
         if any(word in text_lower for word in persona_words):
-            detected.append({
-                "archetype": "Persona",
-                "description": "The social mask - how we present ourselves to the world"
-            })
+            detected.append(
+                {
+                    "archetype": "Persona",
+                    "description": "The social mask - how we present ourselves to the world",
+                }
+            )
 
         if not detected:
-            detected.append({
-                "archetype": "Ego",
-                "description": "The conscious 'I' - center of consciousness (default archetype)"
-            })
+            detected.append(
+                {
+                    "archetype": "Ego",
+                    "description": "The conscious 'I' - center of consciousness (default archetype)",
+                }
+            )
 
         return detected
 
-    def _identify_collective_themes(self, text: str) -> List[str]:
+    def _identify_collective_themes(self, text: str) -> list[str]:
         """
         Identify themes from the collective unconscious.
 
@@ -207,7 +252,15 @@ class Jung(Philosopher):
             themes.append("Mythological patterns - echoes of universal human narratives")
 
         # Death and rebirth
-        rebirth_words = ["death", "rebirth", "transformation", "end", "beginning", "phoenix", "resurrection"]
+        rebirth_words = [
+            "death",
+            "rebirth",
+            "transformation",
+            "end",
+            "beginning",
+            "phoenix",
+            "resurrection",
+        ]
         if any(word in text_lower for word in rebirth_words):
             themes.append("Death and rebirth - the eternal cycle of transformation")
 
@@ -217,7 +270,14 @@ class Jung(Philosopher):
             themes.append("The hero's journey - universal pattern of growth and return")
 
         # Opposites and paradox
-        paradox_words = ["opposite", "both", "neither", "paradox", "contradiction", "light and dark"]
+        paradox_words = [
+            "opposite",
+            "both",
+            "neither",
+            "paradox",
+            "contradiction",
+            "light and dark",
+        ]
         if any(word in text_lower for word in paradox_words):
             themes.append("Coincidentia oppositorum - unity of opposites")
 
@@ -231,7 +291,7 @@ class Jung(Philosopher):
 
         return themes
 
-    def _assess_individuation(self, text: str) -> Dict[str, Any]:
+    def _assess_individuation(self, text: str) -> dict[str, Any]:
         """
         Assess the stage of individuation (becoming one's true self).
 
@@ -248,7 +308,14 @@ class Jung(Philosopher):
         shadow_count = sum(1 for word in shadow_indicators if word in text_lower)
 
         # Advanced stage: Integration
-        integration_indicators = ["integrate", "whole", "balance", "accept all", "unity", "complete"]
+        integration_indicators = [
+            "integrate",
+            "whole",
+            "balance",
+            "accept all",
+            "unity",
+            "complete",
+        ]
         integration_count = sum(1 for word in integration_indicators if word in text_lower)
 
         # Self-realization stage
@@ -277,10 +344,10 @@ class Jung(Philosopher):
             "stage": stage,
             "description": description,
             "level": level,
-            "jungian_note": "Individuation is the process of becoming who you truly are"
+            "jungian_note": "Individuation is the process of becoming who you truly are",
         }
 
-    def _determine_psychological_type(self, text: str) -> Dict[str, Any]:
+    def _determine_psychological_type(self, text: str) -> dict[str, Any]:
         """
         Determine psychological type based on Jung's typology.
 
@@ -319,7 +386,7 @@ class Jung(Philosopher):
             "Thinking": thinking_count,
             "Feeling": feeling_count,
             "Sensation": sensation_count,
-            "Intuition": intuition_count
+            "Intuition": intuition_count,
         }
         dominant_function = max(function_scores, key=function_scores.get)
 
@@ -327,10 +394,10 @@ class Jung(Philosopher):
             "attitude": attitude,
             "dominant_function": dominant_function,
             "type_description": f"{attitude} {dominant_function}",
-            "note": "Psychological type influences how we perceive and judge reality"
+            "note": "Psychological type influences how we perceive and judge reality",
         }
 
-    def _check_shadow_integration(self, text: str) -> Dict[str, Any]:
+    def _check_shadow_integration(self, text: str) -> dict[str, Any]:
         """
         Check the level of shadow integration.
 
@@ -375,10 +442,10 @@ class Jung(Philosopher):
             "status": status,
             "level": level,
             "note": note,
-            "jungian_principle": "Until you make the unconscious conscious, it will direct your life"
+            "jungian_principle": "Until you make the unconscious conscious, it will direct your life",
         }
 
-    def _detect_synchronicity(self, text: str) -> Dict[str, Any]:
+    def _detect_synchronicity(self, text: str) -> dict[str, Any]:
         """
         Detect indicators of synchronicity (meaningful coincidence).
 
@@ -392,7 +459,9 @@ class Jung(Philosopher):
 
         # Meaning + Coincidence together
         has_meaning = "meaning" in text_lower or "significant" in text_lower
-        has_coincidence = "coincidence" in text_lower or "chance" in text_lower or "happened" in text_lower
+        has_coincidence = (
+            "coincidence" in text_lower or "chance" in text_lower or "happened" in text_lower
+        )
 
         if has_sync or (has_meaning and has_coincidence):
             present = True
@@ -404,10 +473,10 @@ class Jung(Philosopher):
         return {
             "present": present,
             "description": description,
-            "principle": "Synchronicity reveals the meaningful connection between psyche and matter"
+            "principle": "Synchronicity reveals the meaningful connection between psyche and matter",
         }
 
-    def _assess_self_realization(self, text: str) -> Dict[str, Any]:
+    def _assess_self_realization(self, text: str) -> dict[str, Any]:
         """
         Assess the level of Self-realization.
 
@@ -440,17 +509,17 @@ class Jung(Philosopher):
         return {
             "level": level,
             "status": status,
-            "note": "The Self is both the center and circumference of the psyche"
+            "note": "The Self is both the center and circumference of the psyche",
         }
 
     def _construct_reasoning(
         self,
-        archetypes: List[Dict[str, str]],
-        collective_themes: List[str],
-        individuation: Dict[str, Any],
-        psych_type: Dict[str, Any],
-        shadow: Dict[str, Any],
-        self_realization: Dict[str, Any]
+        archetypes: list[dict[str, str]],
+        collective_themes: list[str],
+        individuation: dict[str, Any],
+        psych_type: dict[str, Any],
+        shadow: dict[str, Any],
+        self_realization: dict[str, Any],
     ) -> str:
         """Construct Jungian analytical reasoning."""
         primary_archetype = archetypes[0]["archetype"]
@@ -474,8 +543,6 @@ class Jung(Philosopher):
         reasoning += f"Self-realization assessment: {self_realization['status']}. "
 
         # Conclude with Jungian wisdom
-        reasoning += (
-            "The psyche seeks wholeness through the integration of conscious and unconscious elements."
-        )
+        reasoning += "The psyche seeks wholeness through the integration of conscious and unconscious elements."
 
         return reasoning

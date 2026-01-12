@@ -19,7 +19,7 @@ Key Concepts:
 - Mono no aware (物の哀れ): Awareness of transience, poignant beauty of impermanence
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -35,10 +35,10 @@ class WabiSabi(Philosopher):
     def __init__(self) -> None:
         super().__init__(
             name="侘び寂び (Wabi-Sabi)",
-            description="Japanese aesthetic focused on imperfection, impermanence, and simple natural beauty"
+            description="Japanese aesthetic focused on imperfection, impermanence, and simple natural beauty",
         )
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Analyze the prompt from Wabi-Sabi aesthetic perspective.
 
@@ -68,11 +68,11 @@ class WabiSabi(Philosopher):
             "metadata": {
                 "philosopher": self.name,
                 "approach": "Aesthetic appreciation of imperfection and transience",
-                "focus": "侘び (wabi), 寂び (sabi), and natural beauty"
-            }
+                "focus": "侘び (wabi), 寂び (sabi), and natural beauty",
+            },
         }
 
-    def _analyze_aesthetic(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_aesthetic(self, prompt: str) -> dict[str, Any]:
         """
         Perform Wabi-Sabi aesthetic analysis.
 
@@ -115,9 +115,7 @@ class WabiSabi(Philosopher):
         )
 
         # Construct reasoning
-        reasoning = self._construct_reasoning(
-            imperfection, impermanence, simplicity, overall
-        )
+        reasoning = self._construct_reasoning(imperfection, impermanence, simplicity, overall)
 
         return {
             "reasoning": reasoning,
@@ -130,10 +128,10 @@ class WabiSabi(Philosopher):
             "yugen": yugen,
             "ma": ma,
             "mono_no_aware": mono_no_aware,
-            "overall": overall
+            "overall": overall,
         }
 
-    def _assess_imperfection(self, text: str) -> Dict[str, Any]:
+    def _assess_imperfection(self, text: str) -> dict[str, Any]:
         """
         Assess appreciation of imperfection.
 
@@ -142,7 +140,16 @@ class WabiSabi(Philosopher):
         text_lower = text.lower()
 
         # Imperfection appreciation indicators
-        imperfect_words = ["imperfect", "flaw", "crack", "worn", "weathered", "aged", "rustic", "rough"]
+        imperfect_words = [
+            "imperfect",
+            "flaw",
+            "crack",
+            "worn",
+            "weathered",
+            "aged",
+            "rustic",
+            "rough",
+        ]
         has_imperfect = sum(1 for word in imperfect_words if word in text_lower)
 
         # Perfection seeking (opposed to wabi-sabi)
@@ -174,10 +181,10 @@ class WabiSabi(Philosopher):
             "appreciation": appreciation,
             "description": description,
             "quality": quality,
-            "principle": "不完全の美 - Beauty in imperfection, incompleteness"
+            "principle": "不完全の美 - Beauty in imperfection, incompleteness",
         }
 
-    def _assess_impermanence(self, text: str) -> Dict[str, Any]:
+    def _assess_impermanence(self, text: str) -> dict[str, Any]:
         """
         Assess awareness of impermanence (mujō/無常).
 
@@ -186,7 +193,15 @@ class WabiSabi(Philosopher):
         text_lower = text.lower()
 
         # Impermanence indicators
-        impermanent_words = ["transient", "fleeting", "temporary", "passing", "ephemeral", "fade", "change"]
+        impermanent_words = [
+            "transient",
+            "fleeting",
+            "temporary",
+            "passing",
+            "ephemeral",
+            "fade",
+            "change",
+        ]
         has_impermanent = sum(1 for word in impermanent_words if word in text_lower)
 
         # Permanence seeking (opposed to wabi-sabi)
@@ -222,10 +237,10 @@ class WabiSabi(Philosopher):
             "awareness": awareness,
             "description": description,
             "quality": quality,
-            "principle": "無常 (mujō) - Nothing lasts, nothing is finished, nothing is perfect"
+            "principle": "無常 (mujō) - Nothing lasts, nothing is finished, nothing is perfect",
         }
 
-    def _assess_simplicity(self, text: str) -> Dict[str, Any]:
+    def _assess_simplicity(self, text: str) -> dict[str, Any]:
         """
         Assess simplicity and austerity.
 
@@ -270,10 +285,10 @@ class WabiSabi(Philosopher):
             "level": level,
             "description": description,
             "quality": quality,
-            "principle": "簡素 (kanso) - Simplicity, austerity, essential beauty"
+            "principle": "簡素 (kanso) - Simplicity, austerity, essential beauty",
         }
 
-    def _assess_naturalness(self, text: str) -> Dict[str, Any]:
+    def _assess_naturalness(self, text: str) -> dict[str, Any]:
         """
         Assess naturalness and organic quality.
 
@@ -282,11 +297,26 @@ class WabiSabi(Philosopher):
         text_lower = text.lower()
 
         # Naturalness indicators
-        natural_words = ["natural", "organic", "authentic", "real", "genuine", "unforced", "spontaneous"]
+        natural_words = [
+            "natural",
+            "organic",
+            "authentic",
+            "real",
+            "genuine",
+            "unforced",
+            "spontaneous",
+        ]
         has_natural = sum(1 for word in natural_words if word in text_lower)
 
         # Artificiality (opposed to wabi-sabi)
-        artificial_words = ["artificial", "fake", "synthetic", "manufactured", "processed", "contrived"]
+        artificial_words = [
+            "artificial",
+            "fake",
+            "synthetic",
+            "manufactured",
+            "processed",
+            "contrived",
+        ]
         has_artificial = sum(1 for word in artificial_words if word in text_lower)
 
         # Connection to nature
@@ -318,10 +348,10 @@ class WabiSabi(Philosopher):
             "level": quality_level,
             "description": description,
             "quality": quality,
-            "principle": "自然 (shizen) - Naturalness, authenticity, without artifice"
+            "principle": "自然 (shizen) - Naturalness, authenticity, without artifice",
         }
 
-    def _assess_asymmetry(self, text: str) -> Dict[str, Any]:
+    def _assess_asymmetry(self, text: str) -> dict[str, Any]:
         """
         Assess asymmetry and irregularity.
 
@@ -330,7 +360,15 @@ class WabiSabi(Philosopher):
         text_lower = text.lower()
 
         # Asymmetry indicators
-        asymmetric_words = ["asymmetric", "irregular", "uneven", "crooked", "bent", "twisted", "random"]
+        asymmetric_words = [
+            "asymmetric",
+            "irregular",
+            "uneven",
+            "crooked",
+            "bent",
+            "twisted",
+            "random",
+        ]
         has_asymmetric = sum(1 for word in asymmetric_words if word in text_lower)
 
         # Symmetry/perfection (opposed to wabi-sabi)
@@ -358,10 +396,10 @@ class WabiSabi(Philosopher):
             "presence": presence,
             "description": description,
             "quality": quality,
-            "principle": "非対称 (hishōshō) - Beauty in asymmetry and irregularity"
+            "principle": "非対称 (hishōshō) - Beauty in asymmetry and irregularity",
         }
 
-    def _assess_intimacy(self, text: str) -> Dict[str, Any]:
+    def _assess_intimacy(self, text: str) -> dict[str, Any]:
         """
         Assess intimacy, modesty, and small scale.
 
@@ -398,10 +436,10 @@ class WabiSabi(Philosopher):
             "level": level,
             "description": description,
             "quality": quality,
-            "principle": "質素 (shisso) - Modest, humble, unpretentious"
+            "principle": "質素 (shisso) - Modest, humble, unpretentious",
         }
 
-    def _assess_yugen(self, text: str) -> Dict[str, Any]:
+    def _assess_yugen(self, text: str) -> dict[str, Any]:
         """
         Assess yugen (幽玄) - profound subtlety and mysterious depth.
 
@@ -442,10 +480,10 @@ class WabiSabi(Philosopher):
             "presence": presence,
             "description": description,
             "quality": quality,
-            "principle": "幽玄 (yūgen) - Profound subtlety, what is not visible"
+            "principle": "幽玄 (yūgen) - Profound subtlety, what is not visible",
         }
 
-    def _assess_ma(self, text: str) -> Dict[str, Any]:
+    def _assess_ma(self, text: str) -> dict[str, Any]:
         """
         Assess ma (間) - negative space, emptiness, pause.
 
@@ -486,10 +524,10 @@ class WabiSabi(Philosopher):
             "presence": presence,
             "description": description,
             "quality": quality,
-            "principle": "間 (ma) - Negative space, emptiness, the pause between"
+            "principle": "間 (ma) - Negative space, emptiness, the pause between",
         }
 
-    def _assess_mono_no_aware(self, text: str) -> Dict[str, Any]:
+    def _assess_mono_no_aware(self, text: str) -> dict[str, Any]:
         """
         Assess mono no aware (物の哀れ) - awareness of transience.
 
@@ -528,16 +566,16 @@ class WabiSabi(Philosopher):
             "presence": presence,
             "description": description,
             "quality": quality,
-            "principle": "物の哀れ (mono no aware) - Poignant awareness of impermanence"
+            "principle": "物の哀れ (mono no aware) - Poignant awareness of impermanence",
         }
 
     def _calculate_overall_wabi_sabi(
         self,
-        imperfection: Dict[str, Any],
-        impermanence: Dict[str, Any],
-        simplicity: Dict[str, Any],
-        naturalness: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        imperfection: dict[str, Any],
+        impermanence: dict[str, Any],
+        simplicity: dict[str, Any],
+        naturalness: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Calculate overall wabi-sabi quality.
 
@@ -590,15 +628,15 @@ class WabiSabi(Philosopher):
             "overall": overall,
             "description": description,
             "level": level,
-            "principle": "侘び寂び - Finding beauty in imperfection, impermanence, and simplicity"
+            "principle": "侘び寂び - Finding beauty in imperfection, impermanence, and simplicity",
         }
 
     def _construct_reasoning(
         self,
-        imperfection: Dict[str, Any],
-        impermanence: Dict[str, Any],
-        simplicity: Dict[str, Any],
-        overall: Dict[str, Any]
+        imperfection: dict[str, Any],
+        impermanence: dict[str, Any],
+        simplicity: dict[str, Any],
+        overall: dict[str, Any],
     ) -> str:
         """Construct wabi-sabi aesthetic reasoning."""
         reasoning = (

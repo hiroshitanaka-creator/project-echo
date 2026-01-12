@@ -1,0 +1,40 @@
+[project]
+name = "project-echo"
+version = "0.1.0"
+description = "Responsible AI Development Framework with 39 Philosophers and Cosmic Ethics"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+
+authors = [
+    {name = "hiroshitanaka-creator"}
+]
+
+[project.scripts]
+po-cosmic = "po_cosmic.cli:main"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = ["examples", "runs", "reports", "bin"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501", "E402"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/po_core/philosophers/*.py" = ["F841"]
+"src/po_core/philosophers/**/*.py" = ["F841"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

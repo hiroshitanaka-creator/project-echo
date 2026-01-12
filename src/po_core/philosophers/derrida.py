@@ -23,7 +23,7 @@ Key Concepts:
 - Justice: Justice vs Law (law is deconstructible, justice is not)
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -39,10 +39,10 @@ class Derrida(Philosopher):
     def __init__(self) -> None:
         super().__init__(
             name="Jacques Derrida",
-            description="Deconstructionist focusing on différance, trace, supplementarity, and the instability of meaning"
+            description="Deconstructionist focusing on différance, trace, supplementarity, and the instability of meaning",
         )
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Analyze the prompt from Derrida's deconstructionist perspective.
 
@@ -81,11 +81,11 @@ class Derrida(Philosopher):
             "metadata": {
                 "philosopher": self.name,
                 "approach": "Deconstruction",
-                "focus": "Différance, trace, binary oppositions, and the undecidable"
-            }
+                "focus": "Différance, trace, binary oppositions, and the undecidable",
+            },
         }
 
-    def _deconstruct(self, prompt: str) -> Dict[str, Any]:
+    def _deconstruct(self, prompt: str) -> dict[str, Any]:
         """
         Perform comprehensive Derridean deconstruction.
 
@@ -142,8 +142,14 @@ class Derrida(Philosopher):
 
         # Construct deconstructive reasoning
         reasoning = self._construct_reasoning(
-            binaries, traces, differance, contradictions,
-            supplement, logocentrism, undecidables, aporia
+            binaries,
+            traces,
+            differance,
+            contradictions,
+            supplement,
+            logocentrism,
+            undecidables,
+            aporia,
         )
 
         return {
@@ -162,10 +168,10 @@ class Derrida(Philosopher):
             "iterability": iterability,
             "aporia": aporia,
             "gift": gift,
-            "justice": justice
+            "justice": justice,
         }
 
-    def _find_binary_oppositions(self, text: str) -> List[Dict[str, Any]]:
+    def _find_binary_oppositions(self, text: str) -> list[dict[str, Any]]:
         """
         Find binary oppositions in the text.
 
@@ -204,47 +210,55 @@ class Derrida(Philosopher):
             found_second = term2 in text_lower
 
             if found_first and found_second:
-                binaries.append({
-                    "opposition": f"{term1} / {term2}",
-                    "both_present": True,
-                    "privileged_term": term1,
-                    "suppressed_term": term2,
-                    "note": note,
-                    "deconstructive_move": f"Show how '{term2}' is constitutive of '{term1}'"
-                })
+                binaries.append(
+                    {
+                        "opposition": f"{term1} / {term2}",
+                        "both_present": True,
+                        "privileged_term": term1,
+                        "suppressed_term": term2,
+                        "note": note,
+                        "deconstructive_move": f"Show how '{term2}' is constitutive of '{term1}'",
+                    }
+                )
             elif found_first:
-                binaries.append({
-                    "opposition": f"{term1} / [{term2}]",
-                    "both_present": False,
-                    "privileged_term": term1,
-                    "suppressed_term": term2,
-                    "note": f"'{term2}' is the absent trace that constitutes '{term1}'",
-                    "deconstructive_move": f"Reveal the hidden dependence on '{term2}'"
-                })
+                binaries.append(
+                    {
+                        "opposition": f"{term1} / [{term2}]",
+                        "both_present": False,
+                        "privileged_term": term1,
+                        "suppressed_term": term2,
+                        "note": f"'{term2}' is the absent trace that constitutes '{term1}'",
+                        "deconstructive_move": f"Reveal the hidden dependence on '{term2}'",
+                    }
+                )
             elif found_second:
-                binaries.append({
-                    "opposition": f"[{term1}] / {term2}",
-                    "both_present": False,
-                    "privileged_term": term1,
-                    "suppressed_term": term2,
-                    "note": f"The 'inferior' term '{term2}' is present without its 'superior'",
-                    "deconstructive_move": f"Question the assumed priority of '{term1}'"
-                })
+                binaries.append(
+                    {
+                        "opposition": f"[{term1}] / {term2}",
+                        "both_present": False,
+                        "privileged_term": term1,
+                        "suppressed_term": term2,
+                        "note": f"The 'inferior' term '{term2}' is present without its 'superior'",
+                        "deconstructive_move": f"Question the assumed priority of '{term1}'",
+                    }
+                )
 
         # If no binaries found, indicate the fundamental opposition
         if not binaries:
-            binaries.append({
-                "opposition": "meaning / [non-meaning]",
-                "both_present": False,
-                "privileged_term": "meaning",
-                "suppressed_term": "non-meaning",
-                "note": "Every text presupposes an opposition to what it excludes",
-                "deconstructive_move": "Reveal how meaning depends on what it excludes"
-            })
+            binaries.append(
+                {
+                    "opposition": "meaning / [non-meaning]",
+                    "both_present": False,
+                    "privileged_term": "meaning",
+                    "suppressed_term": "non-meaning",
+                    "note": "Every text presupposes an opposition to what it excludes",
+                    "deconstructive_move": "Reveal how meaning depends on what it excludes",
+                }
+            )
 
         return binaries
 
-    def _find_traces(self, text: str) -> List[Dict[str, str]]:
+    def _find_traces(self, text: str) -> list[dict[str, str]]:
         """
         Identify traces - what is absent but shapes the present.
 
@@ -257,64 +271,78 @@ class Derrida(Philosopher):
         negation_words = ["not", "no", "never", "nothing", "without", "lack", "absence"]
         for word in negation_words:
             if word in text_lower:
-                traces.append({
-                    "type": "Negation Trace",
-                    "description": f"Negation ('{word}') reveals the trace of what is denied",
-                    "implication": "The absent (what is negated) haunts the present"
-                })
+                traces.append(
+                    {
+                        "type": "Negation Trace",
+                        "description": f"Negation ('{word}') reveals the trace of what is denied",
+                        "implication": "The absent (what is negated) haunts the present",
+                    }
+                )
                 break
 
         # Comparison traces (what is compared reveals the other)
         comparison_words = ["than", "rather", "instead", "unlike", "different from"]
         for phrase in comparison_words:
             if phrase in text_lower:
-                traces.append({
-                    "type": "Comparative Trace",
-                    "description": f"Comparison ('{phrase}') reveals dependence on an other",
-                    "implication": "Identity constituted through difference"
-                })
+                traces.append(
+                    {
+                        "type": "Comparative Trace",
+                        "description": f"Comparison ('{phrase}') reveals dependence on an other",
+                        "implication": "Identity constituted through difference",
+                    }
+                )
                 break
 
         # Temporal traces (past in present)
         temporal_words = ["memory", "remember", "history", "origin", "before"]
         for word in temporal_words:
             if word in text_lower:
-                traces.append({
-                    "type": "Temporal Trace",
-                    "description": f"Temporal reference ('{word}') inscribes the past in the present",
-                    "implication": "The present is never purely present - always inscribed by past"
-                })
+                traces.append(
+                    {
+                        "type": "Temporal Trace",
+                        "description": f"Temporal reference ('{word}') inscribes the past in the present",
+                        "implication": "The present is never purely present - always inscribed by past",
+                    }
+                )
                 break
 
         # Future traces (anticipation in present)
         future_words = ["promise", "expect", "anticipate", "future", "will"]
         for word in future_words:
             if word in text_lower:
-                traces.append({
-                    "type": "Futural Trace",
-                    "description": f"Futural reference ('{word}') opens present to what is not yet",
-                    "implication": "The present is structured by the to-come (à-venir)"
-                })
+                traces.append(
+                    {
+                        "type": "Futural Trace",
+                        "description": f"Futural reference ('{word}') opens present to what is not yet",
+                        "implication": "The present is structured by the to-come (à-venir)",
+                    }
+                )
                 break
 
         # Reference traces (referring implies absence)
-        if any(word in text_lower for word in ["refer", "represent", "signify", "mean", "indicate"]):
-            traces.append({
-                "type": "Referential Trace",
-                "description": "Reference implies the absence of what is referred to",
-                "implication": "The sign is always the sign of an absence"
-            })
+        if any(
+            word in text_lower for word in ["refer", "represent", "signify", "mean", "indicate"]
+        ):
+            traces.append(
+                {
+                    "type": "Referential Trace",
+                    "description": "Reference implies the absence of what is referred to",
+                    "implication": "The sign is always the sign of an absence",
+                }
+            )
 
         if not traces:
-            traces.append({
-                "type": "Implicit Trace",
-                "description": "Every text is woven of traces it cannot contain",
-                "implication": "The trace of what is unspoken shapes what appears"
-            })
+            traces.append(
+                {
+                    "type": "Implicit Trace",
+                    "description": "Every text is woven of traces it cannot contain",
+                    "implication": "The trace of what is unspoken shapes what appears",
+                }
+            )
 
         return traces
 
-    def _analyze_differance(self, text: str) -> Dict[str, Any]:
+    def _analyze_differance(self, text: str) -> dict[str, Any]:
         """
         Analyze différance - the play of difference and deferral.
 
@@ -325,13 +353,34 @@ class Derrida(Philosopher):
         text_lower = text.lower()
 
         # Temporal deferral indicators
-        deferral_words = ["will", "future", "later", "eventually", "become", "promise",
-                          "waiting", "postpone", "delay", "soon", "someday"]
+        deferral_words = [
+            "will",
+            "future",
+            "later",
+            "eventually",
+            "become",
+            "promise",
+            "waiting",
+            "postpone",
+            "delay",
+            "soon",
+            "someday",
+        ]
         deferral_count = sum(1 for word in deferral_words if word in text_lower)
 
         # Spatial/relational difference indicators
-        difference_words = ["different", "other", "contrast", "versus", "but", "however",
-                            "distinguish", "separate", "apart", "between"]
+        difference_words = [
+            "different",
+            "other",
+            "contrast",
+            "versus",
+            "but",
+            "however",
+            "distinguish",
+            "separate",
+            "apart",
+            "between",
+        ]
         difference_count = sum(1 for word in difference_words if word in text_lower)
 
         # Self-reference indicators (meaning referring to other meanings)
@@ -378,29 +427,33 @@ class Derrida(Philosopher):
             "presence_claims": presence_count,
             "presence_note": presence_note,
             "differance_score": differance_score,
-            "principle": "Différance: The play of difference and deferral that makes meaning possible and impossible"
+            "principle": "Différance: The play of difference and deferral that makes meaning possible and impossible",
         }
 
-    def _find_contradictions(self, text: str) -> List[Dict[str, str]]:
+    def _find_contradictions(self, text: str) -> list[dict[str, str]]:
         """Find internal contradictions or tensions that destabilize the text."""
         contradictions = []
         text_lower = text.lower()
 
         # Explicit contradictions
         if "but" in text_lower or "however" in text_lower or "yet" in text_lower:
-            contradictions.append({
-                "type": "Explicit Tension",
-                "description": "Conjunction signals internal contradiction",
-                "effect": "The text undermines its own assertions"
-            })
+            contradictions.append(
+                {
+                    "type": "Explicit Tension",
+                    "description": "Conjunction signals internal contradiction",
+                    "effect": "The text undermines its own assertions",
+                }
+            )
 
         # Simultaneous affirmation and negation
         if "not" in text_lower and any(word in text_lower for word in ["is", "are", "be"]):
-            contradictions.append({
-                "type": "Affirmation-Negation",
-                "description": "Simultaneous assertion and denial",
-                "effect": "Presence and absence coexist, destabilizing identity"
-            })
+            contradictions.append(
+                {
+                    "type": "Affirmation-Negation",
+                    "description": "Simultaneous assertion and denial",
+                    "effect": "Presence and absence coexist, destabilizing identity",
+                }
+            )
 
         # Paradoxes
         paradox_pairs = [
@@ -411,38 +464,46 @@ class Derrida(Philosopher):
         ]
         for term1, term2 in paradox_pairs:
             if term1 in text_lower and term2 in text_lower:
-                contradictions.append({
-                    "type": "Paradox",
-                    "description": f"'{term1}' and '{term2}' coexist",
-                    "effect": "Binary opposition collapses"
-                })
+                contradictions.append(
+                    {
+                        "type": "Paradox",
+                        "description": f"'{term1}' and '{term2}' coexist",
+                        "effect": "Binary opposition collapses",
+                    }
+                )
 
         # Self-reference paradox
         if any(phrase in text_lower for phrase in ["this statement", "i am", "we are"]):
-            contradictions.append({
-                "type": "Self-Reference",
-                "description": "Self-referential structure",
-                "effect": "The text cannot step outside itself to verify itself"
-            })
+            contradictions.append(
+                {
+                    "type": "Self-Reference",
+                    "description": "Self-referential structure",
+                    "effect": "The text cannot step outside itself to verify itself",
+                }
+            )
 
         # Performative contradiction
         if any(phrase in text_lower for phrase in ["there is no", "nothing is", "we cannot"]):
-            contradictions.append({
-                "type": "Performative Contradiction",
-                "description": "The statement may contradict its own performance",
-                "effect": "Saying 'there is no X' invokes X"
-            })
+            contradictions.append(
+                {
+                    "type": "Performative Contradiction",
+                    "description": "The statement may contradict its own performance",
+                    "effect": "Saying 'there is no X' invokes X",
+                }
+            )
 
         if not contradictions:
-            contradictions.append({
-                "type": "Latent Contradiction",
-                "description": "All texts contain suppressed tensions",
-                "effect": "The apparent coherence conceals deeper instability"
-            })
+            contradictions.append(
+                {
+                    "type": "Latent Contradiction",
+                    "description": "All texts contain suppressed tensions",
+                    "effect": "The apparent coherence conceals deeper instability",
+                }
+            )
 
         return contradictions
 
-    def _find_excluded(self, text: str, binaries: List[Dict[str, Any]]) -> List[Dict[str, str]]:
+    def _find_excluded(self, text: str, binaries: list[dict[str, Any]]) -> list[dict[str, str]]:
         """What is excluded to create this meaning?"""
         excluded = []
 
@@ -451,46 +512,56 @@ class Derrida(Philosopher):
             if not binary.get("both_present", True):
                 suppressed = binary.get("suppressed_term", "")
                 if suppressed:
-                    excluded.append({
-                        "term": suppressed,
-                        "description": f"'{suppressed}' is excluded to privilege its opposite",
-                        "deconstructive_insight": f"The excluded '{suppressed}' is constitutive of the text"
-                    })
+                    excluded.append(
+                        {
+                            "term": suppressed,
+                            "description": f"'{suppressed}' is excluded to privilege its opposite",
+                            "deconstructive_insight": f"The excluded '{suppressed}' is constitutive of the text",
+                        }
+                    )
 
         # General exclusions based on content
         text_lower = text.lower()
 
         if "meaning" in text_lower:
-            excluded.append({
-                "term": "nonsense/ambiguity",
-                "description": "Nonsense and ambiguity are excluded to create 'meaning'",
-                "deconstructive_insight": "Meaning requires but suppresses its other"
-            })
+            excluded.append(
+                {
+                    "term": "nonsense/ambiguity",
+                    "description": "Nonsense and ambiguity are excluded to create 'meaning'",
+                    "deconstructive_insight": "Meaning requires but suppresses its other",
+                }
+            )
 
         if "truth" in text_lower:
-            excluded.append({
-                "term": "error/fiction",
-                "description": "Falsehood and fiction are excluded to claim 'truth'",
-                "deconstructive_insight": "Truth is produced through exclusion"
-            })
+            excluded.append(
+                {
+                    "term": "error/fiction",
+                    "description": "Falsehood and fiction are excluded to claim 'truth'",
+                    "deconstructive_insight": "Truth is produced through exclusion",
+                }
+            )
 
         if "identity" in text_lower or "self" in text_lower:
-            excluded.append({
-                "term": "difference/other",
-                "description": "Difference and otherness are excluded to maintain identity",
-                "deconstructive_insight": "Identity depends on what it excludes"
-            })
+            excluded.append(
+                {
+                    "term": "difference/other",
+                    "description": "Difference and otherness are excluded to maintain identity",
+                    "deconstructive_insight": "Identity depends on what it excludes",
+                }
+            )
 
         if not excluded:
-            excluded.append({
-                "term": "the undecidable",
-                "description": "What cannot be captured by binary logic is excluded",
-                "deconstructive_insight": "The undecidable haunts every decision"
-            })
+            excluded.append(
+                {
+                    "term": "the undecidable",
+                    "description": "What cannot be captured by binary logic is excluded",
+                    "deconstructive_insight": "The undecidable haunts every decision",
+                }
+            )
 
         return excluded
 
-    def _analyze_supplement(self, text: str) -> Dict[str, Any]:
+    def _analyze_supplement(self, text: str) -> dict[str, Any]:
         """
         Analyze the logic of the supplement.
 
@@ -500,8 +571,18 @@ class Derrida(Philosopher):
         text_lower = text.lower()
 
         # Supplement indicators
-        addition_words = ["also", "addition", "extra", "supplement", "more", "further",
-                         "moreover", "besides", "add", "include"]
+        addition_words = [
+            "also",
+            "addition",
+            "extra",
+            "supplement",
+            "more",
+            "further",
+            "moreover",
+            "besides",
+            "add",
+            "include",
+        ]
         addition_count = sum(1 for word in addition_words if word in text_lower)
 
         # Substitution indicators
@@ -544,10 +625,10 @@ class Derrida(Philosopher):
             "substitution_count": substitution_count,
             "completion_count": completion_count,
             "lack_count": lack_count,
-            "principle": "The supplement: what is added to a 'complete' thing reveals its incompleteness"
+            "principle": "The supplement: what is added to a 'complete' thing reveals its incompleteness",
         }
 
-    def _assess_logocentrism(self, text: str) -> Dict[str, Any]:
+    def _assess_logocentrism(self, text: str) -> dict[str, Any]:
         """
         Assess logocentrism - the privilege of presence, voice, and logos.
 
@@ -600,10 +681,10 @@ class Derrida(Philosopher):
             "logos_score": logos_count,
             "writing_score": writing_count,
             "total_logocentric": logo_score,
-            "principle": "Logocentrism: The metaphysical privilege of presence, voice, and reason"
+            "principle": "Logocentrism: The metaphysical privilege of presence, voice, and reason",
         }
 
-    def _analyze_dissemination(self, text: str) -> Dict[str, Any]:
+    def _analyze_dissemination(self, text: str) -> dict[str, Any]:
         """
         Analyze dissemination - the scattering and proliferation of meaning.
 
@@ -651,10 +732,10 @@ class Derrida(Philosopher):
             "gathering_score": gather_count,
             "ambiguity_score": ambig_count,
             "dissemination_total": dissemination_score,
-            "principle": "Dissemination: Meaning scatters without final gathering"
+            "principle": "Dissemination: Meaning scatters without final gathering",
         }
 
-    def _identify_undecidables(self, text: str) -> List[Dict[str, str]]:
+    def _identify_undecidables(self, text: str) -> list[dict[str, str]]:
         """
         Identify undecidables - terms that belong to neither/both sides of a binary.
 
@@ -677,33 +758,41 @@ class Derrida(Philosopher):
 
         for term, (opposition, description) in undecidable_terms.items():
             if term in text_lower:
-                undecidables.append({
-                    "term": term,
-                    "opposition_destabilized": opposition,
-                    "description": description,
-                    "effect": f"'{term}' cannot be assigned to either side of the binary"
-                })
+                undecidables.append(
+                    {
+                        "term": term,
+                        "opposition_destabilized": opposition,
+                        "description": description,
+                        "effect": f"'{term}' cannot be assigned to either side of the binary",
+                    }
+                )
 
         # Check for structural undecidability
-        if any(phrase in text_lower for phrase in ["both", "neither", "and yet", "at the same time"]):
-            undecidables.append({
-                "term": "[structural undecidable]",
-                "opposition_destabilized": "general",
-                "description": "The text indicates something that belongs to both/neither",
-                "effect": "Binary logic is insufficient"
-            })
+        if any(
+            phrase in text_lower for phrase in ["both", "neither", "and yet", "at the same time"]
+        ):
+            undecidables.append(
+                {
+                    "term": "[structural undecidable]",
+                    "opposition_destabilized": "general",
+                    "description": "The text indicates something that belongs to both/neither",
+                    "effect": "Binary logic is insufficient",
+                }
+            )
 
         if not undecidables:
-            undecidables.append({
-                "term": "[implicit undecidable]",
-                "opposition_destabilized": "meaning/non-meaning",
-                "description": "Every text contains moments of undecidability",
-                "effect": "Final decision is always deferred"
-            })
+            undecidables.append(
+                {
+                    "term": "[implicit undecidable]",
+                    "opposition_destabilized": "meaning/non-meaning",
+                    "description": "Every text contains moments of undecidability",
+                    "effect": "Final decision is always deferred",
+                }
+            )
 
         return undecidables
 
-    def _analyze_hospitality(self, text: str) -> Dict[str, Any]:
+    def _analyze_hospitality(self, text: str) -> dict[str, Any]:
         """
         Analyze hospitality - the impossible demand of unconditional welcome.
 
@@ -758,10 +847,10 @@ class Derrida(Philosopher):
             "condition_score": condition_count,
             "exclusion_score": exclusion_count,
             "other_score": other_count,
-            "principle": "Hospitality: The impossible demand of unconditional welcome"
+            "principle": "Hospitality: The impossible demand of unconditional welcome",
         }
 
-    def _analyze_hauntology(self, text: str) -> Dict[str, Any]:
+    def _analyze_hauntology(self, text: str) -> dict[str, Any]:
         """
         Analyze hauntology - being haunted by absent presences.
 
@@ -816,10 +905,10 @@ class Derrida(Philosopher):
             "future_haunting": future_count,
             "presence_absence": pa_count,
             "hauntology_score": haunt_score,
-            "principle": "Hauntology: We are haunted by specters - neither present nor absent"
+            "principle": "Hauntology: We are haunted by specters - neither present nor absent",
         }
 
-    def _assess_iterability(self, text: str) -> Dict[str, Any]:
+    def _assess_iterability(self, text: str) -> dict[str, Any]:
         """
         Assess iterability - repeatability that introduces difference.
 
@@ -867,10 +956,10 @@ class Derrida(Philosopher):
             "difference_score": diff_count,
             "context_score": context_count,
             "citation_score": quote_count,
-            "principle": "Iterability: Repetition is the condition of both identity and difference"
+            "principle": "Iterability: Repetition is the condition of both identity and difference",
         }
 
-    def _identify_aporia(self, text: str) -> List[Dict[str, str]]:
+    def _identify_aporia(self, text: str) -> list[dict[str, str]]:
         """
         Identify aporia - impasses, contradictions that cannot be resolved.
 
@@ -880,47 +969,60 @@ class Derrida(Philosopher):
         text_lower = text.lower()
 
         # Explicit aporia indicators
-        if any(phrase in text_lower for phrase in ["impossible", "cannot", "impassable", "contradiction"]):
-            aporias.append({
-                "type": "Explicit Impasse",
-                "description": "The text acknowledges an impossibility or impasse",
-                "significance": "The aporia is where thinking must linger"
-            })
+        if any(
+            phrase in text_lower
+            for phrase in ["impossible", "cannot", "impassable", "contradiction"]
+        ):
+            aporias.append(
+                {
+                    "type": "Explicit Impasse",
+                    "description": "The text acknowledges an impossibility or impasse",
+                    "significance": "The aporia is where thinking must linger",
+                }
+            )
 
         # Double bind indicators
         if any(phrase in text_lower for phrase in ["both and", "neither nor", "at the same time"]):
-            aporias.append({
-                "type": "Double Bind",
-                "description": "Contradictory demands that cannot both be satisfied",
-                "significance": "No resolution without loss"
-            })
+            aporias.append(
+                {
+                    "type": "Double Bind",
+                    "description": "Contradictory demands that cannot both be satisfied",
+                    "significance": "No resolution without loss",
+                }
+            )
 
         # Decision indicators
         if any(word in text_lower for word in ["decide", "choice", "decision"]):
-            aporias.append({
-                "type": "Aporia of Decision",
-                "description": "A true decision passes through the undecidable",
-                "significance": "If it were calculable, it would not be a decision"
-            })
+            aporias.append(
+                {
+                    "type": "Aporia of Decision",
+                    "description": "A true decision passes through the undecidable",
+                    "significance": "If it were calculable, it would not be a decision",
+                }
+            )
 
         # Responsibility indicators
         if any(word in text_lower for word in ["responsible", "responsibility", "duty"]):
-            aporias.append({
-                "type": "Aporia of Responsibility",
-                "description": "Responsibility to one may mean irresponsibility to others",
-                "significance": "Responsibility is aporetic"
-            })
+            aporias.append(
+                {
+                    "type": "Aporia of Responsibility",
+                    "description": "Responsibility to one may mean irresponsibility to others",
+                    "significance": "Responsibility is aporetic",
+                }
+            )
 
         if not aporias:
-            aporias.append({
-                "type": "Latent Aporia",
-                "description": "Every text encounters its own limits",
-                "significance": "The aporia is where deconstruction begins"
-            })
+            aporias.append(
+                {
+                    "type": "Latent Aporia",
+                    "description": "Every text encounters its own limits",
+                    "significance": "The aporia is where deconstruction begins",
+                }
+            )
 
         return aporias
 
-    def _analyze_gift(self, text: str) -> Dict[str, Any]:
+    def _analyze_gift(self, text: str) -> dict[str, Any]:
         """
         Analyze the gift - the impossibility of the pure gift.
 
@@ -969,10 +1071,10 @@ class Derrida(Philosopher):
             "gift_score": gift_count,
             "exchange_score": exchange_count,
             "gratuitous_score": gratuitous_count,
-            "principle": "The Gift: The pure gift is impossible - recognition annuls it"
+            "principle": "The Gift: The pure gift is impossible - recognition annuls it",
         }
 
-    def _analyze_justice(self, text: str) -> Dict[str, Any]:
+    def _analyze_justice(self, text: str) -> dict[str, Any]:
         """
         Analyze justice vs law.
 
@@ -1026,19 +1128,19 @@ class Derrida(Philosopher):
             "law_score": law_count,
             "rights_score": rights_count,
             "violence_score": violence_count,
-            "principle": "Justice: The undeconstructible that deconstruction serves"
+            "principle": "Justice: The undeconstructible that deconstruction serves",
         }
 
     def _construct_reasoning(
         self,
-        binaries: List[Dict[str, Any]],
-        traces: List[Dict[str, str]],
-        differance: Dict[str, Any],
-        contradictions: List[Dict[str, str]],
-        supplement: Dict[str, Any],
-        logocentrism: Dict[str, Any],
-        undecidables: List[Dict[str, str]],
-        aporia: List[Dict[str, str]]
+        binaries: list[dict[str, Any]],
+        traces: list[dict[str, str]],
+        differance: dict[str, Any],
+        contradictions: list[dict[str, str]],
+        supplement: dict[str, Any],
+        logocentrism: dict[str, Any],
+        undecidables: list[dict[str, str]],
+        aporia: list[dict[str, str]],
     ) -> str:
         """Construct comprehensive deconstructive reasoning."""
         # Start with binary oppositions
@@ -1065,7 +1167,9 @@ class Derrida(Philosopher):
             reasoning += f"Logocentric tendency: {logocentrism['description']}. "
 
         # Add contradictions
-        primary_contradiction = contradictions[0] if contradictions else {"description": "latent tensions"}
+        primary_contradiction = (
+            contradictions[0] if contradictions else {"description": "latent tensions"}
+        )
         reasoning += f"{primary_contradiction['description']}. "
 
         # Add undecidables
@@ -1085,7 +1189,7 @@ class Derrida(Philosopher):
 
         return reasoning
 
-    def _calculate_tension(self, analysis: Dict[str, Any]) -> Dict[str, Any]:
+    def _calculate_tension(self, analysis: dict[str, Any]) -> dict[str, Any]:
         """
         Calculate deconstructive tension.
 
@@ -1161,5 +1265,7 @@ class Derrida(Philosopher):
             "level": level,
             "score": tension_score,
             "description": description,
-            "elements": tension_elements if tension_elements else ["Implicit tensions always present"]
+            "elements": tension_elements
+            if tension_elements
+            else ["Implicit tensions always present"],
         }

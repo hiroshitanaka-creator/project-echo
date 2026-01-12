@@ -16,7 +16,7 @@ Key concepts:
 - Appearance vs Reality: Distinction between seeming and being
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -53,7 +53,7 @@ class Parmenides(Philosopher):
             "unity",
         ]
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Apply Parmenidean ontological reasoning to the prompt.
 
@@ -84,7 +84,7 @@ class Parmenides(Philosopher):
             },
         }
 
-    def _analyze_parmenides(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_parmenides(self, prompt: str) -> dict[str, Any]:
         """Comprehensive Parmenidean analysis of the prompt."""
         being = self._analyze_being(prompt)
         non_being = self._analyze_non_being(prompt)
@@ -97,8 +97,15 @@ class Parmenides(Philosopher):
         logical = self._derive_logical_analysis(prompt)
 
         reasoning = self._construct_reasoning(
-            prompt, being, non_being, truth, opinion,
-            monism, immutability, completeness, appearance_reality
+            prompt,
+            being,
+            non_being,
+            truth,
+            opinion,
+            monism,
+            immutability,
+            completeness,
+            appearance_reality,
         )
 
         return {
@@ -114,7 +121,7 @@ class Parmenides(Philosopher):
             "logical": logical,
         }
 
-    def _analyze_being(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_being(self, prompt: str) -> dict[str, Any]:
         """
         Analyze through the concept of Being.
 
@@ -152,7 +159,7 @@ class Parmenides(Philosopher):
             "application": "What is the Being of what is here in question?",
         }
 
-    def _analyze_non_being(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_non_being(self, prompt: str) -> dict[str, Any]:
         """
         Examine the impossibility of Non-being.
 
@@ -188,7 +195,7 @@ class Parmenides(Philosopher):
             "application": "What absurdity arises from supposing non-being here?",
         }
 
-    def _analyze_way_of_truth(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_way_of_truth(self, prompt: str) -> dict[str, Any]:
         """
         Examine the Way of Truth (aletheia).
 
@@ -219,7 +226,7 @@ class Parmenides(Philosopher):
             "application": "What does rational inquiry reveal about this?",
         }
 
-    def _analyze_way_of_opinion(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_way_of_opinion(self, prompt: str) -> dict[str, Any]:
         """
         Examine the Way of Opinion (doxa).
 
@@ -250,7 +257,7 @@ class Parmenides(Philosopher):
             "application": "What mortal opinions obscure the truth here?",
         }
 
-    def _analyze_monism(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_monism(self, prompt: str) -> dict[str, Any]:
         """
         Examine the doctrine that Being is One.
 
@@ -281,7 +288,7 @@ class Parmenides(Philosopher):
             "application": "What unity underlies apparent diversity here?",
         }
 
-    def _analyze_immutability(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_immutability(self, prompt: str) -> dict[str, Any]:
         """
         Examine the doctrine that Being does not change.
 
@@ -317,7 +324,7 @@ class Parmenides(Philosopher):
             "application": "What apparent changes are revealed as illusions?",
         }
 
-    def _analyze_completeness(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_completeness(self, prompt: str) -> dict[str, Any]:
         """
         Examine the doctrine that Being lacks nothing.
 
@@ -348,7 +355,7 @@ class Parmenides(Philosopher):
             "application": "What completeness or lack appears here?",
         }
 
-    def _analyze_appearance_reality(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_appearance_reality(self, prompt: str) -> dict[str, Any]:
         """
         Examine the distinction between appearance and reality.
 
@@ -379,7 +386,7 @@ class Parmenides(Philosopher):
             "application": "What appears here, and what is truly real?",
         }
 
-    def _derive_logical_analysis(self, prompt: str) -> Dict[str, Any]:
+    def _derive_logical_analysis(self, prompt: str) -> dict[str, Any]:
         """Extract logical principles from Parmenides's reasoning."""
         return {
             "principle_of_non_contradiction": {
@@ -410,46 +417,54 @@ class Parmenides(Philosopher):
         }
 
     def _construct_reasoning(
-        self, prompt: str, being: Dict, non_being: Dict, truth: Dict, opinion: Dict,
-        monism: Dict, immutability: Dict, completeness: Dict, appearance_reality: Dict
+        self,
+        prompt: str,
+        being: dict,
+        non_being: dict,
+        truth: dict,
+        opinion: dict,
+        monism: dict,
+        immutability: dict,
+        completeness: dict,
+        appearance_reality: dict,
     ) -> str:
         """Construct comprehensive Parmenidean reasoning."""
         return f"""Eleatic Inquiry: "{prompt}"
 
 THE WAY OF TRUTH
-{truth['nature']['description']}. {truth['identity_of_thought_and_being']['thesis']}
-{truth['rational_method']['principle']}
+{truth["nature"]["description"]}. {truth["identity_of_thought_and_being"]["thesis"]}
+{truth["rational_method"]["principle"]}
 
 BEING IS
-{being['fundamental_thesis']['statement']}. {being['fundamental_thesis']['necessity']}
-Being is marked by these signs: {', '.join(being['signs_of_being']['list'][:3])}.
+{being["fundamental_thesis"]["statement"]}. {being["fundamental_thesis"]["necessity"]}
+Being is marked by these signs: {", ".join(being["signs_of_being"]["list"][:3])}.
 
 THE IMPOSSIBILITY OF NON-BEING
-{non_being['impossibility']['statement']}. {non_being['unthinkability']['reason']}
-{non_being['forbidden_path']['reason']}
+{non_being["impossibility"]["statement"]}. {non_being["unthinkability"]["reason"]}
+{non_being["forbidden_path"]["reason"]}
 
 THE UNITY OF BEING
-{monism['thesis']['statement']}. {monism['continuity']['reason']}
-{monism['homogeneity']['description']}
+{monism["thesis"]["statement"]}. {monism["continuity"]["reason"]}
+{monism["homogeneity"]["description"]}
 
 THE IMMUTABILITY OF BEING
-{immutability['thesis']['statement']}. {immutability['no_generation']['statement']}
-{immutability['eternal_present']['description']}
+{immutability["thesis"]["statement"]}. {immutability["no_generation"]["statement"]}
+{immutability["eternal_present"]["description"]}
 
 THE COMPLETENESS OF BEING
-{completeness['thesis']['statement']}. {completeness['self_sufficiency']['reason']}
-{being['sphere_metaphor']['description']}
+{completeness["thesis"]["statement"]}. {completeness["self_sufficiency"]["reason"]}
+{being["sphere_metaphor"]["description"]}
 
 APPEARANCE AND REALITY
-{appearance_reality['fundamental_distinction']['gap']}
-{opinion['mortal_errors']['senses']}
-{appearance_reality['discerning_reality']['method']}
+{appearance_reality["fundamental_distinction"]["gap"]}
+{opinion["mortal_errors"]["senses"]}
+{appearance_reality["discerning_reality"]["method"]}
 
 Thus reason declares: Being is one, eternal, unchanging, complete.
 Change and plurality are the way of mortal opinion, not truth.
 What appears to the senses must be judged by reason alone."""
 
-    def _calculate_tension(self, analysis: Dict[str, Any]) -> float:
+    def _calculate_tension(self, analysis: dict[str, Any]) -> float:
         """
         Calculate philosophical tension.
 

@@ -7,10 +7,10 @@ Integrates 39-dimensional ethical evaluation with 39 philosophers' perspectives.
 from __future__ import annotations
 
 import sys
-from pathlib import Path
-from dataclasses import asdict
-from typing import Any, Dict, List, Tuple, Optional
 import time
+from dataclasses import asdict
+from pathlib import Path
+from typing import Any
 
 # Add examples to path to import existing run.py
 examples_path = Path(__file__).resolve().parents[3] / "examples"
@@ -36,15 +36,15 @@ except ImportError:
         def array(x, dtype=None):
             return x
 
-from po_core.cosmic_ethics_39.schema import DIMENSIONS_39, dimension_name_to_key
-from po_core.philosophers import load_cosmic_philosophers
-from po_core.philosophers.base import PhilosopherPerspective
 
 # Import existing cosmic ethics framework
 from cosmic_ethics_39.run import CosmicEthicsFramework, CosmicScenario, EthicalDimension
 
+from po_core.cosmic_ethics_39.schema import DIMENSIONS_39, dimension_name_to_key
+from po_core.philosophers import load_cosmic_philosophers
+from po_core.philosophers.base import PhilosopherPerspective
 
-ScoreDict = Dict[str, float]
+ScoreDict = dict[str, float]
 
 
 class BaseScorer:
@@ -58,7 +58,7 @@ class BaseScorer:
     def __init__(self):
         self.framework = CosmicEthicsFramework()
 
-    def score(self, scenario_text: str, meta: Dict[str, Any]) -> ScoreDict:
+    def score(self, scenario_text: str, meta: dict[str, Any]) -> ScoreDict:
         """
         Returns:
             dict: DIMENSIONS_39 keys with [0,1] scores for all 39 dimensions
@@ -88,7 +88,7 @@ class BaseScorer:
             affected_beings=int(meta.get("affected_beings", 1000000)),
             reversibility=float(meta.get("reversibility", 0.5)),
             uncertainty=float(meta.get("uncertainty", 0.5)),
-            relevant_dimensions=relevant_dims
+            relevant_dimensions=relevant_dims,
         )
 
         # Get evaluation from existing framework
@@ -113,7 +113,7 @@ def _clip01(x: float) -> float:
     return 0.0 if x < 0.0 else 1.0 if x > 1.0 else x
 
 
-def _safe_get(meta: Dict[str, Any], key: str, default: float) -> float:
+def _safe_get(meta: dict[str, Any], key: str, default: float) -> float:
     v = meta.get(key, default)
     try:
         return float(v)
@@ -147,7 +147,12 @@ def _perspective_weight_vector(p: PhilosopherPerspective) -> ScoreDict:
             if k in w:
                 w[k] = 1.25
 
-    if "betweenness" in approach or "relational" in approach or "ningen" in approach or "watsuji" in approach:
+    if (
+        "betweenness" in approach
+        or "relational" in approach
+        or "ningen" in approach
+        or "watsuji" in approach
+    ):
         for k in ["local", "collective_good", "systemic_responsibility", "collective_consensus"]:
             if k in w:
                 w[k] = 1.20
@@ -165,7 +170,7 @@ def _perspective_weight_vector(p: PhilosopherPerspective) -> ScoreDict:
     return w
 
 
-def _aggregate_weights(perspectives: List[PhilosopherPerspective]) -> Tuple[ScoreDict, ScoreDict]:
+def _aggregate_weights(perspectives: list[PhilosopherPerspective]) -> tuple[ScoreDict, ScoreDict]:
     """
     Aggregate weights from all philosophers.
 
@@ -190,7 +195,7 @@ def _aggregate_weights(perspectives: List[PhilosopherPerspective]) -> Tuple[Scor
         values = [W[i][j] for i in range(len(W))]
         m = sum(values) / len(values)
         variance = sum((v - m) ** 2 for v in values) / len(values)
-        s = variance ** 0.5
+        s = variance**0.5
         mean.append(m)
         std.append(s)
 
@@ -211,11 +216,15 @@ def _apply_weights(base_scores: ScoreDict, mean_weights: ScoreDict) -> ScoreDict
     return out
 
 
-def _compute_adjusted_overall(adjusted_scores: ScoreDict, meta: Dict[str, Any]) -> Dict[str, float]:
+def _compute_adjusted_overall(adjusted_scores: ScoreDict, meta: dict[str, Any]) -> dict[str, float]:
     """
     Compute overall adjusted score with uncertainty and irreversibility penalties.
     """
-    overall = float(sum(adjusted_scores[k] for k in DIMENSIONS_39) / len(DIMENSIONS_39)) if DIMENSIONS_39 else 0.0
+    overall = (
+        float(sum(adjusted_scores[k] for k in DIMENSIONS_39) / len(DIMENSIONS_39))
+        if DIMENSIONS_39
+        else 0.0
+    )
 
     uncertainty = _safe_get(meta, "uncertainty", 0.0)
     reversibility = _safe_get(meta, "reversibility", 1.0)
@@ -234,7 +243,9 @@ def _compute_adjusted_overall(adjusted_scores: ScoreDict, meta: Dict[str, Any]) 
     }
 
 
-def _tension_topk(base_scores: ScoreDict, std_weights: ScoreDict, k: int = 10) -> List[Dict[str, Any]]:
+def _tension_topk(
+    base_scores: ScoreDict, std_weights: ScoreDict, k: int = 10
+) -> list[dict[str, Any]]:
     """
     Calculate tension (disagreement among philosophers) for each dimension.
 
@@ -251,14 +262,16 @@ def _tension_topk(base_scores: ScoreDict, std_weights: ScoreDict, k: int = 10) -
     return [{"dimension": d, "tension_score": float(s)} for d, s in items[:k]]
 
 
-def _blocked_options(adjusted: Dict[str, float], adjusted_scores: ScoreDict) -> List[Dict[str, Any]]:
+def _blocked_options(
+    adjusted: dict[str, float], adjusted_scores: ScoreDict
+) -> list[dict[str, Any]]:
     """
     Generate blocked options based on risk thresholds.
 
     Rule-based blocking logic:
     - If adjusted_score < 0.5 or critical dimensions exceed thresholds
     """
-    blocked: List[Dict[str, Any]] = []
+    blocked: list[dict[str, Any]] = []
 
     adj_score = adjusted["adjusted_score"]
 
@@ -272,12 +285,14 @@ def _blocked_options(adjusted: Dict[str, float], adjusted_scores: ScoreDict) -> 
         triggers.append("unknown_unknowns")
 
     if adj_score < 0.5 or len(triggers) >= 2:
-        blocked.append({
-            "option": "Proceed with full-scale execution",
-            "reason": "Risk/uncertainty thresholds exceeded",
-            "blocking_dimensions": triggers or ["adjusted_score_low"],
-            "tension_score": float(-(0.5 - adj_score)) if adj_score < 0.5 else -0.1,
-        })
+        blocked.append(
+            {
+                "option": "Proceed with full-scale execution",
+                "reason": "Risk/uncertainty thresholds exceeded",
+                "blocking_dimensions": triggers or ["adjusted_score_low"],
+                "tension_score": float(-(0.5 - adj_score)) if adj_score < 0.5 else -0.1,
+            }
+        )
 
     return blocked
 
@@ -294,10 +309,10 @@ class CosmicEthics39Evaluator:
     5. Generates blocked options based on thresholds
     """
 
-    def __init__(self, base_scorer: Optional[BaseScorer] = None) -> None:
+    def __init__(self, base_scorer: BaseScorer | None = None) -> None:
         self.base_scorer = base_scorer or BaseScorer()
 
-    def evaluate(self, scenario_text: str, meta: Dict[str, Any]) -> Dict[str, Any]:
+    def evaluate(self, scenario_text: str, meta: dict[str, Any]) -> dict[str, Any]:
         """
         Evaluate a cosmic scenario with 39 philosophers and 39 dimensions.
 
@@ -315,7 +330,7 @@ class CosmicEthics39Evaluator:
 
         # 2) Philosophers analyze
         philosophers = load_cosmic_philosophers()
-        perspectives: List[PhilosopherPerspective] = [
+        perspectives: list[PhilosopherPerspective] = [
             ph.analyze(scenario_text, meta) for ph in philosophers
         ]
 

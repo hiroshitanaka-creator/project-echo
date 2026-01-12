@@ -17,7 +17,7 @@ Key Concepts:
 - Sage-Ruler: Leadership through non-interference
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from po_core.philosophers.base import Philosopher
 
@@ -33,10 +33,10 @@ class Laozi(Philosopher):
     def __init__(self) -> None:
         super().__init__(
             name="Laozi",
-            description="Daoist sage focused on the Tao (Way), wu wei (non-action), and natural simplicity"
+            description="Daoist sage focused on the Tao (Way), wu wei (non-action), and natural simplicity",
         )
 
-    def reason(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def reason(self, prompt: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
         """Analyze from Laozi's Daoist perspective."""
         analysis = self._analyze_daoist(prompt)
         tension = self._calculate_tension(analysis)
@@ -57,11 +57,11 @@ class Laozi(Philosopher):
             "metadata": {
                 "philosopher": self.name,
                 "approach": "Daoist wisdom",
-                "focus": "Tao, wu wei, naturalness, and complementary opposites"
-            }
+                "focus": "Tao, wu wei, naturalness, and complementary opposites",
+            },
         }
 
-    def _analyze_daoist(self, prompt: str) -> Dict[str, Any]:
+    def _analyze_daoist(self, prompt: str) -> dict[str, Any]:
         """Perform comprehensive Daoist analysis."""
         tao = self._analyze_tao(prompt)
         wu_wei = self._analyze_wu_wei(prompt)
@@ -73,9 +73,7 @@ class Laozi(Philosopher):
         emptiness = self._analyze_emptiness(prompt)
         sage_ruler = self._analyze_sage_ruler(prompt)
 
-        reasoning = self._construct_reasoning(
-            tao, wu_wei, te, pu, yin_yang, soft_hard, emptiness
-        )
+        reasoning = self._construct_reasoning(tao, wu_wei, te, pu, yin_yang, soft_hard, emptiness)
 
         return {
             "reasoning": reasoning,
@@ -87,17 +85,23 @@ class Laozi(Philosopher):
             "return": return_analysis,
             "soft_hard": soft_hard,
             "emptiness": emptiness,
-            "sage_ruler": sage_ruler
+            "sage_ruler": sage_ruler,
         }
 
-    def _analyze_tao(self, text: str) -> Dict[str, Any]:
+    def _analyze_tao(self, text: str) -> dict[str, Any]:
         """Analyze the Tao (Way) - ineffable source of all."""
         text_lower = text.lower()
 
         tao_words = ["way", "path", "tao", "dao", "source", "origin", "principle"]
         tao_count = sum(1 for word in tao_words if word in text_lower)
 
-        ineffable_words = ["cannot be named", "indescribable", "beyond words", "mystery", "nameless"]
+        ineffable_words = [
+            "cannot be named",
+            "indescribable",
+            "beyond words",
+            "mystery",
+            "nameless",
+        ]
         ineffable_count = sum(1 for phrase in ineffable_words if phrase in text_lower)
 
         if tao_count >= 2 and ineffable_count >= 1:
@@ -118,15 +122,24 @@ class Laozi(Philosopher):
             "description": description,
             "tao_score": tao_count,
             "ineffable_score": ineffable_count,
-            "principle": "The Tao that can be told is not the eternal Tao (TTC 1)"
+            "principle": "The Tao that can be told is not the eternal Tao (TTC 1)",
         }
 
-    def _analyze_wu_wei(self, text: str) -> Dict[str, Any]:
+    def _analyze_wu_wei(self, text: str) -> dict[str, Any]:
         """Analyze wu wei - non-action, effortless action."""
         text_lower = text.lower()
 
-        wu_wei_words = ["effortless", "natural", "spontaneous", "let go", "allow",
-                        "flow", "without force", "not force", "non-action"]
+        wu_wei_words = [
+            "effortless",
+            "natural",
+            "spontaneous",
+            "let go",
+            "allow",
+            "flow",
+            "without force",
+            "not force",
+            "non-action",
+        ]
         wu_wei_count = sum(1 for phrase in wu_wei_words if phrase in text_lower)
 
         action_words = ["force", "push", "struggle", "strive", "effort", "fight", "control"]
@@ -150,10 +163,10 @@ class Laozi(Philosopher):
             "description": description,
             "wu_wei_score": wu_wei_count,
             "action_score": action_count,
-            "principle": "Wu wei: Act without acting, do without doing (TTC 2)"
+            "principle": "Wu wei: Act without acting, do without doing (TTC 2)",
         }
 
-    def _analyze_te(self, text: str) -> Dict[str, Any]:
+    def _analyze_te(self, text: str) -> dict[str, Any]:
         """Analyze te (virtue/power) - power from alignment with Tao."""
         text_lower = text.lower()
 
@@ -181,15 +194,23 @@ class Laozi(Philosopher):
             "description": description,
             "te_score": te_count,
             "alignment_score": alignment_count,
-            "principle": "Te: Power/virtue that flows from alignment with the Tao"
+            "principle": "Te: Power/virtue that flows from alignment with the Tao",
         }
 
-    def _analyze_pu(self, text: str) -> Dict[str, Any]:
+    def _analyze_pu(self, text: str) -> dict[str, Any]:
         """Analyze pu (uncarved block) - natural simplicity."""
         text_lower = text.lower()
 
-        pu_words = ["simple", "simplicity", "natural", "unadorned", "plain",
-                    "uncomplicated", "innocent", "original"]
+        pu_words = [
+            "simple",
+            "simplicity",
+            "natural",
+            "unadorned",
+            "plain",
+            "uncomplicated",
+            "innocent",
+            "original",
+        ]
         pu_count = sum(1 for word in pu_words if word in text_lower)
 
         complexity_words = ["complex", "complicated", "sophisticated", "elaborate", "artificial"]
@@ -213,10 +234,10 @@ class Laozi(Philosopher):
             "description": description,
             "pu_score": pu_count,
             "complexity_score": complexity_count,
-            "principle": "Pu: Return to the simplicity of the uncarved block (TTC 19)"
+            "principle": "Pu: Return to the simplicity of the uncarved block (TTC 19)",
         }
 
-    def _analyze_yin_yang(self, text: str) -> Dict[str, Any]:
+    def _analyze_yin_yang(self, text: str) -> dict[str, Any]:
         """Analyze yin-yang - complementary opposites."""
         text_lower = text.lower()
 
@@ -252,10 +273,10 @@ class Laozi(Philosopher):
             "balance": balance,
             "yin_score": yin_count,
             "yang_score": yang_count,
-            "principle": "Yin and yang arise together, complement each other"
+            "principle": "Yin and yang arise together, complement each other",
         }
 
-    def _analyze_return(self, text: str) -> Dict[str, Any]:
+    def _analyze_return(self, text: str) -> dict[str, Any]:
         """Analyze fu (return) - returning to the source."""
         text_lower = text.lower()
 
@@ -283,10 +304,10 @@ class Laozi(Philosopher):
             "description": description,
             "return_score": return_count,
             "progress_score": progress_count,
-            "principle": "Returning is the movement of the Tao (TTC 40)"
+            "principle": "Returning is the movement of the Tao (TTC 40)",
         }
 
-    def _analyze_soft_hard(self, text: str) -> Dict[str, Any]:
+    def _analyze_soft_hard(self, text: str) -> dict[str, Any]:
         """Analyze soft overcoming hard - the water principle."""
         text_lower = text.lower()
 
@@ -314,10 +335,10 @@ class Laozi(Philosopher):
             "description": description,
             "soft_score": soft_count,
             "hard_score": hard_count,
-            "principle": "The soft overcomes the hard, the weak overcomes the strong (TTC 36)"
+            "principle": "The soft overcomes the hard, the weak overcomes the strong (TTC 36)",
         }
 
-    def _analyze_emptiness(self, text: str) -> Dict[str, Any]:
+    def _analyze_emptiness(self, text: str) -> dict[str, Any]:
         """Analyze emptiness and its usefulness."""
         text_lower = text.lower()
 
@@ -342,10 +363,10 @@ class Laozi(Philosopher):
             "description": description,
             "empty_score": empty_count,
             "useful_score": useful_count,
-            "principle": "We shape clay into a pot, but it is the emptiness inside that holds (TTC 11)"
+            "principle": "We shape clay into a pot, but it is the emptiness inside that holds (TTC 11)",
         }
 
-    def _analyze_sage_ruler(self, text: str) -> Dict[str, Any]:
+    def _analyze_sage_ruler(self, text: str) -> dict[str, Any]:
         """Analyze sage-ruler - leadership through non-interference."""
         text_lower = text.lower()
 
@@ -373,18 +394,18 @@ class Laozi(Philosopher):
             "description": description,
             "leadership_score": leadership_count,
             "non_interference_score": non_interference_count,
-            "principle": "The best leader is barely known to exist (TTC 17)"
+            "principle": "The best leader is barely known to exist (TTC 17)",
         }
 
     def _construct_reasoning(
         self,
-        tao: Dict[str, Any],
-        wu_wei: Dict[str, Any],
-        te: Dict[str, Any],
-        pu: Dict[str, Any],
-        yin_yang: Dict[str, Any],
-        soft_hard: Dict[str, Any],
-        emptiness: Dict[str, Any]
+        tao: dict[str, Any],
+        wu_wei: dict[str, Any],
+        te: dict[str, Any],
+        pu: dict[str, Any],
+        yin_yang: dict[str, Any],
+        soft_hard: dict[str, Any],
+        emptiness: dict[str, Any],
     ) -> str:
         """Construct Daoist reasoning."""
         reasoning = (
@@ -409,7 +430,7 @@ class Laozi(Philosopher):
 
         return reasoning
 
-    def _calculate_tension(self, analysis: Dict[str, Any]) -> Dict[str, Any]:
+    def _calculate_tension(self, analysis: dict[str, Any]) -> dict[str, Any]:
         """Calculate philosophical tension."""
         tension_score = 0
         tension_elements = []
@@ -447,5 +468,5 @@ class Laozi(Philosopher):
             "level": level,
             "score": tension_score,
             "description": description,
-            "elements": tension_elements if tension_elements else ["Harmony with the Tao"]
+            "elements": tension_elements if tension_elements else ["Harmony with the Tao"],
         }
