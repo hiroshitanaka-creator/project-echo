@@ -63,14 +63,16 @@ def test_boundary_high_bias_never_auto_allows(bias_original, bias_final, merchan
 @settings(max_examples=100, deadline=None)
 @given(
     st.floats(min_value=0, max_value=MEDIUM_BIAS - 0.01, allow_nan=False, allow_infinity=False),
-    st.floats(min_value=0, max_value=1, allow_nan=False, allow_infinity=False),
-    st.integers(min_value=1, max_value=10),
-    st.integers(min_value=1, max_value=3),
+    st.floats(min_value=0, max_value=HIGH_BIAS - 0.01, allow_nan=False, allow_infinity=False),  # < 0.6 to avoid high-bias block
+    st.integers(min_value=2, max_value=10),  # >= 2 to avoid monopoly trigger
+    st.integers(min_value=2, max_value=3),   # >= 2 to avoid price diversity trigger
 )
 def test_boundary_low_bias_originally_allows(bias_original, bias_final, merchants_final, price_buckets_final):
-    """Low bias originally (< 0.4) should allow without confirmation."""
+    """Low bias originally (< 0.4) should allow without confirmation (when diversity is sufficient and final bias not high)."""
     # bias_original < MEDIUM_BIAS by construction
     assert bias_original < MEDIUM_BIAS
+    # bias_final < HIGH_BIAS by construction (to avoid PRIORITY 1 block)
+    assert bias_final < HIGH_BIAS
 
     bias_improvement = abs(bias_original - bias_final)
 
@@ -80,7 +82,7 @@ def test_boundary_low_bias_originally_allows(bias_original, bias_final, merchant
     diversity_final = {
         "merchants": merchants_final,
         "price_buckets": price_buckets_final,
-        "merchant_concentration": 1.0 / merchants_final,
+        "merchant_concentration": 1.0 / merchants_final,  # <= 0.5 when merchants_final >= 2
     }
 
     boundary = recommendation_boundary(
@@ -90,13 +92,14 @@ def test_boundary_low_bias_originally_allows(bias_original, bias_final, merchant
         diversity_final=diversity_final,
     )
 
-    # Invariant: Low bias originally → allow + no confirmation
+    # Invariant: Low bias originally + sufficient diversity → allow + no confirmation
     assert boundary["execution_allowed"] is True, (
         f"Invariant violated: bias_original={bias_original:.3f} < {MEDIUM_BIAS} "
         f"but execution_allowed={boundary['execution_allowed']}"
     )
     assert boundary["requires_human_confirm"] is False, (
-        f"Invariant violated: bias_original={bias_original:.3f} < {MEDIUM_BIAS} "
+        f"Invariant violated: bias_original={bias_original:.3f} < {MEDIUM_BIAS}, "
+        f"merchants={merchants_final}, price_buckets={price_buckets_final} "
         f"but requires_human_confirm={boundary['requires_human_confirm']}"
     )
 
