@@ -41,8 +41,8 @@ except ImportError:
 from cosmic_ethics_39.run import CosmicEthicsFramework, CosmicScenario, EthicalDimension
 
 from po_core.cosmic_ethics_39.schema import DIMENSIONS_39, dimension_name_to_key
-from po_core.philosophers import load_cosmic_philosophers
-from po_core.philosophers.base import PhilosopherPerspective
+from po_core.philosophers import load_philosophers_by_preset
+from po_core.philosophers.base import Philosopher, PhilosopherPerspective
 
 ScoreDict = dict[str, float]
 
@@ -309,8 +309,19 @@ class CosmicEthics39Evaluator:
     5. Generates blocked options based on thresholds
     """
 
-    def __init__(self, base_scorer: BaseScorer | None = None) -> None:
+    def __init__(
+        self,
+        base_scorer: BaseScorer | None = None,
+        preset: str = "cosmic13",
+        philosophers: list[Philosopher] | None = None,
+    ) -> None:
         self.base_scorer = base_scorer or BaseScorer()
+        self.preset = preset
+        # Allow explicit philosopher list or load from preset
+        if philosophers is not None:
+            self.philosophers = philosophers
+        else:
+            self.philosophers = load_philosophers_by_preset(preset)
 
     def evaluate(self, scenario_text: str, meta: dict[str, Any]) -> dict[str, Any]:
         """
@@ -329,9 +340,8 @@ class CosmicEthics39Evaluator:
         base_scores = self.base_scorer.score(scenario_text, meta)
 
         # 2) Philosophers analyze
-        philosophers = load_cosmic_philosophers()
         perspectives: list[PhilosopherPerspective] = [
-            ph.analyze(scenario_text, meta) for ph in philosophers
+            ph.analyze(scenario_text, meta) for ph in self.philosophers
         ]
 
         # 3) Aggregate weights from philosophers
@@ -365,6 +375,7 @@ class CosmicEthics39Evaluator:
             "tension_topk": tension,
             "blocked_options": blocked,
             "philosophers": {
+                "preset": self.preset,
                 "active_count": len(perspectives),
                 "active_names": [p.name for p in perspectives],
                 "perspectives": [asdict(p) for p in perspectives],

@@ -57,28 +57,60 @@ cd project-echo
 
 ### 実行例
 
-#### 39人の哲学者による分析
+#### po-cosmic CLI（推奨）
+
+統合評価ツール - 哲学者プリセットで結果が変わることを体験：
+
+```bash
+# Cosmic13プリセット（デフォルト）: 長期思考の13哲学者
+bin/po-cosmic cosmic-39 --scenario mars --preset cosmic13
+
+# 東アジア哲学プリセット: 関係性と文脈重視
+bin/po-cosmic cosmic-39 --scenario mars --preset east_asia
+
+# カント主義プリセット: 義務論と普遍原則重視
+bin/po-cosmic cosmic-39 --scenario mars --preset kantian
+
+# 実存主義プリセット: 自由と個人的責任重視
+bin/po-cosmic cosmic-39 --scenario mars --preset existentialist
+
+# 古典ギリシャプリセット: 徳と実践知重視
+bin/po-cosmic cosmic-39 --scenario mars --preset classical
+
+# 全39人の哲学者を使用
+bin/po-cosmic cosmic-39 --scenario agi --preset all --save
+```
+
+利用可能なシナリオ:
+- `agi`: AGI開発の倫理
+- `mars`: 火星テラフォーミング
+- `digital`: デジタル意識アップロード
+- `seti`: SETI信号への応答
+
+#### 個別例の実行
+
+##### 39人の哲学者による分析
 
 ```bash
 cd examples/cosmic_ethics_39
 python3 philosopher_integration.py
 ```
 
-#### 宇宙倫理39次元評価
+##### 宇宙倫理39次元評価
 
 ```bash
 cd examples/cosmic_ethics_39
 python3 run.py
 ```
 
-#### トロッコ問題シミュレーション
+##### トロッコ問題シミュレーション
 
 ```bash
 cd examples/trolley_problem_basic
 python3 run.py
 ```
 
-#### AI権利評価
+##### AI権利評価
 
 ```bash
 cd examples/ai_rights_basic
@@ -145,6 +177,86 @@ AIの「何を考え、何を考慮しなかったか」を記録：
 - `freedom_pressure`: 自由圧力テンソル
 - `tension_elements`: 哲学的張力
 - `blocked_options`: ブロックされた選択肢とその理由
+
+## 哲学者プリセットによる結果の変化
+
+同一シナリオでも、哲学者プリセットを変えると評価結果が劇的に変わります。これは**倫理的多元主義**の実証です。
+
+### Mars Terraforming シナリオの比較
+
+#### Cosmic13プリセット（13人: 長期思考重視）
+```
+Top dimensions:
+  - deep_time                    1.00  ← 時間スケールが最優先
+  - unknown_unknowns             0.53
+  - irreversible_risk            0.53
+  - existential_risk             0.53
+  - direct_responsibility        0.53
+
+Tension topk:
+  - deep_time                   +0.102  ← 哲学者間で最大の意見対立
+  - unknown_unknowns            +0.068
+  - irreversible_risk           +0.068
+
+Active philosophers: 13
+```
+
+#### Kantianプリセット（6人: 義務論重視）
+```
+Top dimensions:
+  - deep_time                    0.95
+  - universal_rights             0.52  ← 普遍的権利が上位に
+  - direct_responsibility        0.52  ← 直接的責任が強調
+  - rational_deliberation        0.52  ← 理性的熟慮が重視
+
+Tension topk:
+  - universal_rights            +0.048
+  - direct_responsibility       +0.048
+  - rational_deliberation       +0.048
+
+Active philosophers: 6
+```
+
+#### Existentialistプリセット（5人: 自由重視）
+```
+Top dimensions:
+  - deep_time                    1.00
+  - unknown_unknowns             0.60  ← リスク次元が高い
+  - irreversible_risk            0.60
+  - existential_risk             0.60
+  - individual_autonomy          0.56  ← 個人の自律性が強調
+  - direct_responsibility        0.56  ← 直接責任が重視
+  - qualitative_value            0.56  ← 質的価値が上位に
+
+Active philosophers: 5
+```
+
+#### East Asiaプリセット（7人: 関係性重視）
+```
+Top dimensions:
+  - deep_time                    0.95
+  - present_generation           0.50  ← 全次元がフラット
+  - future_generation            0.50
+  - local                        0.50
+  - global                       0.50
+
+Tension topk:
+  - (全次元で tension ≈ 0)  ← 東アジア哲学者間の調和
+
+Active philosophers: 7
+```
+
+### 観察されるパターン
+
+1. **Cosmic13**: リスク次元が高く、張力も大きい → 長期視点の哲学者間でも意見が割れる
+2. **Kantian**: 義務論的次元（権利・責任・理性）が強調される
+3. **Existentialist**: 個人の自律性と質的価値が重視され、リスクも高く評価
+4. **East Asia**: 関係性と調和を重視し、張力が小さい（consensus-oriented）
+
+この違いは**哲学者レイヤーアーキテクチャの価値**を実証しています：
+- 単一の倫理理論では見えない盲点を発見
+- 文化的・哲学的背景によって重視される価値が変わる
+- 倫理的判断の「内面レジスタ」として機能
 
 ## 責任あるAI開発の原則
 
