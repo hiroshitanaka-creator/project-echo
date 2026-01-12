@@ -20,6 +20,7 @@ if str(src_path) not in sys.path:
 from po_core.cosmic_ethics_39.evaluator import CosmicEthics39Evaluator
 from po_core.cosmic_ethics_39.scenarios import get_scenario
 from po_core.diversity import Rec, diversify_with_mmr
+from po_echo.echo_mark import get_secret_from_env, make_echo_mark, verify_mark
 
 
 def prompt_yes_no(msg: str) -> bool:
@@ -362,6 +363,87 @@ def cmd_audit(args: argparse.Namespace) -> None:
     print("=" * 80)
 
 
+def cmd_badge(args: argparse.Namespace) -> None:
+    """Execute badge command - generate Echo Mark from audit result."""
+    # Load audit result
+    audit_path = Path(args.input)
+    if not audit_path.exists():
+        print(f"Error: Audit file not found: {audit_path}")
+        return
+
+    audit = json.loads(audit_path.read_text(encoding="utf-8"))
+
+    # Get secret from environment
+    try:
+        secret = get_secret_from_env()
+    except RuntimeError as e:
+        print(f"Error: {e}")
+        print("Set ECHO_MARK_SECRET environment variable (min 16 chars)")
+        return
+
+    # Generate Echo Mark
+    badge = make_echo_mark(audit, secret=secret, run_id=args.run_id)
+
+    # Print summary
+    print("=" * 80)
+    print("[Echo Mark Generated]")
+    print("=" * 80)
+    print(f"Label: {badge['label']}")
+    print(f"Badge text: {badge['badge_text']}")
+    print("\nBias signals:")
+    short = badge["short"]
+    print(f"  Original: {short['bias_original']:.2%}")
+    print(f"  Final: {short['bias_final']:.2%}")
+    print(f"  Improvement: {short['bias_improvement']:.2%}")
+    if short["reasons"]:
+        print(f"  Reasons: {', '.join(short['reasons'])}")
+    print(f"\nSignature: {badge['signature'][:32]}...")
+    print("=" * 80)
+
+    # Save badge
+    out_path = Path(args.output)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(badge, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"💾 Saved to: {out_path}")
+
+
+def cmd_verify(args: argparse.Namespace) -> None:
+    """Execute verify command - verify Echo Mark signature."""
+    # Load badge
+    badge_path = Path(args.input)
+    if not badge_path.exists():
+        print(f"Error: Badge file not found: {badge_path}")
+        return
+
+    badge = json.loads(badge_path.read_text(encoding="utf-8"))
+
+    # Get secret from environment
+    try:
+        secret = get_secret_from_env()
+    except RuntimeError as e:
+        print(f"Error: {e}")
+        print("Set ECHO_MARK_SECRET environment variable (min 16 chars)")
+        return
+
+    # Verify signature
+    valid = verify_mark(
+        payload=badge["payload"],
+        payload_hash=badge["payload_hash"],
+        signature=badge["signature"],
+        secret=secret,
+    )
+
+    print("=" * 80)
+    print("[Echo Mark Verification]")
+    print("=" * 80)
+    print(f"Label: {badge['label']}")
+    print(f"Signature: {'VALID ✓' if valid else 'INVALID ✗'}")
+    print("=" * 80)
+
+    if not valid:
+        raise SystemExit(2)
+
+
 def main() -> None:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -418,12 +500,26 @@ def main() -> None:
     )
     audit.add_argument("--out", default=None, help="Output JSON path for results")
 
+    # badge command - generate Echo Mark
+    badge = subparsers.add_parser("badge", help="Generate Echo Mark from audit result")
+    badge.add_argument("input", help="Path to audit JSON file")
+    badge.add_argument("output", help="Path to output badge JSON file")
+    badge.add_argument("--run-id", dest="run_id", default=None, help="Optional run identifier")
+
+    # verify command - verify Echo Mark
+    verify = subparsers.add_parser("verify", help="Verify Echo Mark signature")
+    verify.add_argument("input", help="Path to badge JSON file")
+
     args = parser.parse_args()
 
     if args.cmd == "cosmic-39":
         cmd_cosmic39(args)
     elif args.cmd == "audit":
         cmd_audit(args)
+    elif args.cmd == "badge":
+        cmd_badge(args)
+    elif args.cmd == "verify":
+        cmd_verify(args)
 
 
 if __name__ == "__main__":
