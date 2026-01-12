@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import sys
 import time
-from dataclasses import asdict
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -45,6 +47,52 @@ from po_core.philosophers import load_philosophers_by_preset
 from po_core.philosophers.base import Philosopher, PhilosopherPerspective
 
 ScoreDict = dict[str, float]
+
+
+# Execution State Management - Core of Operator Responsibility
+class ExecutionState(str, Enum):
+    """
+    State machine for world-affecting operations.
+
+    PLANNED: Initial evaluation complete, no execution yet
+    BOOKED: Committed to external world (reservation/payment made)
+    FAILED: Execution failed, recovery required
+    RECOVERING: Recovery protocol in progress
+    RECOVERED: Recovery completed (success or terminal fallback)
+    CANCELLED: Execution cancelled before booking (policy/human denial)
+    """
+
+    PLANNED = "PLANNED"
+    BOOKED = "BOOKED"
+    FAILED = "FAILED"
+    RECOVERING = "RECOVERING"
+    RECOVERED = "RECOVERED"
+    CANCELLED = "CANCELLED"
+
+
+@dataclass
+class ReceiptSlot:
+    """World evidence - IDs from external systems."""
+
+    reservation_id: str | None = None
+    payment_id: str | None = None
+    ticket_id: str | None = None
+
+
+@dataclass
+class StateEvent:
+    """Single state transition record."""
+
+    ts: str
+    frm: str | None
+    to: str
+    reason: str
+    meta: dict[str, Any] = field(default_factory=dict)
+
+
+def now_ts() -> str:
+    """Current timestamp in ISO format."""
+    return datetime.now().isoformat(timespec="seconds")
 
 
 class BaseScorer:
@@ -656,6 +704,23 @@ class CosmicEthics39Evaluator:
             responsibility_boundary=responsibility_boundary,
         )
 
+        # 11) Execution object - State machine for world-affecting operations
+        execution = {
+            "state": ExecutionState.PLANNED.value,
+            "allowed_by_policy": responsibility_boundary["execution_allowed"],
+            "requires_human_confirm": responsibility_boundary["requires_human_confirm"],
+            "human_decision": None,
+            "receipt_slot": asdict(ReceiptSlot()),
+            "rollback_plan": rollback_plan,
+            "history": [
+                asdict(
+                    StateEvent(
+                        ts=now_ts(), frm=None, to=ExecutionState.PLANNED.value, reason="init"
+                    )
+                )
+            ],
+        }
+
         dt = time.time() - t0
 
         return {
@@ -672,20 +737,7 @@ class CosmicEthics39Evaluator:
             "tension_topk": tension,
             "blocked_options": blocked,
             "responsibility_boundary": responsibility_boundary,
-            "rollback_plan": rollback_plan,
-            "execution_state": {
-                "status": "planned",  # planned -> booked -> in_progress -> done / failed -> recovered
-                "initiated_at": None,
-                "completed_at": None,
-                "failure_reason": None,
-                "recovery_triggered": False,
-            },
-            "receipt_slot": {
-                "world_confirmation_id": None,  # e.g., booking_id, transaction_id, ticket_number
-                "world_system": None,  # e.g., "reservation_api", "payment_gateway"
-                "world_timestamp": None,
-                "world_evidence_url": None,
-            },
+            "execution": execution,
             "human_confirmation": {  # Future proof - evidence of human decision
                 "required": responsibility_boundary["requires_human_confirm"],
                 "method": "none",
