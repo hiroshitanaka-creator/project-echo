@@ -7,11 +7,11 @@ Provides tamper-evident badges: ECHO_VERIFIED, ECHO_CHECK, ECHO_BLOCKED
 
 from __future__ import annotations
 
+import datetime as dt
 import hashlib
 import hmac
 import json
 import os
-from datetime import datetime
 from typing import Any
 
 
@@ -71,7 +71,7 @@ def build_payload(audit: dict[str, Any], run_id: str | None = None) -> dict[str,
 
     payload = {
         "schema_version": "echo_mark_v1",
-        "timestamp": datetime.now(datetime.UTC).isoformat(timespec="seconds"),
+        "timestamp": dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
         "label": label,
         "policy": {
             "ai_recommends": False,
