@@ -94,6 +94,7 @@ __all__ = [
     "Zhuangzi",
     "load_all_philosophers",
     "load_cosmic_philosophers",
+    "load_philosophers_by_preset",
 ]
 
 
@@ -186,3 +187,88 @@ def load_cosmic_philosophers() -> list[Philosopher]:
     """
     all_philosophers = load_all_philosophers()
     return [p for p in all_philosophers if p.name in COSMIC_SET]
+
+
+# East Asian philosophy preset - focusing on relational and contextual ethics
+EAST_ASIA_SET = {
+    "Confucius (孔子)",  # Relational ethics, ritual, virtue
+    "Laozi (老子)",  # Non-interference, natural flow, wu-wei
+    "Zhuangzi (莊子)",  # Relativism, spontaneity, freedom
+    "Dōgen (道元)",  # Time, practice, Buddha-nature
+    "Nishida Kitarō (西田幾多郎)",  # Place, pure experience, nothingness
+    "和辻哲郎 (Watsuji Tetsurō)",  # Relational ethics, betweenness, climate
+    "नागार्जुन (Nāgārjuna)",  # Emptiness, interdependence, Middle Way
+}
+
+# Kantian preset - deontological ethics emphasizing duty and universal principles
+KANTIAN_SET = {
+    "Immanuel Kant",  # Categorical imperative, autonomy, duty
+    "Hannah Arendt",  # Political responsibility, judgment
+    "Emmanuel Levinas",  # Responsibility for the Other, ethics as first philosophy
+    "Simone Weil",  # Justice, attention, obligation
+    "Baruch Spinoza",  # Necessity, ethics, freedom through reason
+    "Hans Jonas",  # Responsibility for future, precautionary principle
+}
+
+# Existentialist preset - emphasizing freedom, choice, and individual responsibility
+EXISTENTIALIST_SET = {
+    "Jean-Paul Sartre",  # Radical freedom, bad faith, commitment
+    "Simone de Beauvoir",  # Ambiguity, situated freedom, ethics of liberation
+    "Martin Heidegger",  # Being-toward-death, authenticity, care
+    "Søren Kierkegaard",  # Subjective truth, anxiety, leap of faith
+    "Friedrich Nietzsche",  # Will to power, eternal return, revaluation
+    "Albert Camus",  # Absurd, revolt, solidarity (if available)
+}
+
+# Western Classical preset - ancient Greek philosophy
+CLASSICAL_SET = {
+    "Plato",  # Forms, the Good, philosopher-kings
+    "Aristotle",  # Virtue ethics, practical wisdom, flourishing
+    "Parmenides",  # Being, unchanging reality
+    "Epicurus",  # Pleasure, friendship, atomism
+    "Marcus Aurelius",  # Stoic virtue, acceptance, cosmic reason
+}
+
+
+PRESETS = {
+    "all": None,  # Special case: load all 39
+    "cosmic13": COSMIC_SET,
+    "east_asia": EAST_ASIA_SET,
+    "kantian": KANTIAN_SET,
+    "existentialist": EXISTENTIALIST_SET,
+    "classical": CLASSICAL_SET,
+}
+
+
+def load_philosophers_by_preset(preset: str = "cosmic13") -> list[Philosopher]:
+    """
+    Load philosophers based on a named preset.
+
+    Available presets:
+    - "all": All 39 philosophers
+    - "cosmic13": Long-term and cosmological thinkers (default)
+    - "east_asia": East Asian philosophy tradition
+    - "kantian": Deontological and duty-based ethics
+    - "existentialist": Freedom and individual responsibility
+    - "classical": Ancient Greek philosophy
+
+    Args:
+        preset: Name of the preset to load
+
+    Returns:
+        List of philosopher instances matching the preset
+
+    Raises:
+        ValueError: If preset name is not recognized
+    """
+    if preset not in PRESETS:
+        available = ", ".join(PRESETS.keys())
+        msg = f"Unknown preset '{preset}'. Available: {available}"
+        raise ValueError(msg)
+
+    if preset == "all":
+        return load_all_philosophers()
+
+    philosopher_set = PRESETS[preset]
+    all_philosophers = load_all_philosophers()
+    return [p for p in all_philosophers if p.name in philosopher_set]

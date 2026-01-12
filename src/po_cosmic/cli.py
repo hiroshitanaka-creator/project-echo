@@ -33,6 +33,7 @@ def print_cosmic39(result: dict) -> None:
     print(f"[Cosmic Ethics 39] {s['meta'].get('name', '(scenario)')}")
     print("=" * 80)
 
+    print(f"Philosopher preset: {phil.get('preset', 'cosmic13')}")
     print(f"Active philosophers: {phil['active_count']}")
     print(
         f"Adjusted score: {scores['adjusted_score']:.2f} "
@@ -89,8 +90,8 @@ def cmd_cosmic39(args: argparse.Namespace) -> None:
     # Get scenario
     scenario_text, meta = get_scenario(args.scenario)
 
-    # Run evaluation
-    evaluator = CosmicEthics39Evaluator()
+    # Run evaluation with preset
+    evaluator = CosmicEthics39Evaluator(preset=args.preset)
     result = evaluator.evaluate(scenario_text, meta)
 
     # Print results
@@ -123,6 +124,11 @@ def main() -> None:
         "--scenario",
         default="mars",
         help="Scenario to evaluate: agi, mars, digital, seti (default: mars)",
+    )
+    c39.add_argument(
+        "--preset",
+        default="cosmic13",
+        help="Philosopher preset: cosmic13, east_asia, kantian, existentialist, classical, all (default: cosmic13)",
     )
     c39.add_argument("--save", action="store_true", help="Save result to runs/ directory")
     c39.add_argument("--out", default=None, help="Explicit output JSON path")

@@ -491,3 +491,51 @@ class Watsuji(Philosopher):
         )
 
         return reasoning
+
+    def _compute_cosmic_weights(
+        self, result: dict[str, Any], context: dict[str, Any] | None = None
+    ) -> dict[str, float]:
+        """
+        Compute Watsuji's cosmic weights for 39 dimensions.
+
+        Watsuji emphasizes:
+        - Relationality (間柄 aidagara) and betweenness (間 ma)
+        - Collective good over individual autonomy
+        - Climate and local context (風土 fūdo)
+        - Systemic and contextual responsibility
+        - Consensus and harmony in decision-making
+        """
+        # Start with neutral weights
+        weights = {dim: 1.0 for dim in [
+            "present_generation", "future_generation", "deep_time",
+            "local", "global", "cosmic",
+            "human", "terrestrial_life", "potential_life",
+            "biological_intelligence", "artificial_intelligence", "hybrid_intelligence",
+            "individual_autonomy", "collective_good", "cosmic_purpose",
+            "known_knowns", "known_unknowns", "unknown_unknowns",
+            "reversible_risk", "irreversible_risk", "existential_risk",
+            "current_rights", "emergent_rights", "universal_rights",
+            "direct_responsibility", "systemic_responsibility", "cosmic_stewardship",
+            "linear_effects", "nonlinear_effects", "emergent_effects",
+            "quantifiable_value", "qualitative_value", "transcendent_value",
+            "rational_deliberation", "intuitive_wisdom", "collective_consensus",
+            "renewable_resources", "finite_resources", "cosmic_resources",
+        ]}
+
+        # Watsuji emphases
+        weights["systemic_responsibility"] = 1.30  # Relational ethics - responsibility in aidagara
+        weights["collective_good"] = 1.30  # 間柄 (aidagara) - collective over individual
+        weights["local"] = 1.25  # 風土 (fūdo) - climate and place
+        weights["collective_consensus"] = 1.25  # Harmony and mutual understanding
+        weights["human"] = 1.20  # 人間 (ningen) - human existence as relational
+        weights["present_generation"] = 1.15  # Focus on present relationships
+        weights["emergent_effects"] = 1.15  # Complex relational emergence
+        weights["qualitative_value"] = 1.10  # Quality of relationships
+
+        # De-emphasize individualistic dimensions
+        weights["individual_autonomy"] = 0.80  # Against isolated individualism
+        weights["direct_responsibility"] = 0.90  # More systemic than direct
+        weights["rational_deliberation"] = 0.90  # Not purely rationalistic
+        weights["cosmic"] = 0.85  # More grounded in local and climate
+
+        return weights
