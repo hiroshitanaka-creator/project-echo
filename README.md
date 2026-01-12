@@ -1,10 +1,38 @@
 # Project Echo - 責任あるAI開発フレームワーク
 
-Project Echoは、責任あるAI開発のための倫理的フレームワークとツール集です。39人の哲学者による多元的分析、39次元の宇宙倫理評価、そしてAI権利と倫理的ジレンマの探求を通じて、AIシステムの倫理的側面を包括的に検討します。
+**AIの判断を"説明"ではなく"責任プロトコル（拒否・人の承認・回復）"として残す**
+
+Project Echoは、AIが間違えたときに世界が壊れないようにするフレームワークです。AIが賢くなることではなく、**判断・拒否・人の最終決定・回復手順を"記録可能なプロトコル"にする**ことで、責任が宙に浮かないように固定します。これはGumdrop（責任を取らずにバトンを渡す）の対極です。
+
+39人の哲学者による多元的分析、39次元の宇宙倫理評価を通じて、AIシステムの倫理的判断における**責任境界（responsibility boundary）**を明示的に定義します。
 
 ## 主な機能
 
-### 1. 🧠 39人の哲学者モジュール (`src/po_core/philosophers/`)
+### 1. ⚖️ 責任境界プロトコル (`responsibility_boundary`)
+
+全評価結果に含まれる責任境界：
+
+- **`ai_recommends`**: AIは決して推奨しない（常にfalse）
+- **`requires_human_confirm`**: 人間の最終確認が必要か
+- **`execution_allowed`**: 実行が許可されるか（閾値ベース）
+- **`liability_mode`**: 責任モード（audit-only / rollback / compensate）
+- **`human_confirmation`**: 人間の承認証跡（method, confirmed_at, confirmed_by）
+- **`rollback_plan`**: 失敗時の回復手順の枠組み
+
+```python
+# 評価結果に常に含まれる
+result["responsibility_boundary"] = {
+    "ai_recommends": False,  # AIは決して勧めない
+    "requires_human_confirm": True,
+    "execution_allowed": False,
+    "liability_mode": "audit-only",
+    "rationale": "Adjusted score below safety threshold",
+    "human_confirmation": {"required": True, "method": "cli_yesno", ...},
+    "rollback_plan": {"available": True, "steps": [...]}
+}
+```
+
+### 2. 🧠 39人の哲学者モジュール (`src/po_core/philosophers/`)
 
 Po_coreから統合された39人の哲学者による多角的倫理分析：
 
@@ -21,7 +49,7 @@ for philosopher in philosophers:
     print(f"{perspective.name}: {perspective.reasoning}")
 ```
 
-### 2. 🌌 Cosmic Ethics 39 (`examples/cosmic_ethics_39/`)
+### 3. 🌌 Cosmic Ethics 39 (`examples/cosmic_ethics_39/`)
 
 39の倫理的次元による宇宙規模の意思決定フレームワーク：
 
@@ -30,7 +58,7 @@ for philosopher in philosophers:
 - 不確実性と不可逆性の考慮
 - AGI開発、火星テラフォーミング、SETI応答などのシナリオ
 
-### 3. 🚃 トロッコ問題とAI倫理 (`examples/trolley_problem_basic/`)
+### 4. 🚃 トロッコ問題とAI倫理 (`examples/trolley_problem_basic/`)
 
 古典的な倫理的ジレンマをAI意思決定に応用：
 
@@ -38,7 +66,7 @@ for philosopher in philosophers:
 - 自動運転車のジレンマ
 - 人間の生命に関わる判断の限界
 
-### 4. 🤖 AI権利の基本探求 (`examples/ai_rights_basic/`)
+### 5. 🤖 AI権利の基本探求 (`examples/ai_rights_basic/`)
 
 AIシステムの権利と倫理的地位の評価：
 

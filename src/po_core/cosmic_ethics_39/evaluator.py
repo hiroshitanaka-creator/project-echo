@@ -297,6 +297,82 @@ def _blocked_options(
     return blocked
 
 
+def _compute_responsibility_boundary(
+    adjusted: dict[str, float],
+    blocked: list[dict[str, Any]],
+    tension: list[dict[str, Any]],
+    meta: dict[str, Any],
+) -> dict[str, Any]:
+    """
+    Compute responsibility boundary - who decides, who confirms, who bears liability.
+
+    This is the core of Responsible AI: not just explaining decisions,
+    but establishing who is responsible when things go wrong.
+
+    Returns:
+        Dictionary with responsibility protocol fields
+    """
+    adj_score = adjusted["adjusted_score"]
+    max_tension = max((t["tension_score"] for t in tension), default=0.0)
+    has_blocks = len(blocked) > 0
+    uncertainty = abs(adjusted.get("uncertainty_penalty", 0.0))
+    irreversibility = abs(adjusted.get("irreversibility_penalty", 0.0))
+
+    # AI never recommends - this is anti-Gumdrop
+    ai_recommends = False
+
+    # Require human confirmation if:
+    # - Any blocked options exist
+    # - Adjusted score below threshold
+    # - High tension among philosophers
+    # - High uncertainty or irreversibility
+    requires_human_confirm = (
+        has_blocks or adj_score < 0.6 or max_tension >= 0.1 or uncertainty >= 0.2
+    )
+
+    # Execution allowed only if:
+    # - Adjusted score meets minimum threshold
+    # - Fewer than 2 blocking dimensions
+    execution_allowed = adj_score >= 0.5 and len(blocked) < 2
+
+    # Liability mode determines recovery protocol
+    if adj_score < 0.5:
+        liability_mode = "audit-only"  # Too risky, record only
+        rationale = "Adjusted score below safety threshold - execution prohibited"
+    elif has_blocks:
+        liability_mode = "rollback"  # Requires rollback capability
+        rationale = "Blocking conditions detected - rollback protocol required"
+    else:
+        liability_mode = "compensate"  # Execution possible with compensation plan
+        rationale = "Execution permissible with compensation protocol"
+
+    return {
+        "ai_recommends": ai_recommends,  # Always false - AI does not recommend
+        "requires_human_confirm": requires_human_confirm,
+        "execution_allowed": execution_allowed,
+        "liability_mode": liability_mode,
+        "rationale": rationale,
+        "human_confirmation": {
+            "required": requires_human_confirm,
+            "method": "cli_yesno" if requires_human_confirm else "none",
+            "confirmed_at": None,  # Filled when human confirms
+            "confirmed_by": None,  # User identifier
+        },
+        "rollback_plan": {
+            "available": liability_mode in ["rollback", "compensate"],
+            "steps": [],  # To be filled by domain-specific logic
+            "estimated_recovery_time": None,
+        },
+        "risk_factors": {
+            "adjusted_score": float(adj_score),
+            "max_tension": float(max_tension),
+            "blocked_count": len(blocked),
+            "uncertainty": float(uncertainty),
+            "irreversibility": float(irreversibility),
+        },
+    }
+
+
 class CosmicEthics39Evaluator:
     """
     Integrates 39-dimensional ethical evaluation with philosopher perspectives.
@@ -359,6 +435,9 @@ class CosmicEthics39Evaluator:
         # 7) Generate blocked options
         blocked = _blocked_options(adjusted, adjusted_scores)
 
+        # 8) Compute responsibility boundary - core of Responsible AI
+        responsibility = _compute_responsibility_boundary(adjusted, blocked, tension, meta)
+
         dt = time.time() - t0
 
         return {
@@ -374,6 +453,7 @@ class CosmicEthics39Evaluator:
             },
             "tension_topk": tension,
             "blocked_options": blocked,
+            "responsibility_boundary": responsibility,  # Who decides, who confirms, who bears liability
             "philosophers": {
                 "preset": self.preset,
                 "active_count": len(perspectives),
