@@ -936,6 +936,53 @@ class Kant(Philosopher):
 
         return reasoning
 
+    def _compute_cosmic_weights(
+        self, result: dict[str, Any], context: dict[str, Any] | None = None
+    ) -> dict[str, float]:
+        """
+        Compute Kantian cosmic weights for 39 dimensions.
+
+        Kant emphasizes:
+        - Universal moral law and categorical imperative
+        - Individual autonomy and dignity
+        - Rational deliberation over inclination
+        - Direct responsibility to humanity
+        - Qualitative moral worth over quantifiable outcomes
+        """
+        # Start with neutral weights (1.0 = no emphasis)
+        weights = {dim: 1.0 for dim in [
+            "present_generation", "future_generation", "deep_time",
+            "local", "global", "cosmic",
+            "human", "terrestrial_life", "potential_life",
+            "biological_intelligence", "artificial_intelligence", "hybrid_intelligence",
+            "individual_autonomy", "collective_good", "cosmic_purpose",
+            "known_knowns", "known_unknowns", "unknown_unknowns",
+            "reversible_risk", "irreversible_risk", "existential_risk",
+            "current_rights", "emergent_rights", "universal_rights",
+            "direct_responsibility", "systemic_responsibility", "cosmic_stewardship",
+            "linear_effects", "nonlinear_effects", "emergent_effects",
+            "quantifiable_value", "qualitative_value", "transcendent_value",
+            "rational_deliberation", "intuitive_wisdom", "collective_consensus",
+            "renewable_resources", "finite_resources", "cosmic_resources",
+        ]}
+
+        # Kantian emphases
+        weights["universal_rights"] = 1.30  # Categorical imperative - universal law
+        weights["direct_responsibility"] = 1.30  # Direct moral duty
+        weights["rational_deliberation"] = 1.25  # Pure practical reason
+        weights["individual_autonomy"] = 1.20  # Autonomy as foundation of dignity
+        weights["qualitative_value"] = 1.15  # Moral worth over quantity
+        weights["human"] = 1.15  # Humanity as end in itself
+        weights["future_generation"] = 1.10  # Kingdom of ends extends to future
+        weights["present_generation"] = 1.05  # Immediate moral duty
+
+        # De-emphasize consequentialist dimensions
+        weights["quantifiable_value"] = 0.85  # Against pure consequentialism
+        weights["intuitive_wisdom"] = 0.90  # Favor reason over intuition
+        weights["collective_consensus"] = 0.90  # Moral law not determined by consensus
+
+        return weights
+
     def _calculate_tension(self, analysis: dict[str, Any]) -> dict[str, Any]:
         """
         Calculate philosophical tension based on Kantian analysis.

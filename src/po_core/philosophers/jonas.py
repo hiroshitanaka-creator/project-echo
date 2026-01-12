@@ -478,3 +478,52 @@ genuine human life and the integrity of nature for all time to come."""
         tension_factors.append(0.1)
 
         return min(sum(tension_factors), 1.0)
+
+    def _compute_cosmic_weights(
+        self, result: dict[str, Any], context: dict[str, Any] | None = None
+    ) -> dict[str, float]:
+        """
+        Compute Jonas's cosmic weights for 39 dimensions.
+
+        Jonas emphasizes:
+        - Future generations and deep time (responsibility ethics)
+        - Irreversible and existential risks (precautionary principle)
+        - Unknown unknowns and technological uncertainty
+        - Preservation of nature and conditions for human life
+        - Heuristic of fear - prioritizing worst-case scenarios
+        """
+        # Start with neutral weights
+        weights = {dim: 1.0 for dim in [
+            "present_generation", "future_generation", "deep_time",
+            "local", "global", "cosmic",
+            "human", "terrestrial_life", "potential_life",
+            "biological_intelligence", "artificial_intelligence", "hybrid_intelligence",
+            "individual_autonomy", "collective_good", "cosmic_purpose",
+            "known_knowns", "known_unknowns", "unknown_unknowns",
+            "reversible_risk", "irreversible_risk", "existential_risk",
+            "current_rights", "emergent_rights", "universal_rights",
+            "direct_responsibility", "systemic_responsibility", "cosmic_stewardship",
+            "linear_effects", "nonlinear_effects", "emergent_effects",
+            "quantifiable_value", "qualitative_value", "transcendent_value",
+            "rational_deliberation", "intuitive_wisdom", "collective_consensus",
+            "renewable_resources", "finite_resources", "cosmic_resources",
+        ]}
+
+        # Jonas emphases - responsibility for future and precaution
+        weights["future_generation"] = 1.35  # Central to responsibility ethics
+        weights["deep_time"] = 1.30  # Long-term preservation imperative
+        weights["irreversible_risk"] = 1.30  # Precautionary principle
+        weights["existential_risk"] = 1.25  # Worst-case scenarios
+        weights["unknown_unknowns"] = 1.20  # Heuristic of fear
+        weights["direct_responsibility"] = 1.20  # Personal moral imperative
+        weights["cosmic_stewardship"] = 1.20  # Care for future humanity
+        weights["terrestrial_life"] = 1.15  # Nature as end in itself
+        weights["systemic_responsibility"] = 1.15  # Collective obligation
+        weights["emergent_effects"] = 1.15  # Unpredictable consequences
+
+        # De-emphasize short-term and reversible
+        weights["present_generation"] = 0.85  # Future takes priority
+        weights["reversible_risk"] = 0.80  # Focus on irreversible
+        weights["current_rights"] = 0.90  # Future rights more critical
+
+        return weights
