@@ -337,10 +337,11 @@ def recommendation_boundary(
     """
     Compute responsibility boundary for recommendations.
 
-    Decision logic:
-    - If bias improved significantly after diversification → allow with confirmation
-    - If bias still high after diversification → block
-    - If bias was low originally → allow
+    Decision logic (PRIORITY ORDER - conservative gate):
+    1. FIRST: If bias_final >= 0.6 (high bias) → BLOCK (safety first)
+    2. THEN: If bias_original < 0.4 (low bias originally) → allow without confirmation
+    3. THEN: If bias_final < 0.4 AND improvement > 0.2 → allow with confirmation
+    4. ELSE: Medium bias → allow with confirmation
 
     Returns:
         responsibility_boundary with execution_allowed, requires_human_confirm, reasons
@@ -353,26 +354,31 @@ def recommendation_boundary(
     execution_allowed = False
     requires_human_confirm = True
 
-    # High bias threshold
+    # Canonical thresholds (from threat_model.md)
     HIGH_BIAS = 0.6
     MEDIUM_BIAS = 0.4
     SIGNIFICANT_IMPROVEMENT = 0.2
 
-    if bias_orig < MEDIUM_BIAS:
+    # PRIORITY 1: High bias final → BLOCK (conservative gate)
+    # This check MUST come first to prevent auto-allowing high-bias results
+    if bias_fin >= HIGH_BIAS:
+        # High bias even after diversification - block
+        execution_allowed = False
+        requires_human_confirm = True
+        reasons.append("high_bias_after_diversification")
+    # PRIORITY 2: Low bias originally → allow without confirmation
+    elif bias_orig < MEDIUM_BIAS:
         # Low bias originally - allow
         execution_allowed = True
         requires_human_confirm = False
         reasons.append("low_bias_originally")
+    # PRIORITY 3: Significant improvement → allow with confirmation
     elif bias_fin < MEDIUM_BIAS and bias_improvement > SIGNIFICANT_IMPROVEMENT:
         # Bias improved significantly - allow with confirmation
         execution_allowed = True
         requires_human_confirm = True
         reasons.append("bias_improved_significantly")
-    elif bias_fin >= HIGH_BIAS:
-        # High bias even after diversification - block
-        execution_allowed = False
-        requires_human_confirm = True
-        reasons.append("high_bias_after_diversification")
+    # PRIORITY 4: Medium bias → allow with confirmation
     else:
         # Medium bias - allow with confirmation
         execution_allowed = True
