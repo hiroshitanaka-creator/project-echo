@@ -96,7 +96,7 @@ def similarity(a: Rec, b: Rec) -> float:
     return min(sim, 1.0)
 
 
-def mmr_select(cands: list[Rec], k: int, lam: float = 0.65, beta: float = 1.0, seed: int = 0) -> list[Rec]:
+def mmr_select(cands: list[Rec], k: int, lam: float = 0.65, beta: float = 0.8, seed: int = 0) -> list[Rec]:
     """
     Maximal Marginal Relevance selection with bias penalty.
 
@@ -428,7 +428,7 @@ def diversify_with_mmr(
     counterfactuals: list[Rec],
     k: int = 5,
     lam: float = 0.65,
-    beta: float = 1.0,
+    beta: float = 0.8,
     min_merchants: int = 2,
     min_price_buckets: int = 2,
 ) -> dict[str, Any]:
