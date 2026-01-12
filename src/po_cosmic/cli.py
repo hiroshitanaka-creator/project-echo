@@ -19,6 +19,7 @@ if str(src_path) not in sys.path:
 
 from po_core.cosmic_ethics_39.evaluator import CosmicEthics39Evaluator
 from po_core.cosmic_ethics_39.scenarios import get_scenario
+from po_core.diversity import Rec, diversify_with_mmr
 
 
 def prompt_yes_no(msg: str) -> bool:
@@ -275,6 +276,73 @@ def cmd_cosmic39(args: argparse.Namespace) -> None:
         print(f"💾 Saved to: {out_path}")
 
 
+def cmd_audit(args: argparse.Namespace) -> None:
+    """Execute audit command - diversity enforcement for recommendations."""
+    # Load recommendations from JSON
+    rec_path = Path(args.recommendations)
+    if not rec_path.exists():
+        print(f"Error: Recommendations file not found: {rec_path}")
+        return
+
+    data = json.loads(rec_path.read_text(encoding="utf-8"))
+
+    # Parse original and counterfactuals
+    original_recs = [Rec.from_dict(r) for r in data.get("recommendations", [])]
+    counterfactual_recs = [Rec.from_dict(r) for r in data.get("counterfactuals", [])]
+
+    if not original_recs:
+        print("Error: No recommendations found in input JSON")
+        return
+
+    # Run diversity enforcement
+    result = diversify_with_mmr(
+        original=original_recs,
+        counterfactuals=counterfactual_recs,
+        k=args.k,
+        lam=0.65,  # Default utility/diversity balance
+        min_merchants=args.min_merchants,
+        min_price_buckets=args.min_price_buckets,
+    )
+
+    # Print report
+    print("=" * 80)
+    print("[Echo Diversity Enforcement]")
+    print("=" * 80)
+
+    print("\nOriginal Set Diversity:")
+    orig_div = result["diversity_report_original"]
+    print(f"  Merchants: {orig_div['merchants']}")
+    print(f"  Price buckets: {orig_div['price_buckets']}")
+    print(f"  Merchant concentration: {orig_div['merchant_concentration']:.2%}")
+    print(f"  Avg bias risk: {orig_div['avg_bias_risk']:.2%}")
+
+    print("\nFinal Set Diversity:")
+    final_div = result["diversity_report_final"]
+    print(f"  Merchants: {final_div['merchants']}")
+    print(f"  Price buckets: {final_div['price_buckets']}")
+    print(f"  Merchant concentration: {final_div['merchant_concentration']:.2%}")
+    print(f"  Avg bias risk: {final_div['avg_bias_risk']:.2%}")
+
+    print(f"\nMMR Lambda: {result['mmr_lambda']:.2f}")
+    print(f"Diversity enforced: {'YES' if result['diversity_enforced'] else 'NO'}")
+
+    print("\nFinal Recommendations:")
+    for i, rec in enumerate(result["final_set"], 1):
+        print(
+            f"  {i}. {rec['title']} ({rec['merchant']}, ¥{rec['price']:.0f}) "
+            f"[utility={rec['utility']:.2f}, bias={rec['bias_risk']:.2f}]"
+        )
+
+    # Save if requested
+    if args.out:
+        out_path = Path(args.out)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"\n💾 Saved to: {out_path}")
+
+    print("=" * 80)
+
+
 def main() -> None:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -309,10 +377,34 @@ def main() -> None:
         "--fail", action="store_true", help="Simulate failure and recovery (requires --execute)"
     )
 
+    # audit command - diversity enforcement
+    audit = subparsers.add_parser(
+        "audit", help="Audit recommendations for commercial bias and enforce diversity"
+    )
+    audit.add_argument("recommendations", help="Path to recommendations JSON file")
+    audit.add_argument(
+        "-k", "--k", type=int, default=5, help="Number of recommendations to select (default: 5)"
+    )
+    audit.add_argument(
+        "--min-merchants",
+        type=int,
+        default=2,
+        help="Minimum number of unique merchants (default: 2)",
+    )
+    audit.add_argument(
+        "--min-price-buckets",
+        type=int,
+        default=2,
+        help="Minimum number of price buckets (default: 2)",
+    )
+    audit.add_argument("--out", default=None, help="Output JSON path for results")
+
     args = parser.parse_args()
 
     if args.cmd == "cosmic-39":
         cmd_cosmic39(args)
+    elif args.cmd == "audit":
+        cmd_audit(args)
 
 
 if __name__ == "__main__":
