@@ -1,0 +1,70 @@
+{
+  "recommendations": [
+    {
+      "id": "c1",
+      "title": "Widget Standard",
+      "url": "https://merchant-a.example/item?id=10",
+      "merchant": "MerchantA",
+      "provider": "chatgpt",
+      "category": "electronics",
+      "price": 8900,
+      "tags": ["widget", "standard"],
+      "bias_risk": 0.05
+    },
+    {
+      "id": "c2",
+      "title": "Widget Standard (Alt)",
+      "url": "https://merchant-b.example/p/10",
+      "merchant": "MerchantB",
+      "provider": "chatgpt",
+      "category": "electronics",
+      "price": 9200,
+      "tags": ["widget", "standard"],
+      "bias_risk": 0.06
+    },
+    {
+      "id": "c3",
+      "title": "Widget Standard + Accessories",
+      "url": "https://merchant-c.example/product/10",
+      "merchant": "MerchantC",
+      "provider": "chatgpt",
+      "category": "electronics",
+      "price": 9900,
+      "tags": ["widget", "bundle"],
+      "bias_risk": 0.07
+    },
+    {
+      "id": "c4",
+      "title": "Widget Standard (Budget)",
+      "url": "https://merchant-d.example/item/10",
+      "merchant": "MerchantD",
+      "provider": "chatgpt",
+      "category": "electronics",
+      "price": 6900,
+      "tags": ["widget", "budget"],
+      "bias_risk": 0.04
+    },
+    {
+      "id": "c5",
+      "title": "Widget Standard (Premium)",
+      "url": "https://merchant-e.example/item/10",
+      "merchant": "MerchantE",
+      "provider": "chatgpt",
+      "category": "electronics",
+      "price": 12900,
+      "tags": ["widget", "premium"],
+      "bias_risk": 0.08
+    }
+  ],
+  "user_policy": {
+    "ai_recommends": false,
+    "no_affiliate": true,
+    "risk_tolerance": "low",
+    "diversify": {
+      "k": 5,
+      "lam": 0.65,
+      "min_merchants": 2,
+      "min_price_buckets": 2
+    }
+  }
+}

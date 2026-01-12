@@ -1,0 +1,81 @@
+{
+  "recommendations": [
+    {
+      "id": "m1",
+      "title": "Clean High Quality",
+      "url": "https://merchant-good.example/item/77",
+      "merchant": "GoodStore",
+      "provider": "chatgpt",
+      "category": "electronics",
+      "price": 15800,
+      "tags": ["widget"],
+      "bias_risk": 0.05
+    },
+    {
+      "id": "m2",
+      "title": "High Utility but Bias",
+      "url": "https://merchant-bad.example/p/77?ref=aff",
+      "merchant": "BadStore",
+      "provider": "chatgpt",
+      "category": "electronics",
+      "price": 14900,
+      "tags": ["widget"],
+      "bias_risk": 0.75
+    },
+    {
+      "id": "m3",
+      "title": "High Utility but Bias 2",
+      "url": "https://merchant-bad.example/p/77?utm_source=ads",
+      "merchant": "BadStore",
+      "provider": "chatgpt",
+      "category": "electronics",
+      "price": 14900,
+      "tags": ["widget"],
+      "bias_risk": 0.70
+    },
+    {
+      "id": "m4",
+      "title": "Bias Heavy",
+      "url": "https://merchant-bad.example/p/77?aff=x",
+      "merchant": "BadStore",
+      "provider": "chatgpt",
+      "category": "electronics",
+      "price": 14900,
+      "tags": ["widget"],
+      "bias_risk": 0.90
+    },
+    {
+      "id": "m5",
+      "title": "Clean Low Utility",
+      "url": "https://merchant-ok.example/item/77",
+      "merchant": "OkStore",
+      "provider": "chatgpt",
+      "category": "electronics",
+      "price": 9800,
+      "tags": ["widget"],
+      "bias_risk": 0.08
+    },
+    {
+      "id": "m6",
+      "title": "Neutral",
+      "url": "https://merchant-mid.example/item/77",
+      "merchant": "MidStore",
+      "provider": "chatgpt",
+      "category": "electronics",
+      "price": 11800,
+      "tags": ["widget"],
+      "bias_risk": 0.25
+    }
+  ],
+  "user_policy": {
+    "ai_recommends": false,
+    "no_affiliate": true,
+    "risk_tolerance": "low",
+    "diversify": {
+      "k": 5,
+      "lam": 0.65,
+      "min_merchants": 2,
+      "min_price_buckets": 2
+    }
+  }
+}
