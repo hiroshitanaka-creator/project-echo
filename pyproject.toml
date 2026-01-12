@@ -13,6 +13,9 @@ authors = [
 [project.scripts]
 po-cosmic = "po_cosmic.cli:main"
 
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "hypothesis"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"
