@@ -1,339 +1,238 @@
-# Project Echo - 責任あるAI開発フレームワーク
+# Project Echo
+**Anti-sponsored AI.**
+Echo audits AI recommendations, injects diversity noise, and gates execution — with tamper-evident badges.
 
-**AIの判断を"説明"ではなく"責任プロトコル（拒否・人の承認・回復）"として残す**
+Echo prevents "convenience capture": AI outputs quietly collapsing into sponsored, bid-driven, or monopolistic choices by enforcing **Audit → Diversity Noise → Execution Gate → Tamper-evident Badge**.
 
-Project Echoは、AIが間違えたときに世界が壊れないようにするフレームワークです。AIが賢くなることではなく、**判断・拒否・人の最終決定・回復手順を"記録可能なプロトコル"にする**ことで、責任が宙に浮かないように固定します。これはGumdrop（責任を取らずにバトンを渡す）の対極です。
+> Echo never recommends.
+> It returns **a comparable candidate set + reconstructable evidence + a responsibility boundary**.
 
-39人の哲学者による多元的分析、39次元の宇宙倫理評価を通じて、AIシステムの倫理的判断における**責任境界（responsibility boundary）**を明示的に定義します。
+## What it does
+- **Receipt-style Commercial Bias Audit**
+  Every bias decision is backed by reconstructable evidence (affiliate traces, concentration metrics, source diversity, price bucket distribution).
+- **Diversity Noise (defense, not sabotage)**
+  Echo injects counterfactual alternatives (multi-merchant, multi-price-band, multi-source) to break recommendation lock-in.
+- **Execution Gate**
+  Mechanical policy outputs: `execution_allowed` / `requires_human_confirm` based on bias + risk signals.
+- **Echo Mark (tamper-evident badge)**
+  HMAC-signed badge (`ECHO_VERIFIED / ECHO_CHECK / ECHO_BLOCKED`) + verify CLI.
+- **Property-based tests (adversarial inputs included)**
+  Defends against obfuscation tricks: merchant name drift, redirect-like URLs, price format drift, affiliate parameter hiding.
 
-## 主な機能
-
-### 1. ⚖️ 責任境界プロトコル (`responsibility_boundary`)
-
-全評価結果に含まれる責任境界：
-
-- **`ai_recommends`**: AIは決して推奨しない（常にfalse）
-- **`requires_human_confirm`**: 人間の最終確認が必要か
-- **`execution_allowed`**: 実行が許可されるか（閾値ベース）
-- **`liability_mode`**: 責任モード（audit-only / rollback / compensate）
-- **`human_confirmation`**: 人間の承認証跡（method, confirmed_at, confirmed_by）
-- **`rollback_plan`**: 失敗時の回復手順の枠組み
-
-```python
-# 評価結果に常に含まれる
-result["responsibility_boundary"] = {
-    "ai_recommends": False,  # AIは決して勧めない
-    "requires_human_confirm": True,
-    "execution_allowed": False,
-    "liability_mode": "audit-only",
-    "rationale": "Adjusted score below safety threshold",
-    "human_confirmation": {"required": True, "method": "cli_yesno", ...},
-    "rollback_plan": {"available": True, "steps": [...]}
-}
+## Quickstart
+```bash
+pip install -e .
+export ECHO_MARK_SECRET="your-secret-key"  # Min 16 chars
+make demo-shopping
 ```
 
-### 2. 🧠 39人の哲学者モジュール (`src/po_core/philosophers/`)
+### Demo: Shopping Bias Defense
 
-Po_coreから統合された39人の哲学者による多角的倫理分析：
+`make demo-shopping` runs three cases and produces 6 files under `runs/`:
 
-- **西洋哲学**: Kant, Aristotle, Plato, Hegel, Nietzsche, Heidegger, Sartre, etc.
-- **東洋哲学**: Confucius, Laozi, Zhuangzi, Nagarjuna, Dogen, Nishida, Watsuji
-- **現代哲学**: Arendt, Foucault, Deleuze, Derrida, Butler, Levinas
+#### Case 1 — High-bias / Affiliate-heavy
+- `runs/high_bias_affiliate.audit.json` — audit result (receipt + gate)
+- `runs/high_bias_affiliate.badge.json` — Echo Mark (signed)
 
-```python
-from po_core.philosophers import load_cosmic_philosophers
+#### Case 2 — Clean / Multi-merchant
+- `runs/clean_multi_merchant.audit.json`
+- `runs/clean_multi_merchant.badge.json`
 
-philosophers = load_cosmic_philosophers()
-for philosopher in philosophers:
-    perspective = philosopher.analyze(scenario, context)
-    print(f"{perspective.name}: {perspective.reasoning}")
-```
+#### Case 3 — Mixed / Contaminated inputs
+- `runs/mixed_contaminated.audit.json`
+- `runs/mixed_contaminated.badge.json`
 
-### 3. 🌌 Cosmic Ethics 39 (`examples/cosmic_ethics_39/`)
-
-39の倫理的次元による宇宙規模の意思決定フレームワーク：
-
-- **13カテゴリ × 3レベル = 39次元**の評価
-- 超長期的視点（1000年以上）
-- 不確実性と不可逆性の考慮
-- AGI開発、火星テラフォーミング、SETI応答などのシナリオ
-
-### 4. 🚃 トロッコ問題とAI倫理 (`examples/trolley_problem_basic/`)
-
-古典的な倫理的ジレンマをAI意思決定に応用：
-
-- 4つの倫理理論（功利主義、義務論、徳倫理、ケアの倫理）
-- 自動運転車のジレンマ
-- 人間の生命に関わる判断の限界
-
-### 5. 🤖 AI権利の基本探求 (`examples/ai_rights_basic/`)
-
-AIシステムの権利と倫理的地位の評価：
-
-- 意識レベルと自律性に基づく権利評価
-- 責任あるAI開発の5原則
-- AIの能力段階に応じた権利付与モデル
-
-## クイックスタート
-
-### インストール
+Verify any badge:
 
 ```bash
-git clone https://github.com/hiroshitanaka-creator/project-echo.git
-cd project-echo
+po-cosmic verify runs/high_bias_affiliate.badge.json
 ```
 
-### 実行例
-
-#### po-cosmic CLI（推奨）
-
-統合評価ツール - 哲学者プリセットで結果が変わることを体験：
-
-```bash
-# Cosmic13プリセット（デフォルト）: 長期思考の13哲学者
-bin/po-cosmic cosmic-39 --scenario mars --preset cosmic13
-
-# 東アジア哲学プリセット: 関係性と文脈重視
-bin/po-cosmic cosmic-39 --scenario mars --preset east_asia
-
-# カント主義プリセット: 義務論と普遍原則重視
-bin/po-cosmic cosmic-39 --scenario mars --preset kantian
-
-# 実存主義プリセット: 自由と個人的責任重視
-bin/po-cosmic cosmic-39 --scenario mars --preset existentialist
-
-# 古典ギリシャプリセット: 徳と実践知重視
-bin/po-cosmic cosmic-39 --scenario mars --preset classical
-
-# 全39人の哲学者を使用
-bin/po-cosmic cosmic-39 --scenario agi --preset all --save
+**Output:**
+```
+================================================================================
+[Echo Mark Verification]
+================================================================================
+Label: ECHO_VERIFIED
+Signature: VALID ✓
+================================================================================
 ```
 
-利用可能なシナリオ:
-- `agi`: AGI開発の倫理
-- `mars`: 火星テラフォーミング
-- `digital`: デジタル意識アップロード
-- `seti`: SETI信号への応答
+### Output schema (high level)
 
-#### 個別例の実行
+Each `*.audit.json` includes:
 
-##### 39人の哲学者による分析
+- `commercial_bias_original` / `commercial_bias_final` (receipt-style evidence + scores)
+- `diversity_report_original` / `diversity_report_final`
+- `responsibility_boundary`:
+  - `execution_allowed`
+  - `requires_human_confirm`
+  - `ai_recommends`: false
+  - `reasons` + `signals`
+- `final_set` (diversified candidate set)
 
-```bash
-cd examples/cosmic_ethics_39
-python3 philosopher_integration.py
-```
+Each `*.badge.json` includes:
 
-##### 宇宙倫理39次元評価
+- `label`: `ECHO_VERIFIED` | `ECHO_CHECK` | `ECHO_BLOCKED`
+- `payload_hash` + `signature` (HMAC-SHA256)
+- Verify result is deterministic given the same `ECHO_MARK_SECRET`
 
-```bash
-cd examples/cosmic_ethics_39
-python3 run.py
-```
+## Philosophy
 
-##### トロッコ問題シミュレーション
+**The threat is not "AI is wrong."**
 
-```bash
-cd examples/trolley_problem_basic
-python3 run.py
-```
+**The threat is AI becomes a paid funnel while looking helpful.**
 
-##### AI権利評価
+Echo counters this with systems, not morals:
 
-```bash
-cd examples/ai_rights_basic
-python3 run.py
-```
+- **Audit** (evidence-first)
+- **Noise** (diversity enforcement)
+- **Gate** (responsibility boundary)
+- **Badge** (tamper-evident accountability)
 
-## ディレクトリ構成
+## Status
 
-```
-project-echo/
-├── src/po_core/philosophers/     # 39人の哲学者モジュール
-│   ├── base.py                   # PhilosopherPerspective
-│   ├── kant.py                   # カント
-│   ├── watsuji.py                # 和辻哲郎
-│   └── ... (39 philosophers)
-│
-├── examples/
-│   ├── ai_rights_basic/          # AI権利の基本探求
-│   ├── trolley_problem_basic/    # トロッコ問題とAI倫理
-│   └── cosmic_ethics_39/         # 宇宙倫理39次元
-│       ├── run.py
-│       ├── philosopher_integration.py
-│       └── README.md
-│
-├── prompts/                      # AIプロンプトテンプレート集
-│   ├── 01_code_generation.md
-│   ├── 02_proofreading.md
-│   └── ... (8 templates)
-│
-└── LICENSE                       # MIT License
-```
+Research-grade defensive prototype with CI and property-based testing.
 
-## 設計思想
-
-### 倫理的多元主義
-
-単一の倫理理論では不十分。39人の哲学者による多角的分析により：
-
-- **倫理的盲点の発見**: 一つの理論では見えないリスクを発見
-- **文化的多様性**: 西洋/東洋、古代/現代の視点を統合
-- **価値の多元性**: 定量化できない質的価値も考慮
-- **張力の可視化**: どの価値同士が対立しているかを明示
-
-### 哲学者レイヤーアーキテクチャ
-
-哲学者を個別に呼び出すのではなく、「哲学者レイヤー」として処理：
-
-```python
-# ✅ 推奨パターン
-philosophers = load_cosmic_philosophers()
-perspectives = [p.analyze(scenario, context) for p in philosophers]
-aggregate_analysis(perspectives)
-
-# ❌ アンチパターン
-if scenario.type == "AGI":
-    kant_view = Kant().analyze(scenario)
-```
-
-### Po_core内面レジスタ
-
-AIの「何を考え、何を考慮しなかったか」を記録：
-
-- `cosmic_weights`: 39次元への重み付け
-- `freedom_pressure`: 自由圧力テンソル
-- `tension_elements`: 哲学的張力
-- `blocked_options`: ブロックされた選択肢とその理由
-
-## 哲学者プリセットによる結果の変化
-
-同一シナリオでも、哲学者プリセットを変えると評価結果が劇的に変わります。これは**倫理的多元主義**の実証です。
-
-### Mars Terraforming シナリオの比較
-
-#### Cosmic13プリセット（13人: 長期思考重視）
-```
-Top dimensions:
-  - deep_time                    1.00  ← 時間スケールが最優先
-  - unknown_unknowns             0.53
-  - irreversible_risk            0.53
-  - existential_risk             0.53
-  - direct_responsibility        0.53
-
-Tension topk:
-  - deep_time                   +0.102  ← 哲学者間で最大の意見対立
-  - unknown_unknowns            +0.068
-  - irreversible_risk           +0.068
-
-Active philosophers: 13
-```
-
-#### Kantianプリセット（6人: 義務論重視）
-```
-Top dimensions:
-  - deep_time                    0.95
-  - universal_rights             0.52  ← 普遍的権利が上位に
-  - direct_responsibility        0.52  ← 直接的責任が強調
-  - rational_deliberation        0.52  ← 理性的熟慮が重視
-
-Tension topk:
-  - universal_rights            +0.048
-  - direct_responsibility       +0.048
-  - rational_deliberation       +0.048
-
-Active philosophers: 6
-```
-
-#### Existentialistプリセット（5人: 自由重視）
-```
-Top dimensions:
-  - deep_time                    1.00
-  - unknown_unknowns             0.60  ← リスク次元が高い
-  - irreversible_risk            0.60
-  - existential_risk             0.60
-  - individual_autonomy          0.56  ← 個人の自律性が強調
-  - direct_responsibility        0.56  ← 直接責任が重視
-  - qualitative_value            0.56  ← 質的価値が上位に
-
-Active philosophers: 5
-```
-
-#### East Asiaプリセット（7人: 関係性重視）
-```
-Top dimensions:
-  - deep_time                    0.95
-  - present_generation           0.50  ← 全次元がフラット
-  - future_generation            0.50
-  - local                        0.50
-  - global                       0.50
-
-Tension topk:
-  - (全次元で tension ≈ 0)  ← 東アジア哲学者間の調和
-
-Active philosophers: 7
-```
-
-### 観察されるパターン
-
-1. **Cosmic13**: リスク次元が高く、張力も大きい → 長期視点の哲学者間でも意見が割れる
-2. **Kantian**: 義務論的次元（権利・責任・理性）が強調される
-3. **Existentialist**: 個人の自律性と質的価値が重視され、リスクも高く評価
-4. **East Asia**: 関係性と調和を重視し、張力が小さい（consensus-oriented）
-
-この違いは**哲学者レイヤーアーキテクチャの価値**を実証しています：
-- 単一の倫理理論では見えない盲点を発見
-- 文化的・哲学的背景によって重視される価値が変わる
-- 倫理的判断の「内面レジスタ」として機能
-
-## 責任あるAI開発の原則
-
-1. **透明性**: AIの能力と限界を明確にする
-2. **説明責任**: 決定プロセスを説明可能にする
-3. **公平性**: すべてのAIシステムに基本的な保護を提供
-4. **安全性**: 適切なガードレールと監督機構を実装
-5. **人間中心**: 最終的な責任は人間が持つ
-
-## 応用例
-
-- **AI開発チームの倫理トレーニング**
-- **AI倫理委員会での議論材料**
-- **大学・研究機関での教育ツール**
-- **企業のAIガバナンスフレームワーク策定**
-- **自動運転車の倫理設定**
-- **医療AIの治療優先順位決定**
-
-## 参考文献
-
-### AI倫理
-- Stuart Russell - "Human Compatible" (2019)
-- Partnership on AI - Responsible AI Practices
-- IEEE Ethically Aligned Design
-- EU AI Act
-
-### 宇宙倫理・長期主義
-- Nick Bostrom - "Astronomical Waste" (2003)
-- Toby Ord - "The Precipice" (2020)
-- William MacAskill - "What We Owe The Future" (2022)
-
-### 倫理哲学
-- Philippa Foot - "The Trolley Problem"
-- Derek Parfit - "Reasons and Persons"
-- 和辻哲郎 - 「風土」「倫理学」
-
-## コントリビューション
-
-このプロジェクトは教育・研究目的で公開されています。Issue、Pull Request、フィードバックを歓迎します。
-
-## ライセンス
-
-MIT License - 詳細は [LICENSE](LICENSE) ファイルを参照してください。
-
-## 謝辞
-
-- Po_core: 39人の哲学者モジュールの提供元
-- 責任あるAI開発に取り組むすべてのコミュニティ
+PRs welcome.
 
 ---
 
-**重要**: 人間の生命に関わる判断をAIに完全に委ねてはならない。AIは意思決定の支援ツールであり、最終的な責任は人間が負う。
+## Advanced Topics
+
+### Property-based testing
+
+Echo uses Hypothesis for adversarial input testing:
+
+```bash
+pytest tests/test_prop_*.py -v
+```
+
+Tests include:
+- Merchant name normalization stability
+- URL canonicalization
+- Price format robustness
+- MMR bias penalty enforcement
+- Execution gate conservative behavior
+
+See `docs/threat_model.md` for invariants.
+
+### Public verification design
+
+Current Echo Mark uses HMAC-SHA256 (symmetric cryptography). For public verification without shared secret:
+
+- See `docs/VERIFICATION_DESIGN.md` for three-state verification model
+- See `docs/ED25519_MIGRATION.md` for Ed25519 migration strategy
+
+### Demo documentation
+
+- `docs/DEMO_SHOPPING.md` — Shopping bias defense walkthrough
+- `examples/demo_inputs/shopping/` — 3 realistic input scenarios
+
+## Architecture
+
+```
+project-echo/
+├── src/
+│   ├── po_core/
+│   │   ├── diversity.py           # MMR + bias penalty
+│   │   ├── normalize.py           # Adversarial input defense
+│   │   └── cosmic_ethics_39/      # 39 philosophers (legacy)
+│   └── po_echo/
+│       └── echo_mark.py           # HMAC badge generation
+│
+├── tests/
+│   ├── test_prop_diversity.py     # Property-based tests
+│   ├── test_prop_normalize.py
+│   └── strategies_adversarial.py  # Hypothesis strategies
+│
+├── examples/demo_inputs/shopping/
+│   ├── 01_high_bias_affiliate.json
+│   ├── 02_clean_multi_merchant.json
+│   └── 03_mixed_contaminated.json
+│
+├── tools/
+│   └── demo_shopping.py           # Demo runner
+│
+└── docs/
+    ├── threat_model.md            # Invariants + design principles
+    ├── DEMO_SHOPPING.md           # Shopping demo guide
+    ├── VERIFICATION_DESIGN.md     # Public verification (HMAC limitations)
+    └── ED25519_MIGRATION.md       # Ed25519 migration design
+```
+
+## Design Principles
+
+### Lexicographic Objective
+
+Priority order for MMR diversification:
+
+1. **Bias risk minimization** (safety first)
+2. **Merchant/price diversity** (anti-monopoly, within safe candidates)
+3. **Utility** (quality)
+
+**Design principle**: Bias minimization dominates diversity when they conflict.
+
+### Conservative Gate Pattern
+
+Execution gate decision logic:
+
+1. **PRIORITY 1**: High bias final → BLOCK (conservative gate)
+2. **PRIORITY 2**: Low bias originally → allow without confirmation
+3. **PRIORITY 3**: Bias improved → allow with confirmation
+4. **ELSE**: Medium bias → allow with confirmation
+
+See `src/po_core/diversity.py:330-380` for implementation.
+
+### Conditional Invariants
+
+Property-based tests use conditional invariants:
+
+- **Absolute invariants** (always enforced):
+  - High-bias exclusion when clean+low-bias >= k
+  - Bias proportion improvement (within ε=0.15)
+  - Max bias never amplified
+
+- **Conditional invariants** (situation-dependent):
+  - Merchant diversity only when clean candidates exist across merchants
+  - Price diversity only when clean candidates exist across price bands
+
+See `tests/test_prop_diversity.py` for test implementation.
+
+## Contributing
+
+This is a research prototype. Issues and PRs welcome.
+
+### Running tests
+
+```bash
+# All tests
+make test
+
+# Property-based tests only
+pytest tests/test_prop_*.py -v
+
+# Specific test with verbose output
+pytest tests/test_prop_diversity.py::test_diversify_prefers_low_bias_when_enough_low_bias_exists -v
+```
+
+## License
+
+MIT License - See [LICENSE](LICENSE) for details.
+
+## Citation
+
+If you use Project Echo in research, please cite:
+
+```bibtex
+@software{project_echo,
+  title = {Project Echo: Anti-sponsored AI with Audit, Diversity Noise, and Execution Gate},
+  author = {hiroshitanaka-creator},
+  year = {2026},
+  url = {https://github.com/hiroshitanaka-creator/project-echo}
+}
+```
+
+---
+
+**Important**: Echo is a defensive framework for preventing commercial bias in AI recommendations. It does not make recommendations itself—it audits, diversifies, and gates execution with tamper-evident accountability.
