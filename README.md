@@ -62,6 +62,16 @@ Signature: VALID ✓
 ================================================================================
 ```
 
+### Demo outputs (6 files)
+Generated under `runs/` (audit + badge for each case):
+
+- `runs/high_bias_affiliate.audit.json`
+- `runs/high_bias_affiliate.badge.json`
+- `runs/clean_multi_merchant.audit.json`
+- `runs/clean_multi_merchant.badge.json`
+- `runs/mixed_contaminated.audit.json`
+- `runs/mixed_contaminated.badge.json`
+
 ### Output schema (high level)
 
 Each `*.audit.json` includes:
