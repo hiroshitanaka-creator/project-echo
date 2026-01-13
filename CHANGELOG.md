@@ -5,6 +5,41 @@ All notable changes to Project Echo will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.1.1] - 2026-01-12
+
+### Added
+- **Demo B: Shopping Bias Defense** - Complete demonstration package
+  - 3 realistic scenarios (high-bias affiliate, clean multi-merchant, mixed contaminated)
+  - 6 output files (3 × audit.json + badge.json)
+  - `make demo-shopping` target for one-command execution
+  - `tools/demo_shopping.py` runner script
+  - `docs/DEMO_SHOPPING.md` comprehensive guide
+- **Public Verification Design** (`docs/VERIFICATION_DESIGN.md`)
+  - Three-state verification model (VERIFIED / UNVERIFIED / INVALID)
+  - Graceful degradation strategy for HMAC limitations
+  - Implementation roadmap for public verification
+- **Ed25519 Migration Design** (`docs/ED25519_MIGRATION.md`)
+  - Complete 4-phase migration strategy (HMAC → Dual → Ed25519-primary → Ed25519-only)
+  - Key management, signature generation/verification
+  - Security considerations (key rotation, replay mitigation)
+- **Release Assets** for v0.1.0
+  - `demo_inputs_shopping.zip` (3 JSON input files)
+  - Ready for GitHub Release attachment
+
+### Changed
+- **README Rebranding** - "Anti-sponsored AI" positioning
+  - New tagline: "Verify before you trust."
+  - Philosophy section: "AI becomes a paid funnel while looking helpful"
+  - Demo outputs section: Clear 6-file list
+  - Release badge added to README header
+- **CHANGELOG Format** - Now follows Keep a Changelog standard
+
+### Documentation
+- All design documents ready for public review
+- Complete reproduction package for Demo B
+
+---
+
 ## [v0.1.0] - 2026-01-12
 
 ### Added
@@ -149,4 +184,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[v0.1.1]: https://github.com/hiroshitanaka-creator/project-echo/releases/tag/v0.1.1
 [v0.1.0]: https://github.com/hiroshitanaka-creator/project-echo/releases/tag/v0.1.0
