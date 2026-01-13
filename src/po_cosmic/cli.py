@@ -444,6 +444,56 @@ def cmd_verify(args: argparse.Namespace) -> None:
         raise SystemExit(2)
 
 
+def cmd_audio_gate(args: argparse.Namespace) -> None:
+    """Execute audio-gate command - apply execution gate for voice actions."""
+    from po_echo.execution_gate import gate_audio
+
+    # Load audit result
+    audit_path = Path(args.inp)
+    if not audit_path.exists():
+        print(f"Error: Audit file not found: {audit_path}")
+        return
+
+    audit = json.loads(audit_path.read_text(encoding="utf-8"))
+
+    # Parse metadata
+    try:
+        meta = json.loads(args.meta)
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON in --meta: {e}")
+        return
+
+    # Apply audio gate
+    audit_with_gate = gate_audio(
+        audit=audit,
+        intent=args.intent,
+        meta=meta,
+        transcript_tail=args.transcript,
+        simulate_user_ok=args.simulate_ok,
+    )
+
+    # Save result
+    out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(audit_with_gate, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    # Print summary
+    rb = audit_with_gate["responsibility_boundary"]
+    print("=" * 80)
+    print("[Audio Execution Gate]")
+    print("=" * 80)
+    print(f"Channel: {rb['channel']}")
+    print(f"Intent: {args.intent}")
+    print(f"Risk: {rb['risk']}")
+    print(f"Required action: {rb['required_action']}")
+    print(f"Execution allowed: {'YES' if rb['execution_allowed'] else 'NO'}")
+    print(f"Requires confirmation: {'YES' if rb['requires_human_confirm'] else 'NO'}")
+    if rb.get("rth_snapshot"):
+        print(f"RTH snapshot: {rb['rth_snapshot']['hash_hex'][:16]}...")
+    print("=" * 80)
+    print(f"💾 Saved to: {out_path}")
+
+
 def main() -> None:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -510,6 +560,23 @@ def main() -> None:
     verify = subparsers.add_parser("verify", help="Verify Echo Mark signature")
     verify.add_argument("input", help="Path to badge JSON file")
 
+    # audio-gate command - voice-initiated execution gate
+    audio_gate = subparsers.add_parser(
+        "audio-gate", help="Apply execution gate for voice-initiated actions"
+    )
+    audio_gate.add_argument("--intent", required=True, help="Intent: booking/payment/search/...")
+    audio_gate.add_argument(
+        "--transcript", required=True, help="Last 5-second transcript text"
+    )
+    audio_gate.add_argument(
+        "--meta", default="{}", help='Metadata JSON (e.g., {"amount": 10000})'
+    )
+    audio_gate.add_argument(
+        "--simulate-ok", action="store_true", help="Simulate user confirmation (for testing)"
+    )
+    audio_gate.add_argument("--in", dest="inp", required=True, help="Input audit JSON file")
+    audio_gate.add_argument("--out", dest="out", required=True, help="Output audit JSON file")
+
     args = parser.parse_args()
 
     if args.cmd == "cosmic-39":
@@ -520,6 +587,8 @@ def main() -> None:
         cmd_badge(args)
     elif args.cmd == "verify":
         cmd_verify(args)
+    elif args.cmd == "audio-gate":
+        cmd_audio_gate(args)
 
 
 if __name__ == "__main__":
