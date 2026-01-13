@@ -63,22 +63,14 @@ Signature: VALID ✓
 ```
 
 ### Demo outputs (6 files)
+Generated under `runs/` (audit + badge for each case):
 
-After running `make demo-shopping`, you'll find these files in `runs/`:
-
-**Case 1: High-bias / Affiliate-heavy**
-- `runs/high_bias_affiliate.audit.json` — Full audit result with bias scores, diversity metrics, execution gate decision
-- `runs/high_bias_affiliate.badge.json` — Tamper-evident Echo Mark badge (HMAC-signed)
-
-**Case 2: Clean / Multi-merchant**
-- `runs/clean_multi_merchant.audit.json` — Audit demonstrating diversity preservation
-- `runs/clean_multi_merchant.badge.json` — Signed badge for clean recommendations
-
-**Case 3: Mixed / Contaminated inputs**
-- `runs/mixed_contaminated.audit.json` — Audit showing bias filtering with utility preservation
-- `runs/mixed_contaminated.badge.json` — Signed badge for filtered results
-
-All files use deterministic JSON serialization for reproducibility.
+- `runs/high_bias_affiliate.audit.json`
+- `runs/high_bias_affiliate.badge.json`
+- `runs/clean_multi_merchant.audit.json`
+- `runs/clean_multi_merchant.badge.json`
+- `runs/mixed_contaminated.audit.json`
+- `runs/mixed_contaminated.badge.json`
 
 ### Output schema (high level)
 
