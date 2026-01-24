@@ -1,6 +1,6 @@
 [project]
 name = "project-echo"
-version = "0.1.0"
+version = "0.2.0"
 description = "Responsible AI Development Framework with 39 Philosophers and Cosmic Ethics"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -8,6 +8,10 @@ license = {text = "MIT"}
 
 authors = [
     {name = "hiroshitanaka-creator"}
+]
+
+dependencies = [
+    "pynacl>=1.5.0",
 ]
 
 [project.scripts]

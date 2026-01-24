@@ -20,7 +20,24 @@ if str(src_path) not in sys.path:
 from po_core.cosmic_ethics_39.evaluator import CosmicEthics39Evaluator
 from po_core.cosmic_ethics_39.scenarios import get_scenario
 from po_core.diversity import Rec, diversify_with_mmr
-from po_echo.echo_mark import get_secret_from_env, make_echo_mark, verify_mark
+from po_echo.echo_mark import (
+    get_secret_from_env,
+    load_ed25519_keypair,
+    load_ed25519_private_key_from_env,
+    make_echo_mark,
+    make_echo_mark_dual,
+    make_echo_mark_ed25519,
+    verify_echo_mark_dual,
+    verify_echo_mark_ed25519,
+    verify_mark,
+)
+
+try:
+    from nacl.signing import SigningKey
+
+    ED25519_AVAILABLE = True
+except ImportError:
+    ED25519_AVAILABLE = False
 
 
 def prompt_yes_no(msg: str) -> bool:
@@ -373,16 +390,67 @@ def cmd_badge(args: argparse.Namespace) -> None:
 
     audit = json.loads(audit_path.read_text(encoding="utf-8"))
 
-    # Get secret from environment
-    try:
-        secret = get_secret_from_env()
-    except RuntimeError as e:
-        print(f"Error: {e}")
-        print("Set ECHO_MARK_SECRET environment variable (min 16 chars)")
-        return
+    # Determine signature mode
+    sig_mode = getattr(args, "sig_mode", "hmac")  # Default to HMAC for backward compatibility
+    key_id = getattr(args, "key_id", "default")
 
-    # Generate Echo Mark
-    badge = make_echo_mark(audit, secret=secret, run_id=args.run_id)
+    # Generate Echo Mark based on signature mode
+    if sig_mode == "ed25519" and ED25519_AVAILABLE:
+        # Ed25519-only mode
+        try:
+            # Try loading from file first
+            if hasattr(args, "keys_dir") and args.keys_dir:
+                keypair = load_ed25519_keypair(key_id, args.keys_dir)
+                private_key = keypair["private_key"]
+            else:
+                # Fall back to environment variable
+                private_key = load_ed25519_private_key_from_env()
+                if not private_key:
+                    print("Error: ECHO_MARK_PRIVATE_KEY not set")
+                    print("Set environment variable or use --keys-dir")
+                    return
+
+            badge = make_echo_mark_ed25519(audit, private_key, key_id, run_id=args.run_id)
+            print(f"✓ Ed25519 signature mode")
+        except (FileNotFoundError, RuntimeError) as e:
+            print(f"Error: {e}")
+            return
+
+    elif sig_mode == "dual" and ED25519_AVAILABLE:
+        # Dual signature mode (HMAC + Ed25519)
+        try:
+            # Get HMAC secret
+            secret = get_secret_from_env()
+
+            # Get Ed25519 private key
+            if hasattr(args, "keys_dir") and args.keys_dir:
+                keypair = load_ed25519_keypair(key_id, args.keys_dir)
+                private_key = keypair["private_key"]
+            else:
+                private_key = load_ed25519_private_key_from_env()
+                if not private_key:
+                    print("Error: ECHO_MARK_PRIVATE_KEY not set")
+                    return
+
+            badge = make_echo_mark_dual(
+                audit, secret, private_key, key_id, run_id=args.run_id
+            )
+            print(f"✓ Dual signature mode (HMAC + Ed25519)")
+        except (FileNotFoundError, RuntimeError) as e:
+            print(f"Error: {e}")
+            return
+
+    else:
+        # HMAC-only mode (default, backward compatible)
+        try:
+            secret = get_secret_from_env()
+        except RuntimeError as e:
+            print(f"Error: {e}")
+            print("Set ECHO_MARK_SECRET environment variable (min 16 chars)")
+            return
+
+        badge = make_echo_mark(audit, secret=secret, run_id=args.run_id)
+        print(f"✓ HMAC signature mode (legacy)")
 
     # Print summary
     print("=" * 80)
@@ -390,6 +458,8 @@ def cmd_badge(args: argparse.Namespace) -> None:
     print("=" * 80)
     print(f"Label: {badge['label']}")
     print(f"Badge text: {badge['badge_text']}")
+    print(f"Schema version: {badge.get('schema_version', 'echo_mark_v2')}")
+    print(f"Verification method: {badge.get('verification_method', 'HMAC-SHA256')}")
     print("\nBias signals:")
     short = badge["short"]
     print(f"  Original: {short['bias_original']:.2%}")
@@ -398,6 +468,8 @@ def cmd_badge(args: argparse.Namespace) -> None:
     if short["reasons"]:
         print(f"  Reasons: {', '.join(short['reasons'])}")
     print(f"\nSignature: {badge['signature'][:32]}...")
+    if "public_key" in badge:
+        print(f"Public key: {badge['public_key'][:32]}...")
     print("=" * 80)
 
     # Save badge
@@ -417,31 +489,110 @@ def cmd_verify(args: argparse.Namespace) -> None:
 
     badge = json.loads(badge_path.read_text(encoding="utf-8"))
 
-    # Get secret from environment
-    try:
-        secret = get_secret_from_env()
-    except RuntimeError as e:
-        print(f"Error: {e}")
-        print("Set ECHO_MARK_SECRET environment variable (min 16 chars)")
-        return
-
-    # Verify signature
-    valid = verify_mark(
-        payload=badge["payload"],
-        payload_hash=badge["payload_hash"],
-        signature=badge["signature"],
-        secret=secret,
-    )
+    # Detect signature type
+    schema_version = badge.get("schema_version", "echo_mark_v2")
+    verification_method = badge.get("verification_method", "HMAC-SHA256")
 
     print("=" * 80)
     print("[Echo Mark Verification]")
     print("=" * 80)
     print(f"Label: {badge['label']}")
-    print(f"Signature: {'VALID ✓' if valid else 'INVALID ✗'}")
-    print("=" * 80)
+    print(f"Schema version: {schema_version}")
+    print(f"Verification method: {verification_method}")
+    print()
 
-    if not valid:
-        raise SystemExit(2)
+    # Verify based on schema version
+    if schema_version == "echo_mark_v3" and "public_key" in badge:
+        # Ed25519 or dual signature
+        if ED25519_AVAILABLE:
+            # Try dual verification (Ed25519 preferred, HMAC fallback)
+            try:
+                secret = get_secret_from_env()
+            except RuntimeError:
+                secret = None  # No HMAC secret available
+
+            result = verify_echo_mark_dual(badge, hmac_secret=secret)
+
+            # Print result
+            print(f"Status: {result['status']}")
+            if result.get("verification_method"):
+                print(f"Verified with: {result['verification_method']}")
+            print()
+
+            # Print checks
+            checks = result.get("checks", {})
+            print("Verification checks:")
+            print(f"  Hash integrity: {'✓' if checks.get('hash_integrity') else '✗'}")
+            print(f"  Signature valid: {'✓' if checks.get('signature_valid') else '✗'}")
+            print(f"  Schema valid: {'✓' if checks.get('schema_valid') else '✗'}")
+            print(f"  Timestamp valid: {'✓' if checks.get('timestamp_valid') else '⚠️'}")
+
+            # Print warnings/notes
+            if result.get("timestamp_warning"):
+                print(f"\n⚠️  Timestamp warning: {result['timestamp_warning']}")
+            if result.get("note"):
+                print(f"\nNote: {result['note']}")
+
+            print("=" * 80)
+
+            if result["status"] != "VERIFIED":
+                print(f"\n❌ Verification failed: {result.get('reason')}")
+                raise SystemExit(2)
+
+            print("\n✅ VERIFIED")
+
+        else:
+            # PyNaCl not available, try HMAC fallback
+            print("⚠️  PyNaCl not installed, Ed25519 verification not available")
+            print("Falling back to HMAC verification...")
+            print()
+
+            if "signature_hmac" not in badge:
+                print("❌ No HMAC signature found in badge")
+                print("Install PyNaCl for Ed25519 verification: pip install pynacl")
+                raise SystemExit(2)
+
+            try:
+                secret = get_secret_from_env()
+            except RuntimeError as e:
+                print(f"Error: {e}")
+                print("Set ECHO_MARK_SECRET environment variable")
+                raise SystemExit(2)
+
+            valid = verify_mark(
+                payload=badge["payload"],
+                payload_hash=badge["payload_hash"],
+                signature=badge.get("signature_hmac", badge["signature"]),
+                secret=secret,
+            )
+
+            print(f"Signature: {'VALID ✓' if valid else 'INVALID ✗'}")
+            print("=" * 80)
+
+            if not valid:
+                raise SystemExit(2)
+
+    else:
+        # Legacy HMAC verification (v1/v2)
+        try:
+            secret = get_secret_from_env()
+        except RuntimeError as e:
+            print(f"Error: {e}")
+            print("Set ECHO_MARK_SECRET environment variable")
+            raise SystemExit(2)
+
+        valid = verify_mark(
+            payload=badge["payload"],
+            payload_hash=badge["payload_hash"],
+            signature=badge["signature"],
+            secret=secret,
+        )
+
+        print(f"Signature: {'VALID ✓' if valid else 'INVALID ✗'}")
+        print("=" * 80)
+
+        if not valid:
+            raise SystemExit(2)
 
 
 def cmd_audio_gate(args: argparse.Namespace) -> None:
@@ -555,6 +706,25 @@ def main() -> None:
     badge.add_argument("input", help="Path to audit JSON file")
     badge.add_argument("output", help="Path to output badge JSON file")
     badge.add_argument("--run-id", dest="run_id", default=None, help="Optional run identifier")
+    badge.add_argument(
+        "--sig-mode",
+        dest="sig_mode",
+        choices=["hmac", "ed25519", "dual"],
+        default="hmac",
+        help="Signature mode: hmac (legacy), ed25519 (v3), dual (HMAC+Ed25519, recommended)",
+    )
+    badge.add_argument(
+        "--key-id",
+        dest="key_id",
+        default="default",
+        help="Key identifier for Ed25519 (default: 'default')",
+    )
+    badge.add_argument(
+        "--keys-dir",
+        dest="keys_dir",
+        default=None,
+        help="Directory containing Ed25519 keypair files (default: .keys/)",
+    )
 
     # verify command - verify Echo Mark
     verify = subparsers.add_parser("verify", help="Verify Echo Mark signature")
