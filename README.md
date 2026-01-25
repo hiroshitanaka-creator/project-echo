@@ -25,8 +25,18 @@ Echo prevents "convenience capture": AI outputs quietly collapsing into sponsore
 
 ## Quickstart
 ```bash
+# Install dependencies (includes PyNaCl for Ed25519)
 pip install -e .
+
+# For HMAC-only mode (legacy)
 export ECHO_MARK_SECRET="your-secret-key"  # Min 16 chars
+
+# For Ed25519 or dual signature mode (recommended)
+python tools/generate_keypair.py --key-id v1 --output .keys --registry
+export ECHO_MARK_PRIVATE_KEY="$(cat .keys/v1.private.key)"
+export ECHO_MARK_PUBLIC_KEY="$(cat .keys/v1.public.key)"
+
+# Run demo
 make demo-shopping
 ```
 
@@ -131,12 +141,29 @@ Tests include:
 
 See `docs/threat_model.md` for invariants.
 
-### Public verification design
+### Echo Mark v3: Ed25519 Signatures (v0.2.0)
 
-Current Echo Mark uses HMAC-SHA256 (symmetric cryptography). For public verification without shared secret:
+**Public verification is now available** with Ed25519 digital signatures.
 
+```bash
+# Generate keypair (one-time setup)
+python tools/generate_keypair.py --key-id v1 --output .keys --registry
+
+# Sign with dual mode (HMAC + Ed25519)
+po-cosmic badge runs/example.audit.json runs/example.badge.json --sig-mode dual --key-id v1 --keys-dir .keys
+
+# Verify (anyone can do this, no secret needed!)
+po-cosmic verify runs/example.badge.json
+```
+
+**Migration strategy**: Phase 2 (Dual Signature)
+- Generate both HMAC and Ed25519 signatures (backward compatible)
+- Ed25519 preferred for verification (public key cryptography)
+- HMAC fallback for systems without PyNaCl
+
+For migration details:
 - See `docs/VERIFICATION_DESIGN.md` for three-state verification model
-- See `docs/ED25519_MIGRATION.md` for Ed25519 migration strategy
+- See `docs/ED25519_MIGRATION.md` for complete migration strategy
 
 ### Demo documentation
 

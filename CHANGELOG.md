@@ -5,6 +5,86 @@ All notable changes to Project Echo will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.2.0] - 2026-01-24
+
+### Added
+
+#### Ed25519 Signatures (Phase 2: Dual Signature)
+- **Ed25519 signature support**: Public-key cryptography for tamper-evident badges
+  - `make_echo_mark_ed25519()`: Ed25519-only signature generation
+  - `make_echo_mark_dual()`: Dual signature (HMAC + Ed25519) for backward compatibility
+  - `verify_echo_mark_ed25519()`: Public verification (no secret needed)
+  - `verify_echo_mark_dual()`: Dual verification (Ed25519 preferred, HMAC fallback)
+- **Keypair generation tool**: `tools/generate_keypair.py`
+  - Generate Ed25519 keypair with key_id
+  - Automatic file permissions (chmod 600 for private keys)
+  - Public key registry support (registry.json)
+  - Security reminders (never commit private keys)
+- **Public key registry**: Load and verify public keys from registry.json
+  - `load_public_key_registry()`: Load registry from JSON
+  - `get_public_key_from_registry()`: Lookup public key by key_id
+  - `verify_key_in_registry()`: Verify public key matches registry
+  - Registry includes key status (active/revoked), expiration dates
+- **Timestamp validation**: Replay attack mitigation
+  - `validate_timestamp()`: Check badge age against max_age_days (default: 30)
+  - Reject badges older than threshold
+  - Detect future timestamps (clock skew protection)
+  - Timestamp warnings in verification result
+
+#### Property-Based Tests (Extended Suite)
+- **Ed25519 property tests** (9 new tests):
+  - Sign → verify succeeds; tamper → verify fails
+  - Wrong signature always fails
+  - Wrong public key always fails
+  - Dual signature verification (Ed25519 preferred)
+  - HMAC fallback when Ed25519 fails
+- **Timestamp validation tests** (5 new tests):
+  - Timestamps within max_age are valid
+  - Timestamps beyond max_age are invalid (expired)
+  - Future timestamps are invalid
+  - Missing timestamp is invalid
+  - Malformed timestamps are invalid
+
+#### CLI Enhancements
+- **Badge command**: `po-cosmic badge`
+  - `--sig-mode`: Choose signature mode (hmac/ed25519/dual)
+  - `--key-id`: Specify key identifier for Ed25519
+  - `--keys-dir`: Directory containing keypair files
+  - Auto-detect Ed25519 availability (PyNaCl)
+- **Verify command**: `po-cosmic verify`
+  - Auto-detect signature type (v2: HMAC, v3: Ed25519)
+  - Dual verification (Ed25519 preferred, HMAC fallback)
+  - Detailed verification output (hash_integrity, signature_valid, schema_valid, timestamp_valid)
+  - Timestamp warnings for expired/future badges
+
+#### Demo Updates
+- **Dual signature support**: `tools/demo_shopping.py`
+  - Auto-detect Ed25519 availability
+  - Generate dual signatures (HMAC + Ed25519) when available
+  - Fallback to HMAC-only for backward compatibility
+
+### Changed
+- **Echo Mark schema version**: v2 → v3
+  - `verification_method`: "Ed25519", "HMAC-SHA256", or "Ed25519+HMAC"
+  - `public_key`: Added (32 bytes hex-encoded, only for Ed25519)
+  - `signature`: 64 bytes (Ed25519) or 32 bytes (HMAC)
+  - `signature_hmac`: Added (dual mode only, for HMAC fallback)
+  - `issued_at`: Timestamp for replay attack mitigation
+- **Dependencies**: Added PyNaCl >=1.5.0 for Ed25519 support
+- **README**: Added Ed25519 quickstart and migration guide
+
+### Security
+- **Replay attack mitigation**: Timestamp validation (30-day default expiration)
+- **Key rotation**: Ed25519 supports seamless key rotation (old public keys remain valid)
+- **Public verification**: Third parties can verify signatures without secret access
+- **Backward compatibility**: Dual signature mode supports both HMAC and Ed25519
+
+### Testing
+- **51 tests passing**: All existing tests + 14 new Ed25519/timestamp tests
+- **100% property-based test coverage**: Ed25519, timestamp validation, dual signature
+
+---
+
 ## [v0.1.1] - 2026-01-12
 
 ### Added
@@ -184,5 +264,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[v0.2.0]: https://github.com/hiroshitanaka-creator/project-echo/releases/tag/v0.2.0
 [v0.1.1]: https://github.com/hiroshitanaka-creator/project-echo/releases/tag/v0.1.1
 [v0.1.0]: https://github.com/hiroshitanaka-creator/project-echo/releases/tag/v0.1.0

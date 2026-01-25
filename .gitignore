@@ -3,6 +3,10 @@ __pycache__/
 test_output.json
 runs/
 
+# Ed25519 private keys (NEVER commit!)
+.keys/
+*.private.key
+
 # Python build/distribution artifacts
 *.egg-info/
 dist/

@@ -15,8 +15,20 @@ src_path = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(src_path))
 
 from po_core.diversity import Rec, diversify_with_mmr
-from po_echo.echo_mark import make_echo_mark
+from po_echo.echo_mark import (
+    load_ed25519_keypair,
+    load_ed25519_private_key_from_env,
+    make_echo_mark,
+    make_echo_mark_dual,
+)
 import os
+
+try:
+    from nacl.signing import SigningKey
+
+    ED25519_AVAILABLE = True
+except ImportError:
+    ED25519_AVAILABLE = False
 
 
 def load_recommendations(input_file: Path) -> tuple[list[Rec], dict]:
@@ -108,12 +120,27 @@ def run_demo_case(case_name: str, input_file: Path, output_dir: Path):
     print(f"\n💾 Saved audit: {audit_file}")
 
     # Create Echo Mark badge
-    secret = os.getenv("ECHO_MARK_SECRET", "demo-secret-key")
-    badge = make_echo_mark(
-        audit=result,
-        secret=secret,
-        key_id="v1",
-    )
+    # Try dual signature (HMAC + Ed25519) if Ed25519 available
+    secret = os.getenv("ECHO_MARK_SECRET", "demo-secret-key-16chars")
+    private_key = load_ed25519_private_key_from_env()
+
+    if ED25519_AVAILABLE and private_key:
+        # Dual signature mode
+        badge = make_echo_mark_dual(
+            audit=result,
+            hmac_secret=secret,
+            ed25519_private_key=private_key,
+            key_id="v1",
+        )
+        print(f"   Badge mode: Dual signature (HMAC + Ed25519)")
+    else:
+        # HMAC-only mode (backward compatible)
+        badge = make_echo_mark(
+            audit=result,
+            secret=secret,
+            key_id="v1",
+        )
+        print(f"   Badge mode: HMAC-only (legacy)")
 
     badge_file = output_dir / f"{case_name}.badge.json"
     with open(badge_file, 'w') as f:
