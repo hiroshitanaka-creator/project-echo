@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Audio Channel for Ear-worn Devices (Sweetpea)
+- **Voice Boundary Policy**: Risk-based execution control for voice-initiated actions
+  - `voice_boundary.py`: Risk classification (low/medium/high) for intents
+  - Auto-execute for low-risk actions (search, summary)
+  - Double-tap confirmation for medium-risk (booking, itinerary)
+  - App confirmation for high-risk (payment, identity disclosure)
+  - Intent categories: CRITICAL_INTENTS (payment, purchase), SENSITIVE_INTENTS (booking, data_share)
+- **Ear-Handshake Protocol**: OS-independent device pairing
+  - `ear_handshake.py`: Challenge-response authentication via HMAC
+  - QR/ultrasonic challenge generation
+  - Short-lived session keys (5-minute default expiry)
+  - Replay attack prevention with timestamp validation
+  - Graceful degradation to app confirmation on session expiry
+- **Rolling Transcript Hash (RTH)**: Minimal-disclosure voice audit trail
+  - `rth.py`: Privacy-preserving transcript hashing
+  - Never stores raw audio or full transcripts
+  - Feature extraction: sorted word sets only (discards order, timing, prosody)
+  - Rolling hash chain: H_t = H(H_{t-1} || feat_t)
+  - Snapshot attachment to Echo Mark receipts
+
 #### Ed25519 Signatures (Phase 2: Dual Signature)
 - **Ed25519 signature support**: Public-key cryptography for tamper-evident badges
   - `make_echo_mark_ed25519()`: Ed25519-only signature generation
@@ -251,16 +271,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Future Roadmap
 
-### v0.2.0 (Planned)
-- Ed25519 signature implementation (Phase 2: Dual signature)
-- Public key registry
-- Replay attack mitigation (timestamp validation)
-- Extended property-based tests (regression suite)
+### v0.2.1 (Next)
+- Property-based tests for Audio Channel (voice_boundary, ear_handshake, rth)
+- Audio Channel CLI integration (`po-cosmic voice` subcommand)
+- Demo C: Voice-initiated booking scenario
 
 ### v0.3.0 (Planned)
 - Real-world integration examples (browser extension, API proxy)
 - Performance benchmarks (10k recommendations)
 - Multi-language support (i18n)
+- Ed25519 Phase 3: Ed25519-primary (deprecate HMAC-only)
+
+### v1.0.0 (Vision)
+- Production-ready Audio Channel for ear-worn devices
+- Ed25519 Phase 4: Ed25519-only (remove HMAC)
+- Public audit registry (verifiable without secret access)
+- SDK for third-party integrations
 
 ---
 

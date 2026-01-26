@@ -2,9 +2,13 @@
 **Anti-sponsored AI.**
 
 [![Release](https://img.shields.io/github/v/release/hiroshitanaka-creator/project-echo?label=Release)](https://github.com/hiroshitanaka-creator/project-echo/releases)
+[![Tests](https://img.shields.io/badge/tests-51%20passing-brightgreen)](https://github.com/hiroshitanaka-creator/project-echo/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 
 Echo audits AI recommendations, injects diversity noise, and gates execution — with tamper-evident badges.
+
+**v0.2.0**: Ed25519 signatures + Audio Channel for ear-worn devices (Sweetpea)
 
 Echo prevents "convenience capture": AI outputs quietly collapsing into sponsored, bid-driven, or monopolistic choices by enforcing **Audit → Diversity Noise → Execution Gate → Tamper-evident Badge**.
 
@@ -12,6 +16,8 @@ Echo prevents "convenience capture": AI outputs quietly collapsing into sponsore
 > It returns **a comparable candidate set + reconstructable evidence + a responsibility boundary**.
 
 ## What it does
+
+### Core Defense Pipeline
 - **Receipt-style Commercial Bias Audit**
   Every bias decision is backed by reconstructable evidence (affiliate traces, concentration metrics, source diversity, price bucket distribution).
 - **Diversity Noise (defense, not sabotage)**
@@ -19,7 +25,17 @@ Echo prevents "convenience capture": AI outputs quietly collapsing into sponsore
 - **Execution Gate**
   Mechanical policy outputs: `execution_allowed` / `requires_human_confirm` based on bias + risk signals.
 - **Echo Mark (tamper-evident badge)**
-  HMAC-signed badge (`ECHO_VERIFIED / ECHO_CHECK / ECHO_BLOCKED`) + verify CLI.
+  Ed25519 + HMAC-signed badge (`ECHO_VERIFIED / ECHO_CHECK / ECHO_BLOCKED`) + verify CLI.
+
+### Audio Channel (Sweetpea) — NEW in v0.2.0
+- **Voice Boundary Policy**
+  Risk-based confirmation for voice-initiated actions: auto-execute (low), double-tap (medium), app-confirm (high).
+- **Ear-Handshake Protocol**
+  OS-independent device pairing via challenge-response (HMAC). Short-lived session keys (5-min expiry).
+- **Rolling Transcript Hash (RTH)**
+  Privacy-preserving voice audit. Stores only hashed word sets — never raw audio or full transcripts.
+
+### Quality Assurance
 - **Property-based tests (adversarial inputs included)**
   Defends against obfuscation tricks: merchant name drift, redirect-like URLs, price format drift, affiliate parameter hiding.
 
@@ -95,11 +111,14 @@ Each `*.audit.json` includes:
   - `reasons` + `signals`
 - `final_set` (diversified candidate set)
 
-Each `*.badge.json` includes:
+Each `*.badge.json` includes (v3 schema):
 
 - `label`: `ECHO_VERIFIED` | `ECHO_CHECK` | `ECHO_BLOCKED`
-- `payload_hash` + `signature` (HMAC-SHA256)
-- Verify result is deterministic given the same `ECHO_MARK_SECRET`
+- `verification_method`: `Ed25519`, `HMAC-SHA256`, or `Ed25519+HMAC`
+- `payload_hash` + `signature` (64 bytes for Ed25519, 32 bytes for HMAC)
+- `signature_hmac`: HMAC fallback signature (dual mode only)
+- `public_key`: Ed25519 public key (hex-encoded, enables public verification)
+- `issued_at`: Timestamp for replay attack mitigation (30-day expiration)
 
 ## Philosophy
 
@@ -116,9 +135,16 @@ Echo counters this with systems, not morals:
 
 ## Status
 
-Research-grade defensive prototype with CI and property-based testing.
+**v0.2.0** — Research-grade defensive prototype.
 
-PRs welcome.
+| Metric | Status |
+|--------|--------|
+| Tests | 51 passing (property-based + integration) |
+| Signature | Ed25519 + HMAC dual mode |
+| Channels | Web + Audio (Sweetpea) |
+| Replay Protection | Timestamp validation (30-day expiration) |
+
+PRs welcome. See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ---
 
@@ -175,17 +201,27 @@ For migration details:
 ```
 project-echo/
 ├── src/
-│   ├── po_core/
-│   │   ├── diversity.py           # MMR + bias penalty
-│   │   ├── normalize.py           # Adversarial input defense
-│   │   └── cosmic_ethics_39/      # 39 philosophers (legacy)
-│   └── po_echo/
-│       └── echo_mark.py           # HMAC badge generation
+│   ├── po_core/                     # Core algorithms
+│   │   ├── diversity.py             # MMR + bias penalty (lexicographic objective)
+│   │   ├── normalize.py             # Adversarial input defense
+│   │   └── cosmic_ethics_39/        # 39 philosophers (legacy)
+│   │
+│   ├── po_cosmic/                   # CLI interface
+│   │   └── cli.py                   # po-cosmic command
+│   │
+│   └── po_echo/                     # Echo Mark + Audio Channel
+│       ├── echo_mark.py             # Ed25519 + HMAC badge generation
+│       ├── execution_gate.py        # Execution gate logic
+│       ├── voice_boundary.py        # Audio: Risk-based voice policy
+│       ├── ear_handshake.py         # Audio: Device pairing (Sweetpea)
+│       └── rth.py                   # Audio: Rolling Transcript Hash
 │
 ├── tests/
-│   ├── test_prop_diversity.py     # Property-based tests
-│   ├── test_prop_normalize.py
-│   └── strategies_adversarial.py  # Hypothesis strategies
+│   ├── test_prop_diversity.py       # Property-based tests (MMR)
+│   ├── test_prop_normalize.py       # Input robustness
+│   ├── test_prop_execution_gate.py  # Conservative gate behavior
+│   ├── test_prop_echo_mark.py       # Ed25519 + timestamp validation
+│   └── strategies_adversarial.py    # Hypothesis strategies
 │
 ├── examples/demo_inputs/shopping/
 │   ├── 01_high_bias_affiliate.json
@@ -193,13 +229,14 @@ project-echo/
 │   └── 03_mixed_contaminated.json
 │
 ├── tools/
-│   └── demo_shopping.py           # Demo runner
+│   ├── demo_shopping.py             # Demo runner
+│   └── generate_keypair.py          # Ed25519 key generation
 │
 └── docs/
-    ├── threat_model.md            # Invariants + design principles
-    ├── DEMO_SHOPPING.md           # Shopping demo guide
-    ├── VERIFICATION_DESIGN.md     # Public verification (HMAC limitations)
-    └── ED25519_MIGRATION.md       # Ed25519 migration design
+    ├── threat_model.md              # 5 core invariants
+    ├── DEMO_SHOPPING.md             # Shopping demo guide
+    ├── VERIFICATION_DESIGN.md       # Public verification strategy
+    └── ED25519_MIGRATION.md         # Ed25519 migration (4 phases)
 ```
 
 ## Design Principles
