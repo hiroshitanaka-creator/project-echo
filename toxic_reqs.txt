@@ -1,0 +1,6 @@
+# toxic_reqs.txt
+openai
+tiktoken
+langchain-openai
+requests
+numpy
