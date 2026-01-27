@@ -1,0 +1,7 @@
+# clean_reqs.txt
+requests
+numpy
+pandas
+scikit-learn
+fastapi
+uvicorn
