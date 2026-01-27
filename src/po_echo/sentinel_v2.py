@@ -15,6 +15,24 @@ VENDOR_RISK_MAP = {
     "firebase_admin": "Google Firebase",
     "azure": "Microsoft Azure",
     "vercel": "Vercel",
+
+    # 💥 Google / Gemini Specific Traps
+    "google.generativeai": "Google Gemini API (Vendor Lock-in)",
+    "vertexai": "Google Vertex AI (Enterprise Lock-in)",
+    "google_auth_oauthlib": "Google Auth (Identity Lock-in)",
+}
+
+# 💡 依存に対する「逃げ道」(代替手段)
+ALTERNATIVE_MAP = {
+    "openai": "litellm (Universal Proxy), ollama (Local LLM)",
+    "anthropic": "litellm (Universal Proxy), langchain (Abstraction)",
+    "boto3": "minio (S3-compatible OSS), localstack (Local AWS)",
+    "google.cloud": "minio (Storage), self-hosted alternatives",
+    "azure": "self-hosted alternatives, OSS equivalents",
+
+    # 💡 Geminiへの依存に対する「逃げ道」
+    "google.generativeai": "litellm (Universal Proxy), langchain (Abstraction)",
+    "vertexai": "mlflow (Open MLOps), kubeflow (OSS MLOps)",
 }
 
 # 思考停止（ハードコードされた認証情報）のパターン
