@@ -1,0 +1,6 @@
+# Development dependencies (pinned for reproducibility)
+-r requirements.txt
+pytest==9.0.2
+ruff==0.14.14
+hypothesis==6.151.4
+mypy==1.19.1

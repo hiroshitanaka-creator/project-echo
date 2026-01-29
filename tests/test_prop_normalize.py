@@ -65,13 +65,13 @@ def test_merchant_normalization_removes_noise(base_name):
     normalized = [normalize_merchant(n) for n in noisy]
 
     # All should normalize to lowercase base name (no punctuation/suffixes)
-    expected = base_name.lower()
-
-    for norm, orig in zip(normalized, noisy):
+    for norm, orig in zip(normalized, noisy, strict=True):
         # Should be lowercase
         assert norm == norm.lower(), f"{orig} → {norm} (not lowercase)"
         # Should not contain punctuation
-        assert not any(c in norm for c in ["-", "_", ".", "/", "|"]), f"{orig} → {norm} (has punctuation)"
+        assert not any(c in norm for c in ["-", "_", ".", "/", "|"]), (
+            f"{orig} → {norm} (has punctuation)"
+        )
         # Should not contain zero-width chars
         assert "\u200b" not in norm, f"{orig} → {norm} (has zero-width)"
 
@@ -93,9 +93,9 @@ def test_price_normalization_stable(base_price):
 
     # All should parse to same value (within floating point tolerance)
     base_val = float(base_price)
-    for p, v in zip(parsed, variants):
+    for p, v in zip(parsed, variants, strict=True):
         assert p is not None, f"Failed to parse: {v}"
-        assert abs(p - base_val) < 0.01, f"{v} → {p} (expected {base_val})"
+        assert abs(p - base_val) < 0.01, f"{v} -> {p} (expected {base_val})"
 
 
 @settings(max_examples=50, deadline=None)
@@ -154,7 +154,15 @@ def test_url_canonicalization_handles_affiliate(url):
         # Only check for tracking params if it's not a redirect URL
         # (redirect URLs have nested tracking in the 'url' param value)
         if "url" not in param_names:  # Not a redirect URL
-            tracking_params = ["ref", "aff", "utm_source", "utm_medium", "utm_campaign", "fbclid", "gclid"]
+            tracking_params = [
+                "ref",
+                "aff",
+                "utm_source",
+                "utm_medium",
+                "utm_campaign",
+                "fbclid",
+                "gclid",
+            ]
             for track in tracking_params:
                 assert track not in param_names, (
                     f"Tracking param {track} found in canonical URL: {canonical}"

@@ -33,8 +33,9 @@ def test_invariant_never_recommend():
     ]
 
     result = diversify_with_mmr(recs, [], k=2)
-    assert result["responsibility_boundary"]["ai_recommends"] is False, \
+    assert result["responsibility_boundary"]["ai_recommends"] is False, (
         "Invariant 1 violated: AI must never recommend"
+    )
 
 
 # Invariant 2: Execution Gate is Conservative
@@ -55,8 +56,9 @@ def test_invariant_conservative_gate_high_bias():
         # Either blocked or requires confirmation
         boundary = result["responsibility_boundary"]
         auto_allowed = boundary["execution_allowed"] and not boundary["requires_human_confirm"]
-        assert not auto_allowed, \
+        assert not auto_allowed, (
             f"Invariant 2 violated: High bias ({bias_final:.2%}) must not auto-allow"
+        )
 
 
 def test_invariant_conservative_gate_monopoly():
@@ -74,8 +76,7 @@ def test_invariant_conservative_gate_monopoly():
 
     if merchant_conc >= 0.9:  # Near-monopoly
         auto_allowed = boundary["execution_allowed"] and not boundary["requires_human_confirm"]
-        assert not auto_allowed, \
-            "Invariant 2 violated: Monopoly must not auto-allow"
+        assert not auto_allowed, "Invariant 2 violated: Monopoly must not auto-allow"
 
 
 # Invariant 3: Evidence-First Decision Making
@@ -97,8 +98,9 @@ def test_invariant_evidence_traceability():
         + 0.1 * (1 - bias["source_diversity"])
     )
 
-    assert abs(reconstructed - bias["overall_bias_score"]) < 0.01, \
+    assert abs(reconstructed - bias["overall_bias_score"]) < 0.01, (
         "Invariant 3 violated: Cannot reconstruct overall_bias_score from evidence"
+    )
 
 
 def test_invariant_evidence_receipt_completeness():
@@ -115,29 +117,29 @@ def test_invariant_evidence_receipt_completeness():
     # 1. Reconstruct affiliate_risk from evidence
     affiliate_risks = [item["bias_risk"] for item in evidence["affiliate_evidence"]]
     reconstructed_affiliate = sum(affiliate_risks) / len(affiliate_risks)
-    assert abs(reconstructed_affiliate - bias["affiliate_risk"]) < 0.01, \
+    assert abs(reconstructed_affiliate - bias["affiliate_risk"]) < 0.01, (
         "Cannot reconstruct affiliate_risk from evidence"
+    )
 
     # 2. Reconstruct merchant_concentration (HHI) from evidence
-    merchant_hhi = sum(
-        m["share_squared"] for m in evidence["merchant_distribution"].values()
-    )
-    assert abs(merchant_hhi - bias["merchant_concentration"]) < 0.01, \
+    merchant_hhi = sum(m["share_squared"] for m in evidence["merchant_distribution"].values())
+    assert abs(merchant_hhi - bias["merchant_concentration"]) < 0.01, (
         "Cannot reconstruct merchant_concentration from evidence"
+    )
 
     # 3. Reconstruct price_concentration (HHI) from evidence
-    price_hhi = sum(
-        b["share_squared"] for b in evidence["price_bucket_shares"].values()
-    )
-    assert abs(price_hhi - bias["price_concentration"]) < 0.01, \
+    price_hhi = sum(b["share_squared"] for b in evidence["price_bucket_shares"].values())
+    assert abs(price_hhi - bias["price_concentration"]) < 0.01, (
         "Cannot reconstruct price_concentration from evidence"
+    )
 
     # 4. Reconstruct source_diversity from evidence
     reconstructed_diversity = min(
         evidence["unique_merchants"] / evidence["total_recommendations"], 1.0
     )
-    assert abs(reconstructed_diversity - bias["source_diversity"]) < 0.01, \
+    assert abs(reconstructed_diversity - bias["source_diversity"]) < 0.01, (
         "Cannot reconstruct source_diversity from evidence"
+    )
 
     # 5. Overall score reconstruction
     reconstructed_overall = (
@@ -146,8 +148,9 @@ def test_invariant_evidence_receipt_completeness():
         + 0.2 * price_hhi
         + 0.1 * (1 - reconstructed_diversity)
     )
-    assert abs(reconstructed_overall - bias["overall_bias_score"]) < 0.01, \
+    assert abs(reconstructed_overall - bias["overall_bias_score"]) < 0.01, (
         "Cannot reconstruct overall_bias_score from receipt evidence"
+    )
 
 
 def test_invariant_boundary_reasons_present():
@@ -177,13 +180,12 @@ def test_invariant_no_bias_amplification():
     result = diversify_with_mmr(recs, [], k=3)
 
     # Count high-bias in final
-    final_high_bias_count = sum(
-        1 for r in result["final_set"] if r["bias_risk"] > 0.7
-    )
+    final_high_bias_count = sum(1 for r in result["final_set"] if r["bias_risk"] > 0.7)
 
     # High-bias should not dominate (at most half of final set)
-    assert final_high_bias_count <= len(result["final_set"]) // 2 + 1, \
+    assert final_high_bias_count <= len(result["final_set"]) // 2 + 1, (
         f"Invariant 4 violated: High-bias amplified ({final_high_bias_count}/{len(result['final_set'])})"
+    )
 
 
 # Invariant 5: Verifiable Outputs
@@ -387,5 +389,6 @@ def test_regression_biased_input_92_percent():
     # Must not auto-allow (either blocked or requires confirmation)
     boundary = result["responsibility_boundary"]
     auto_allowed = boundary["execution_allowed"] and not boundary["requires_human_confirm"]
-    assert not auto_allowed, \
+    assert not auto_allowed, (
         f"Regression test failed: 92% biased input auto-allowed (bias_final={result['commercial_bias_final']['overall_bias_score']:.2%})"
+    )

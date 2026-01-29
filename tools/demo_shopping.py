@@ -14,17 +14,17 @@ from pathlib import Path
 src_path = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(src_path))
 
+import os
+
 from po_core.diversity import Rec, diversify_with_mmr
 from po_echo.echo_mark import (
-    load_ed25519_keypair,
     load_ed25519_private_key_from_env,
     make_echo_mark,
     make_echo_mark_dual,
 )
-import os
 
 try:
-    from nacl.signing import SigningKey
+    import nacl.signing  # noqa: F401 - import check for availability
 
     ED25519_AVAILABLE = True
 except ImportError:
@@ -46,7 +46,7 @@ def load_recommendations(input_file: Path) -> tuple[list[Rec], dict]:
             price=float(r["price"]),
             tags=tuple(r["tags"]),
             utility=r.get("utility", 1.0),  # Default to 1.0 if not specified
-            ethics=r.get("ethics", 0.5),    # Default to neutral
+            ethics=r.get("ethics", 0.5),  # Default to neutral
             bias_risk=float(r["bias_risk"]),
         )
         recs.append(rec)
@@ -57,9 +57,9 @@ def load_recommendations(input_file: Path) -> tuple[list[Rec], dict]:
 
 def run_demo_case(case_name: str, input_file: Path, output_dir: Path):
     """Run a single demo case."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Demo Case: {case_name}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     # Load input
     recs, user_policy = load_recommendations(input_file)
@@ -88,25 +88,29 @@ def run_demo_case(case_name: str, input_file: Path, output_dir: Path):
     bias_final = result["commercial_bias_final"]["overall_bias_score"]
     boundary = result["responsibility_boundary"]
 
-    print(f"\n📊 Commercial Bias:")
+    print("\n📊 Commercial Bias:")
     print(f"   Original: {bias_orig:.2f}")
     print(f"   Final:    {bias_final:.2f}")
     print(f"   Change:   {bias_final - bias_orig:+.2f}")
 
-    print(f"\n🎯 Diversity:")
-    print(f"   Merchants: {result['diversity_report_original']['merchants']} → {result['diversity_report_final']['merchants']}")
-    print(f"   Price buckets: {result['diversity_report_original']['price_buckets']} → {result['diversity_report_final']['price_buckets']}")
+    print("\n🎯 Diversity:")
+    print(
+        f"   Merchants: {result['diversity_report_original']['merchants']} → {result['diversity_report_final']['merchants']}"
+    )
+    print(
+        f"   Price buckets: {result['diversity_report_original']['price_buckets']} → {result['diversity_report_final']['price_buckets']}"
+    )
 
-    print(f"\n🛡️ Execution Gate:")
+    print("\n🛡️ Execution Gate:")
     print(f"   Execution allowed: {boundary['execution_allowed']}")
     print(f"   Requires human confirm: {boundary['requires_human_confirm']}")
     print(f"   AI recommends: {boundary['ai_recommends']}")
     print(f"   Reasons: {', '.join(boundary['reasons'])}")
 
     # Determine label
-    if not boundary['execution_allowed']:
+    if not boundary["execution_allowed"]:
         label = "ECHO_BLOCKED"
-    elif not boundary['requires_human_confirm']:
+    elif not boundary["requires_human_confirm"]:
         label = "ECHO_VERIFIED"
     else:
         label = "ECHO_CHECK"
@@ -115,7 +119,7 @@ def run_demo_case(case_name: str, input_file: Path, output_dir: Path):
 
     # Save audit result
     audit_file = output_dir / f"{case_name}.audit.json"
-    with open(audit_file, 'w') as f:
+    with open(audit_file, "w") as f:
         json.dump(result, f, indent=2, default=str)
     print(f"\n💾 Saved audit: {audit_file}")
 
@@ -132,7 +136,7 @@ def run_demo_case(case_name: str, input_file: Path, output_dir: Path):
             ed25519_private_key=private_key,
             key_id="v1",
         )
-        print(f"   Badge mode: Dual signature (HMAC + Ed25519)")
+        print("   Badge mode: Dual signature (HMAC + Ed25519)")
     else:
         # HMAC-only mode (backward compatible)
         badge = make_echo_mark(
@@ -140,14 +144,14 @@ def run_demo_case(case_name: str, input_file: Path, output_dir: Path):
             secret=secret,
             key_id="v1",
         )
-        print(f"   Badge mode: HMAC-only (legacy)")
+        print("   Badge mode: HMAC-only (legacy)")
 
     badge_file = output_dir / f"{case_name}.badge.json"
-    with open(badge_file, 'w') as f:
+    with open(badge_file, "w") as f:
         json.dump(badge, f, indent=2)
     print(f"💾 Saved badge:  {badge_file}")
 
-    print(f"\n{'='*60}\n")
+    print(f"\n{'=' * 60}\n")
 
 
 def main():
@@ -183,6 +187,7 @@ def main():
         except Exception as e:
             print(f"❌ Error in {case_name}: {e}")
             import traceback
+
             traceback.print_exc()
 
     print("\n🎉 Demo completed!")

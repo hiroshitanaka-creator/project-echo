@@ -1,7 +1,7 @@
 import ast
 import os
-import sys
 import re
+import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -15,7 +15,6 @@ VENDOR_RISK_MAP = {
     "firebase_admin": "Google Firebase",
     "azure": "Microsoft Azure",
     "vercel": "Vercel",
-
     # 💥 Google / Gemini Specific Traps
     "google.generativeai": "Google Gemini API (Vendor Lock-in)",
     "vertexai": "Google Vertex AI (Enterprise Lock-in)",
@@ -29,7 +28,6 @@ ALTERNATIVE_MAP = {
     "boto3": "minio (S3-compatible OSS), localstack (Local AWS)",
     "google.cloud": "minio (Storage), self-hosted alternatives",
     "azure": "self-hosted alternatives, OSS equivalents",
-
     # 💡 Geminiへの依存に対する「逃げ道」
     "google.generativeai": "litellm (Universal Proxy), langchain (Abstraction)",
     "vertexai": "mlflow (Open MLOps), kubeflow (OSS MLOps)",
@@ -92,7 +90,7 @@ def scan_directory(target_dir):
                 total_files += 1
 
                 try:
-                    with open(full_path, "r", encoding="utf-8") as f:
+                    with open(full_path, encoding="utf-8") as f:
                         tree = ast.parse(f.read(), filename=str(full_path))
 
                     dog = Doberman(str(full_path))

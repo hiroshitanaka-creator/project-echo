@@ -90,9 +90,7 @@ def _compute_or_verify_echo_mark(run: dict) -> dict | None:
         rb = audit.get("responsibility_boundary", {})
         allowed = bool(rb.get("execution_allowed", False))
         confirm = bool(rb.get("requires_human_confirm", True))
-        label = (
-            "ECHO_BLOCKED" if not allowed else ("ECHO_CHECK" if confirm else "ECHO_VERIFIED")
-        )
+        label = "ECHO_BLOCKED" if not allowed else ("ECHO_CHECK" if confirm else "ECHO_VERIFIED")
         return {
             "schema_version": "echo_mark_v1",
             "label": label,
@@ -120,9 +118,7 @@ def _compute_or_verify_echo_mark(run: dict) -> dict | None:
         rb = audit.get("responsibility_boundary", {})
         allowed = bool(rb.get("execution_allowed", False))
         confirm = bool(rb.get("requires_human_confirm", True))
-        label = (
-            "ECHO_BLOCKED" if not allowed else ("ECHO_CHECK" if confirm else "ECHO_VERIFIED")
-        )
+        label = "ECHO_BLOCKED" if not allowed else ("ECHO_CHECK" if confirm else "ECHO_VERIFIED")
         return {
             "schema_version": "echo_mark_v1",
             "label": label,
@@ -275,20 +271,20 @@ def render_run_section(run: dict[str, Any], title: str) -> str:
         lines.append("_not available_")
         lines.append("")
     else:
-        lines.append(f"- **Label**: `{mark.get('label','')}`")
+        lines.append(f"- **Label**: `{mark.get('label', '')}`")
         if mark.get("badge_text"):
             lines.append(f"- **Badge**: {mark.get('badge_text')}")
         short = mark.get("short") or {}
         if ("bias_original" in short) or ("bias_final" in short):
             lines.append(
-                f"- **Bias**: {short.get('bias_original','NA')} → {short.get('bias_final','NA')} "
-                f"(Δ {short.get('bias_improvement','NA')})"
+                f"- **Bias**: {short.get('bias_original', 'NA')} → {short.get('bias_final', 'NA')} "
+                f"(Δ {short.get('bias_improvement', 'NA')})"
             )
         if short.get("reasons"):
             lines.append(f"- **Reasons**: {', '.join(short.get('reasons'))}")
-        lines.append(f"- **Verification**: `{mark.get('verification_status','')}`")
-        lines.append(f"- **payload_hash**: `{_short_hex(mark.get('payload_hash',''))}`")
-        lines.append(f"- **signature**: `{_short_hex(mark.get('signature',''))}`")
+        lines.append(f"- **Verification**: `{mark.get('verification_status', '')}`")
+        lines.append(f"- **payload_hash**: `{_short_hex(mark.get('payload_hash', ''))}`")
+        lines.append(f"- **signature**: `{_short_hex(mark.get('signature', ''))}`")
         lines.append("")
 
     return "\n".join(lines)

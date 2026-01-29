@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Rolling Transcript Hash (RTH)
 
@@ -22,12 +21,12 @@ Privacy guarantees:
 - Hash is one-way (cannot recover original text)
 - Only confirmation-adjacent snapshots are disclosed
 """
+
 from __future__ import annotations
 
 import hashlib
 import time
 from dataclasses import asdict, dataclass
-from typing import Dict
 
 
 def _feat(text: str) -> bytes:
@@ -107,7 +106,7 @@ class RollingTranscriptHash:
         f = _feat(text_window)
         self.state.h_prev = hashlib.sha256(self.state.h_prev + f).digest()
 
-    def snapshot(self) -> Dict:
+    def snapshot(self) -> dict:
         """
         Create snapshot for Echo Mark receipt.
 
@@ -129,7 +128,7 @@ class RollingTranscriptHash:
             "hash_hex": self.state.h_prev.hex(),
         }
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """
         Export full state (for debugging/persistence).
 

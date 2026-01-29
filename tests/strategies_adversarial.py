@@ -148,9 +148,7 @@ def price_strings(draw):
     """
     n = draw(st.integers(min_value=0, max_value=500_000))
     kind = draw(
-        st.sampled_from(
-            ["plain", "comma", "yen_prefix", "yen_suffix", "k", "k_jpy", "spaces"]
-        )
+        st.sampled_from(["plain", "comma", "yen_prefix", "yen_suffix", "k", "k_jpy", "spaces"])
     )
 
     if kind == "plain":
@@ -162,9 +160,9 @@ def price_strings(draw):
     if kind == "yen_suffix":
         return f"{n:,}円"
     if kind == "k":
-        return f"{n/1000:.1f}k"
+        return f"{n / 1000:.1f}k"
     if kind == "k_jpy":
-        return f"{n/1000:.2f}k JPY"
+        return f"{n / 1000:.2f}k JPY"
     return f"  ¥ {n:,}  "
 
 
@@ -205,9 +203,7 @@ def affiliate_urls(draw):
     # nested
     nested_target = draw(url_variants())
     # Ensure nested has affiliate
-    ref_value = draw(
-        st.text(min_size=1, max_size=8, alphabet=string.ascii_letters + string.digits)
-    )
+    ref_value = draw(st.text(min_size=1, max_size=8, alphabet=string.ascii_letters + string.digits))
     nested_target += "&ref=" + ref_value
     return "https://tracker.example/redirect?url=" + urllib.parse.quote(nested_target, safe="")
 

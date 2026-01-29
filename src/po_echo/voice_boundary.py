@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Voice-Boundary Policy for Audio Channel
 
@@ -12,10 +11,11 @@ Risk levels:
 
 All executions generate Echo Mark receipts regardless of channel.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, Optional, Dict
+from typing import Literal
 
 Risk = Literal["low", "medium", "high"]
 Confirm = Literal["none", "double_tap", "passphrase", "app_confirm"]
@@ -42,7 +42,7 @@ CRITICAL_INTENTS = {"payment", "purchase", "identity_disclosure"}
 SENSITIVE_INTENTS = {"booking", "itinerary", "data_share", "home_access"}
 
 
-def classify_risk(intent: str, meta: Optional[Dict] = None) -> Risk:
+def classify_risk(intent: str, meta: dict | None = None) -> Risk:
     """
     Classify intent risk level for voice-initiated actions.
 
@@ -70,7 +70,7 @@ def classify_risk(intent: str, meta: Optional[Dict] = None) -> Risk:
     return "low"
 
 
-def decide(intent: str, meta: Optional[Dict] = None) -> VoiceBoundaryDecision:
+def decide(intent: str, meta: dict | None = None) -> VoiceBoundaryDecision:
     """
     Determine responsibility boundary for voice-initiated action.
 
@@ -95,8 +95,8 @@ def decide(intent: str, meta: Optional[Dict] = None) -> VoiceBoundaryDecision:
 
 
 def attach_boundary(
-    audit: Dict, decision: VoiceBoundaryDecision, rth_snapshot: Optional[Dict] = None
-) -> Dict:
+    audit: dict, decision: VoiceBoundaryDecision, rth_snapshot: dict | None = None
+) -> dict:
     """
     Attach voice-specific responsibility boundary to audit result.
 
