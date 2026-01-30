@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Execution Gate for Multi-Channel Actions
 
@@ -13,21 +12,20 @@ Integrates with:
 - Rolling Transcript Hash (src/po_echo/rth.py)
 - Echo Mark (src/po_echo/echo_mark.py)
 """
-from __future__ import annotations
 
-from typing import Dict, Optional
+from __future__ import annotations
 
 from po_echo.rth import RollingTranscriptHash
 from po_echo.voice_boundary import attach_boundary, decide
 
 
 def gate_audio(
-    audit: Dict,
+    audit: dict,
     intent: str,
-    meta: Optional[Dict],
+    meta: dict | None,
     transcript_tail: str,
     simulate_user_ok: bool = False,
-) -> Dict:
+) -> dict:
     """
     Apply execution gate for audio channel (voice-initiated actions).
 

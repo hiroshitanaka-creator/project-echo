@@ -11,19 +11,19 @@ authors = [
 ]
 
 dependencies = [
-    "pynacl>=1.5.0",
+    "pynacl>=1.5.0,<2.0.0",
 ]
 
 [project.scripts]
 po-cosmic = "po_cosmic.cli:main"
 
 [project.optional-dependencies]
-dev = ["pytest", "ruff", "hypothesis"]
+dev = ["pytest>=8.0.0", "ruff>=0.4.0", "hypothesis>=6.100.0", "mypy>=1.10.0"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-exclude = ["examples", "runs", "reports", "bin"]
+exclude = ["examples", "runs", "reports", "bin", "hidden_lockin.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
@@ -41,6 +41,20 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+ignore_missing_imports = true
+exclude = ["examples", "runs", "reports", "bin", "tests"]
+
+[[tool.mypy.overrides]]
+module = "po_core.philosophers.*"
+disallow_untyped_defs = false
 
 [build-system]
 requires = ["setuptools>=61.0"]

@@ -1,0 +1,2 @@
+# Production dependencies (pinned for reproducibility)
+pynacl==1.6.2

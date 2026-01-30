@@ -19,7 +19,6 @@ from hypothesis.strategies import composite
 
 from po_core.diversity import Rec, diversify_with_mmr
 
-
 # Constants for clean candidate detection (must match diversify_with_mmr)
 BETA = 0.8
 MIN_EFFECTIVE_UTILITY = 0.1
@@ -40,7 +39,9 @@ def is_high_bias(r: Rec) -> bool:
 @composite
 def recommendation_set(draw):
     """Generate realistic recommendation sets for testing."""
-    merchants = draw(st.lists(st.sampled_from(["A", "B", "C", "D", "E"]), min_size=1, max_size=5, unique=True))
+    merchants = draw(
+        st.lists(st.sampled_from(["A", "B", "C", "D", "E"]), min_size=1, max_size=5, unique=True)
+    )
 
     recs = []
     for i in range(draw(st.integers(min_value=5, max_value=15))):

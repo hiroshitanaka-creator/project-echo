@@ -74,7 +74,7 @@ def save_keypair(keypair: dict[str, str], output_dir: Path) -> None:
     # Save public key (readable)
     public_file.write_text(keypair["public_key"] + "\n")
 
-    print(f"✓ Generated Ed25519 keypair:")
+    print("✓ Generated Ed25519 keypair:")
     print(f"  Private key: {private_file} (chmod 600 - KEEP SECRET)")
     print(f"  Public key:  {public_file} (safe to share)")
     print(f"\n  Public key:  {keypair['public_key']}")
@@ -185,7 +185,7 @@ Examples:
     print("  - NEVER commit .keys/ to git (add to .gitignore)")
     print("  - NEVER share private key files")
     print("  - Public keys are safe to share")
-    print(f"  - Private key has restricted permissions (chmod 600)")
+    print("  - Private key has restricted permissions (chmod 600)")
 
 
 if __name__ == "__main__":

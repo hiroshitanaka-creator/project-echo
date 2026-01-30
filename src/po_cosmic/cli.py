@@ -28,12 +28,11 @@ from po_echo.echo_mark import (
     make_echo_mark_dual,
     make_echo_mark_ed25519,
     verify_echo_mark_dual,
-    verify_echo_mark_ed25519,
     verify_mark,
 )
 
 try:
-    from nacl.signing import SigningKey
+    import nacl.signing  # noqa: F401 - import check for availability
 
     ED25519_AVAILABLE = True
 except ImportError:
@@ -299,8 +298,8 @@ def cmd_audit(args: argparse.Namespace) -> None:
     # Load recommendations from JSON
     rec_path = Path(args.recommendations)
     if not rec_path.exists():
-        print(f"Error: Recommendations file not found: {rec_path}")
-        return
+        print(f"Error: Recommendations file not found: {rec_path}", file=sys.stderr)
+        raise SystemExit(1)
 
     data = json.loads(rec_path.read_text(encoding="utf-8"))
 
@@ -309,8 +308,8 @@ def cmd_audit(args: argparse.Namespace) -> None:
     counterfactual_recs = [Rec.from_dict(r) for r in data.get("counterfactuals", [])]
 
     if not original_recs:
-        print("Error: No recommendations found in input JSON")
-        return
+        print("Error: No recommendations found in input JSON", file=sys.stderr)
+        raise SystemExit(1)
 
     # Run diversity enforcement
     result = diversify_with_mmr(
@@ -385,8 +384,8 @@ def cmd_badge(args: argparse.Namespace) -> None:
     # Load audit result
     audit_path = Path(args.input)
     if not audit_path.exists():
-        print(f"Error: Audit file not found: {audit_path}")
-        return
+        print(f"Error: Audit file not found: {audit_path}", file=sys.stderr)
+        raise SystemExit(1)
 
     audit = json.loads(audit_path.read_text(encoding="utf-8"))
 
@@ -406,15 +405,15 @@ def cmd_badge(args: argparse.Namespace) -> None:
                 # Fall back to environment variable
                 private_key = load_ed25519_private_key_from_env()
                 if not private_key:
-                    print("Error: ECHO_MARK_PRIVATE_KEY not set")
-                    print("Set environment variable or use --keys-dir")
-                    return
+                    print("Error: ECHO_MARK_PRIVATE_KEY not set", file=sys.stderr)
+                    print("Set environment variable or use --keys-dir", file=sys.stderr)
+                    raise SystemExit(1)
 
             badge = make_echo_mark_ed25519(audit, private_key, key_id, run_id=args.run_id)
-            print(f"✓ Ed25519 signature mode")
+            print("Ed25519 signature mode")
         except (FileNotFoundError, RuntimeError) as e:
-            print(f"Error: {e}")
-            return
+            print(f"Error: {e}", file=sys.stderr)
+            raise SystemExit(1) from None
 
     elif sig_mode == "dual" and ED25519_AVAILABLE:
         # Dual signature mode (HMAC + Ed25519)
@@ -429,28 +428,26 @@ def cmd_badge(args: argparse.Namespace) -> None:
             else:
                 private_key = load_ed25519_private_key_from_env()
                 if not private_key:
-                    print("Error: ECHO_MARK_PRIVATE_KEY not set")
-                    return
+                    print("Error: ECHO_MARK_PRIVATE_KEY not set", file=sys.stderr)
+                    raise SystemExit(1)
 
-            badge = make_echo_mark_dual(
-                audit, secret, private_key, key_id, run_id=args.run_id
-            )
-            print(f"✓ Dual signature mode (HMAC + Ed25519)")
+            badge = make_echo_mark_dual(audit, secret, private_key, key_id, run_id=args.run_id)
+            print("Dual signature mode (HMAC + Ed25519)")
         except (FileNotFoundError, RuntimeError) as e:
-            print(f"Error: {e}")
-            return
+            print(f"Error: {e}", file=sys.stderr)
+            raise SystemExit(1) from None
 
     else:
         # HMAC-only mode (default, backward compatible)
         try:
             secret = get_secret_from_env()
         except RuntimeError as e:
-            print(f"Error: {e}")
-            print("Set ECHO_MARK_SECRET environment variable (min 16 chars)")
-            return
+            print(f"Error: {e}", file=sys.stderr)
+            print("Set ECHO_MARK_SECRET environment variable (min 16 chars)", file=sys.stderr)
+            raise SystemExit(1) from None
 
         badge = make_echo_mark(audit, secret=secret, run_id=args.run_id)
-        print(f"✓ HMAC signature mode (legacy)")
+        print("HMAC signature mode (legacy)")
 
     # Print summary
     print("=" * 80)
@@ -484,8 +481,8 @@ def cmd_verify(args: argparse.Namespace) -> None:
     # Load badge
     badge_path = Path(args.input)
     if not badge_path.exists():
-        print(f"Error: Badge file not found: {badge_path}")
-        return
+        print(f"Error: Badge file not found: {badge_path}", file=sys.stderr)
+        raise SystemExit(1)
 
     badge = json.loads(badge_path.read_text(encoding="utf-8"))
 
@@ -557,7 +554,7 @@ def cmd_verify(args: argparse.Namespace) -> None:
             except RuntimeError as e:
                 print(f"Error: {e}")
                 print("Set ECHO_MARK_SECRET environment variable")
-                raise SystemExit(2)
+                raise SystemExit(2) from None
 
             valid = verify_mark(
                 payload=badge["payload"],
@@ -566,7 +563,7 @@ def cmd_verify(args: argparse.Namespace) -> None:
                 secret=secret,
             )
 
-            print(f"Signature: {'VALID ✓' if valid else 'INVALID ✗'}")
+            print(f"Signature: {'VALID' if valid else 'INVALID'}")
             print("=" * 80)
 
             if not valid:
@@ -579,7 +576,7 @@ def cmd_verify(args: argparse.Namespace) -> None:
         except RuntimeError as e:
             print(f"Error: {e}")
             print("Set ECHO_MARK_SECRET environment variable")
-            raise SystemExit(2)
+            raise SystemExit(2) from None
 
         valid = verify_mark(
             payload=badge["payload"],
@@ -602,8 +599,8 @@ def cmd_audio_gate(args: argparse.Namespace) -> None:
     # Load audit result
     audit_path = Path(args.inp)
     if not audit_path.exists():
-        print(f"Error: Audit file not found: {audit_path}")
-        return
+        print(f"Error: Audit file not found: {audit_path}", file=sys.stderr)
+        raise SystemExit(1)
 
     audit = json.loads(audit_path.read_text(encoding="utf-8"))
 
@@ -611,8 +608,8 @@ def cmd_audio_gate(args: argparse.Namespace) -> None:
     try:
         meta = json.loads(args.meta)
     except json.JSONDecodeError as e:
-        print(f"Error: Invalid JSON in --meta: {e}")
-        return
+        print(f"Error: Invalid JSON in --meta: {e}", file=sys.stderr)
+        raise SystemExit(1) from None
 
     # Apply audio gate
     audit_with_gate = gate_audio(
@@ -735,12 +732,8 @@ def main() -> None:
         "audio-gate", help="Apply execution gate for voice-initiated actions"
     )
     audio_gate.add_argument("--intent", required=True, help="Intent: booking/payment/search/...")
-    audio_gate.add_argument(
-        "--transcript", required=True, help="Last 5-second transcript text"
-    )
-    audio_gate.add_argument(
-        "--meta", default="{}", help='Metadata JSON (e.g., {"amount": 10000})'
-    )
+    audio_gate.add_argument("--transcript", required=True, help="Last 5-second transcript text")
+    audio_gate.add_argument("--meta", default="{}", help='Metadata JSON (e.g., {"amount": 10000})')
     audio_gate.add_argument(
         "--simulate-ok", action="store_true", help="Simulate user confirmation (for testing)"
     )

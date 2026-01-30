@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Ear-Handshake: OS-Independent Device Pairing
 
@@ -23,16 +22,16 @@ Use case:
 - Voice actions use session key for authentication
 - If session expires during high-risk action, force app confirmation
 """
+
 from __future__ import annotations
 
 import hashlib
 import hmac
 import os
 import time
-from typing import Dict
 
 
-def new_device(master_key: bytes | None = None) -> Dict:
+def new_device(master_key: bytes | None = None) -> dict:
     """
     Create new device identity.
 
@@ -48,7 +47,7 @@ def new_device(master_key: bytes | None = None) -> Dict:
     }
 
 
-def issue_challenge(device: Dict) -> Dict:
+def issue_challenge(device: dict) -> dict:
     """
     Issue challenge for device authentication.
 
@@ -76,7 +75,7 @@ def issue_challenge(device: Dict) -> Dict:
     }
 
 
-def verify_response(device: Dict, challenge: Dict) -> bool:
+def verify_response(device: dict, challenge: dict) -> bool:
     """
     Verify challenge response from device.
 
@@ -107,7 +106,7 @@ def verify_response(device: Dict, challenge: Dict) -> bool:
     return hmac.compare_digest(sig, challenge["sig_hex"])
 
 
-def derive_session_key(device: Dict, challenge: Dict) -> str:
+def derive_session_key(device: dict, challenge: dict) -> str:
     """
     Derive ephemeral session key from challenge.
 

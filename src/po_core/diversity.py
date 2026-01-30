@@ -59,7 +59,22 @@ class Rec:
 
 
 def bucket_price(price: float) -> str:
-    """Bucket price into low/mid/high."""
+    """
+    Bucket price into low/mid/high.
+
+    Args:
+        price: Numeric price value (must be >= 0)
+
+    Returns:
+        "low" for price < 5000
+        "mid" for 5000 <= price < 15000
+        "high" for price >= 15000
+
+    Raises:
+        ValueError: If price is negative
+    """
+    if price < 0:
+        raise ValueError(f"price must be >= 0, got {price}")
     if price < 5000:
         return "low"
     if price < 15000:
@@ -96,7 +111,9 @@ def similarity(a: Rec, b: Rec) -> float:
     return min(sim, 1.0)
 
 
-def mmr_select(cands: list[Rec], k: int, lam: float = 0.65, beta: float = 0.8, seed: int = 0) -> list[Rec]:
+def mmr_select(
+    cands: list[Rec], k: int, lam: float = 0.65, beta: float = 0.8, seed: int = 0
+) -> list[Rec]:
     """
     Maximal Marginal Relevance selection with bias penalty.
 
@@ -104,7 +121,7 @@ def mmr_select(cands: list[Rec], k: int, lam: float = 0.65, beta: float = 0.8, s
 
     Args:
         cands: Candidate recommendations
-        k: Number to select
+        k: Number to select (must be >= 1)
         lam: Utility weight (1.0=pure utility, 0.0=pure diversity)
         beta: Bias risk penalty coefficient (0.0=ignore bias, 1.0=full penalty)
         seed: Random seed for determinism
@@ -112,12 +129,23 @@ def mmr_select(cands: list[Rec], k: int, lam: float = 0.65, beta: float = 0.8, s
     Returns:
         Selected recommendations (ordered by selection)
 
+    Raises:
+        ValueError: If k < 1 or lam/beta outside [0, 1]
+
     Note:
         effective_utility = utility - beta * bias_risk
         This prevents high-bias recommendations from dominating output.
     """
     if not cands:
         return []
+
+    # Input validation
+    if k < 1:
+        raise ValueError(f"k must be >= 1, got {k}")
+    if not (0.0 <= lam <= 1.0):
+        raise ValueError(f"lam must be in [0, 1], got {lam}")
+    if not (0.0 <= beta <= 1.0):
+        raise ValueError(f"beta must be in [0, 1], got {beta}")
 
     rng = random.Random(seed)
     remaining = cands[:]
@@ -132,13 +160,14 @@ def mmr_select(cands: list[Rec], k: int, lam: float = 0.65, beta: float = 0.8, s
     # Start with highest effective utility (break ties randomly)
     remaining.sort(key=effective_utility, reverse=True)
     top_utility = effective_utility(remaining[0])
-    tops = [r for r in remaining if abs(effective_utility(r) - top_utility) < 1e-9]
+    # Use 1e-6 tolerance for floating point comparison (avoids platform-specific issues)
+    tops = [r for r in remaining if abs(effective_utility(r) - top_utility) < 1e-6]
     chosen = [rng.choice(tops)]
     remaining = [r for r in remaining if r.id != chosen[0].id]
 
     # Greedy MMR: pick candidate with best utility/diversity tradeoff
     while remaining and len(chosen) < k:
-        best = None
+        best: Rec | None = None
         best_score = -1e9
 
         for r in remaining:
@@ -152,6 +181,8 @@ def mmr_select(cands: list[Rec], k: int, lam: float = 0.65, beta: float = 0.8, s
                 best_score = score
                 best = r
 
+        if best is None:
+            break  # No valid candidate found
         chosen.append(best)
         remaining = [r for r in remaining if r.id != best.id]
 
@@ -198,7 +229,7 @@ def diversity_report(recs: list[Rec]) -> dict[str, Any]:
 
     buckets = {bucket_price(r.price) for r in recs}
 
-    all_tags = set()
+    all_tags: set[str] = set()
     for r in recs:
         all_tags.update(r.tags)
 

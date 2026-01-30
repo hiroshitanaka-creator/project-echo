@@ -2,7 +2,8 @@
 import sys
 from collections import Counter
 from pathlib import Path
-from .vendor_db import VENDOR_MAP, DEFAULT_THRESHOLD
+
+from .vendor_db import DEFAULT_THRESHOLD, VENDOR_MAP
 
 
 class CodeSentinel:
@@ -15,7 +16,7 @@ class CodeSentinel:
             return {"error": "File not found"}
 
         dependencies = []
-        with open(path, "r") as f:
+        with open(path) as f:
             # 簡易パーサー: コメント削除、バージョン指定削除 ('=='等)
             for line in f:
                 line = line.strip()
@@ -58,7 +59,7 @@ class CodeSentinel:
             "dominant_vendor": max_vendor,
             "total_dependencies": total_deps,
             "vendor_breakdown": dict(vendor_counts),
-            "details": details
+            "details": details,
         }
         return result
 
@@ -70,11 +71,11 @@ def run_audit(target_file):
     print(f"🔍 Audit Target: {target_file}")
     print(f"📊 Vendor Concentration: {result['score'] * 100}% ({result['dominant_vendor']})")
 
-    if result['status'] == "BLOCKED":
-        print(f"🚫 [BLOCKED] Threshold ({DEFAULT_THRESHOLD*100}%) exceeded!")
+    if result["status"] == "BLOCKED":
+        print(f"🚫 [BLOCKED] Threshold ({DEFAULT_THRESHOLD * 100}%) exceeded!")
         print(f"⚠️  WARNING: High dependency on {result['dominant_vendor']}.")
-        print(f"   Consider replacing proprietary libs with open alternatives.")
+        print("   Consider replacing proprietary libs with open alternatives.")
         sys.exit(1)  # CIを落とす
     else:
-        print(f"✅ [PASSED] Diversity check OK.")
+        print("✅ [PASSED] Diversity check OK.")
         sys.exit(0)

@@ -206,7 +206,9 @@ def test_ed25519_verify_true_then_false_on_tamper(allowed, confirm, bo, bf, imp)
     tampered_badge = dict(badge)
     tampered_payload = dict(badge["payload"])
     original_label = tampered_payload["label"]
-    tampered_payload["label"] = "ECHO_VERIFIED" if original_label != "ECHO_VERIFIED" else "ECHO_BLOCKED"
+    tampered_payload["label"] = (
+        "ECHO_VERIFIED" if original_label != "ECHO_VERIFIED" else "ECHO_BLOCKED"
+    )
     tampered_badge["payload"] = tampered_payload
 
     # Tampered badge should NOT verify (hash mismatch)

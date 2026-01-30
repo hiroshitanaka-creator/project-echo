@@ -1,5 +1,6 @@
 # run_sentinel.py
 import sys
+
 from src.po_echo.sentinel import run_audit
 
 if __name__ == "__main__":
