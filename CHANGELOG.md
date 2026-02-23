@@ -304,10 +304,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.0] - 2026-02-24
 ### Added
-- src/po_echo/gumdrop_defense.py（screenless ambient device向けEcho Mark強化）
-- AGENT.md
-- docs/openai_world_register_threat.md
+- `src/po_echo/gumdrop_defense.py`（screenless ambient device向けEcho Mark強化）
+- AGENT.md（他のAIエージェント開発ガイド）
+- docs/openai_world_register_threat.md（World Register脅威モデル）
 - README.md全面刷新（脅威モデル前面配置・一般化）
 
 ### Changed
-- 商品名を「screenless ambient device」に一般化
+- 商品名を「screenless ambient device」に一般化（リスク低減）
+
+### Philosophy
+AIの「失敗しなかった意図」課金モデルに対して、透明性と責任境界を強制する防御を追加。
+選択肢を残すことをシステムで守る。
