@@ -36,11 +36,15 @@ ignore = ["E501", "E402"]
 [tool.ruff.format]
 quote-style = "double"
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
+pythonpath = ["src"]
 
 [tool.mypy]
 python_version = "3.11"
