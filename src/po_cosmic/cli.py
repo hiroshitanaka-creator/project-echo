@@ -592,6 +592,13 @@ def cmd_verify(args: argparse.Namespace) -> None:
             raise SystemExit(2)
 
 
+def cmd_greet(args: argparse.Namespace) -> None:
+    """Execute greet command - output a Japanese greeting."""
+    from po_cosmic.greet import greet
+
+    print(greet(args.name))
+
+
 def cmd_audio_gate(args: argparse.Namespace) -> None:
     """Execute audio-gate command - apply execution gate for voice actions."""
     from po_echo.execution_gate import gate_audio
@@ -727,6 +734,10 @@ def main() -> None:
     verify = subparsers.add_parser("verify", help="Verify Echo Mark signature")
     verify.add_argument("input", help="Path to badge JSON file")
 
+    # greet command - Japanese greeting
+    greet_parser = subparsers.add_parser("greet", help="Output a Japanese greeting (こんにちは)")
+    greet_parser.add_argument("--name", default="", help="Name to address (optional)")
+
     # audio-gate command - voice-initiated execution gate
     audio_gate = subparsers.add_parser(
         "audio-gate", help="Apply execution gate for voice-initiated actions"
@@ -752,6 +763,8 @@ def main() -> None:
         cmd_verify(args)
     elif args.cmd == "audio-gate":
         cmd_audio_gate(args)
+    elif args.cmd == "greet":
+        cmd_greet(args)
 
 
 if __name__ == "__main__":
