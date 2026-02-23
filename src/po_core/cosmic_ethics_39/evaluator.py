@@ -10,7 +10,7 @@ import sys
 import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -50,7 +50,7 @@ ScoreDict = dict[str, float]
 
 
 # Execution State Management - Core of Operator Responsibility
-class ExecutionState(str, Enum):
+class ExecutionState(StrEnum):
     """
     State machine for world-affecting operations.
 
