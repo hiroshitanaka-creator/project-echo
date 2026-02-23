@@ -301,3 +301,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Philosophy
 - 「失敗しなかった意図」課金モデルに対するEcho Markの位置づけを明確化
+
+## [0.3.0] - 2026-02-24
+### Added
+- src/po_echo/gumdrop_defense.py（screenless ambient device向けEcho Mark強化）
+- AGENT.md
+- docs/openai_world_register_threat.md
+- README.md全面刷新（脅威モデル前面配置・一般化）
+
+### Changed
+- 商品名を「screenless ambient device」に一般化
