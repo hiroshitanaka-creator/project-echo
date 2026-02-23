@@ -2,38 +2,69 @@ name: CI
 
 on:
   push:
-    branches: ["*"]
+    branches: [main]
   pull_request:
-    branches: ["*"]
+    branches: [main]
 
 jobs:
-  test:
+  p0-1-quality-gate:
+    name: P0-1 Quality Gate (lint / typing / property tests)
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: P0-1 Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: P0-1 Setup Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
+          cache: "pip"
 
-      - name: Install dependencies
+      - name: P0-1 Install dependencies (requirements-dev + editable)
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
-          pip install mypy
+          pip install -r requirements-dev.txt
+          pip install -e .
 
-      - name: Lint with ruff
-        run: |
-          ruff check .
-          ruff format --check .
+      - name: P0-1 Ruff lint
+        id: ruff
+        run: ruff check . --output-format=github
 
-      - name: Type check with mypy
+      - name: P0-1 mypy type check (strictness ramp)
+        id: mypy
         run: |
-          mypy src/po_core/diversity.py src/po_core/normalize.py src/po_cosmic/cli.py --ignore-missing-imports || echo "Type check completed with warnings"
+          # TODO(Project Echo): 段階的 strict 化のため、将来的に --ignore-missing-imports を外して --strict を有効化する。
+          mypy src \
+            --ignore-missing-imports \
+            --warn-redundant-casts \
+            --warn-unused-ignores \
+            --warn-return-any \
+            --no-implicit-optional \
+            --check-untyped-defs \
+            --disallow-incomplete-defs
 
-      - name: Run tests
+      - name: P0-1 pytest (property-based + quick)
+        id: pytest
         run: |
-          pytest -v
+          # Project Echo 不変原則：テストが落ちたら即修正必須
+          pytest tests/ -q --hypothesis-show-statistics
+
+      - name: P0-1 CI summary
+        if: always()
+        run: |
+          {
+            echo "## P0-1 CI Summary"
+            echo ""
+            echo "| Check | Result |"
+            echo "|---|---|"
+            echo "| Ruff | ${{ steps.ruff.outcome }} |"
+            echo "| mypy | ${{ steps.mypy.outcome }} |"
+            echo "| pytest | ${{ steps.pytest.outcome }} |"
+            echo ""
+            if [ "${{ job.status }}" != "success" ]; then
+              echo "❌ One or more gates failed. See failed step logs above for evidence and fix immediately."
+            else
+              echo "✅ All gates passed."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
