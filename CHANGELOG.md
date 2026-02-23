@@ -293,3 +293,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v0.2.0]: https://github.com/hiroshitanaka-creator/project-echo/releases/tag/v0.2.0
 [v0.1.1]: https://github.com/hiroshitanaka-creator/project-echo/releases/tag/v0.1.1
 [v0.1.0]: https://github.com/hiroshitanaka-creator/project-echo/releases/tag/v0.1.0
+
+## [Unreleased] - 2026-02-24
+### Added
+- AGENT.md: 他のAIエージェントが思想を守りながら開発できるガイド作成
+- docs/openai_world_register_threat.md: OpenAIの「Gumdrop + World Register」戦略に対する詳細脅威分析（飛べない豚オリジナル考察）
+
+### Philosophy
+- 「失敗しなかった意図」課金モデルに対するEcho Markの位置づけを明確化
