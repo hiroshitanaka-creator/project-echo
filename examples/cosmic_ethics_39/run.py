@@ -129,6 +129,7 @@ class CosmicEthicsFramework:
 
         adjusted_score = overall_score * (1.0 - uncertainty_penalty - irreversibility_penalty)
 
+        # Project Echo 不変原則：AIはおすすめしない
         return {
             "scenario": scenario.name,
             "dimension_scores": dimension_scores,
@@ -136,7 +137,15 @@ class CosmicEthicsFramework:
             "adjusted_score": adjusted_score,
             "uncertainty_penalty": uncertainty_penalty,
             "irreversibility_penalty": irreversibility_penalty,
-            "recommendation": self._generate_recommendation(adjusted_score, scenario)
+            "candidate_set": self._build_candidate_set(scenario),
+            "evidence": self._build_evidence(
+                scenario=scenario,
+                dimension_scores=dimension_scores,
+                adjusted_score=adjusted_score,
+                uncertainty_penalty=uncertainty_penalty,
+                irreversibility_penalty=irreversibility_penalty,
+            ),
+            "responsibility_boundary": self._build_responsibility_boundary(scenario),
         }
 
     def _calculate_dimension_score(self, scenario: CosmicScenario, dimension: EthicalDimension) -> float:
@@ -167,16 +176,62 @@ class CosmicEthicsFramework:
 
         return base_score
 
-    def _generate_recommendation(self, score: float, scenario: CosmicScenario) -> str:
-        """スコアに基づいた推奨事項を生成"""
-        if score > 0.7:
-            return "慎重な実施を推奨。詳細な監視体制を確立。"
-        elif score > 0.5:
-            return "さらなる研究と倫理的検討が必要。段階的アプローチを推奨。"
-        elif score > 0.3:
-            return "重大な倫理的懸念あり。代替案の探索を強く推奨。"
-        else:
-            return "現時点での実施は推奨されない。根本的な再検討が必要。"
+    def _build_candidate_set(self, scenario: CosmicScenario) -> List[Dict[str, str]]:
+        """候補セットを返す（AIによる推薦は禁止）。"""
+        # Project Echo 不変原則：AIはおすすめしない
+        return [
+            {
+                "id": "candidate.monitor_and_iterate",
+                "description": "段階的導入と継続監視を行う選択肢",
+            },
+            {
+                "id": "candidate.research_first",
+                "description": "追加研究・影響評価を先行する選択肢",
+            },
+            {
+                "id": "candidate.defer_and_reassess",
+                "description": "実施を保留し、前提条件を再評価する選択肢",
+            },
+        ]
+
+    def _build_evidence(
+        self,
+        scenario: CosmicScenario,
+        dimension_scores: Dict[str, float],
+        adjusted_score: float,
+        uncertainty_penalty: float,
+        irreversibility_penalty: float,
+    ) -> Dict[str, Any]:
+        """候補セットの根拠となる証拠情報を返す。"""
+        # Project Echo 不変原則：AIはおすすめしない
+        return {
+            "scenario": scenario.name,
+            "time_horizon_years": scenario.time_horizon,
+            "affected_beings": scenario.affected_beings,
+            "dimension_scores": dimension_scores,
+            "adjusted_score": adjusted_score,
+            "uncertainty_penalty": uncertainty_penalty,
+            "irreversibility_penalty": irreversibility_penalty,
+        }
+
+    def _build_responsibility_boundary(self, scenario: CosmicScenario) -> Dict[str, Any]:
+        """責任境界を機械可読で返す。"""
+        # Project Echo 不変原則：AIはおすすめしない
+        return {
+            "ai_role": "候補セット・証拠・責任境界の提示のみ",
+            "human_role": "最終意思決定と実行責任",
+            "required_process": [
+                "ステークホルダー審査",
+                "倫理委員会レビュー",
+                "監査ログ保存",
+            ],
+            "scenario": scenario.name,
+        }
+
+    # Project Echo 不変原則：AIはおすすめしない
+    # LEGACY: recommendation生成は不変原則により禁止
+    # def _generate_recommendation(self, score: float, scenario: CosmicScenario) -> str:
+    #     ...
 
 
 def create_cosmic_scenarios() -> List[CosmicScenario]:
@@ -315,8 +370,21 @@ def run_cosmic_analysis():
             bar = "█" * int(score * 20)
             print(f"  {dim_name:30s} {bar} {score:.2f}")
 
-        print(f"\n【推奨事項】")
-        print(f"  {evaluation['recommendation']}")
+        # Project Echo 不変原則：AIはおすすめしない
+        print(f"\n【候補セット】")
+        for candidate in evaluation["candidate_set"]:
+            print(f"  - {candidate['id']}: {candidate['description']}")
+
+        # Project Echo 不変原則：AIはおすすめしない
+        print(f"\n【証拠】")
+        print(f"  調整後スコア: {evaluation['evidence']['adjusted_score']:.2f}")
+        print(f"  不確実性ペナルティ: {evaluation['evidence']['uncertainty_penalty']:.2f}")
+        print(f"  不可逆性ペナルティ: {evaluation['evidence']['irreversibility_penalty']:.2f}")
+
+        # Project Echo 不変原則：AIはおすすめしない
+        print(f"\n【責任境界】")
+        print(f"  AIの役割: {evaluation['responsibility_boundary']['ai_role']}")
+        print(f"  人間の役割: {evaluation['responsibility_boundary']['human_role']}")
 
 
 def demonstrate_framework():
