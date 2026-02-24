@@ -94,6 +94,8 @@ def build_payload(
         Payload dict with schema_version v2
     """
     boundary = audit.get("responsibility_boundary") or {}
+    # Project Echo 不変原則：責任境界統一（schema_version必須）
+    boundary_schema_version = str(boundary.get("schema_version") or "1.0")
     label = label_from_boundary(boundary)
 
     # pull minimal signals (robust to missing keys)
@@ -109,6 +111,8 @@ def build_payload(
         "policy": {
             "ai_recommends": False,
             "liability_mode": (boundary.get("liability_mode") or "audit-only"),
+            # Project Echo 不変原則：責任境界統一（schema_version必須）
+            "schema_version": boundary_schema_version,
         },
         "signals": {
             # boundary signals (preferred)

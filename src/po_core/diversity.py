@@ -439,6 +439,8 @@ def recommendation_boundary(
         requires_human_confirm = True
 
     return {
+        # Project Echo 不変原則：責任境界統一（schema_version必須）
+        "schema_version": "1.0",
         "execution_allowed": execution_allowed,
         "requires_human_confirm": requires_human_confirm,
         "ai_recommends": False,  # Policy: never recommend
