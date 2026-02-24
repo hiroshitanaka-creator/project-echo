@@ -159,7 +159,7 @@ class Peirce(Philosopher):
         has_symbol = sum(1 for word in symbol_words if word in text_lower)
 
         sign_type_scores = {"Icon": has_icon, "Index": has_index, "Symbol": has_symbol}
-        dominant_sign = max(sign_type_scores, key=sign_type_scores.get)
+        dominant_sign = max(sign_type_scores, key=lambda k: sign_type_scores[k])
 
         if has_sign >= 1 and has_interpretant >= 1:
             status = "Triadic Semiosis"
@@ -226,7 +226,7 @@ class Peirce(Philosopher):
             "Induction": has_induction,
             "Abduction": has_abduction + has_best_explanation + has_surprise,
         }
-        dominant = max(scores, key=scores.get)
+        dominant = max(scores, key=lambda k: scores[k])
 
         if scores[dominant] == 0:
             inference_type = "No Clear Inference"
@@ -280,7 +280,7 @@ class Peirce(Philosopher):
             "Secondness": has_secondness,
             "Thirdness": has_thirdness,
         }
-        dominant = max(scores, key=scores.get)
+        dominant = max(scores, key=lambda k: scores[k])
 
         if scores[dominant] == 0:
             category = "No Clear Category"

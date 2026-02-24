@@ -2,15 +2,16 @@
 import sys
 from collections import Counter
 from pathlib import Path
+from typing import Any
 
 from .vendor_db import DEFAULT_THRESHOLD, VENDOR_MAP
 
 
 class CodeSentinel:
-    def __init__(self, threshold=DEFAULT_THRESHOLD):
+    def __init__(self, threshold: float = DEFAULT_THRESHOLD) -> None:
         self.threshold = threshold
 
-    def audit_requirements(self, file_path: str):
+    def audit_requirements(self, file_path: str) -> dict[str, Any]:
         path = Path(file_path)
         if not path.exists():
             return {"error": "File not found"}
@@ -30,7 +31,7 @@ class CodeSentinel:
         if total_deps == 0:
             return {"status": "SAFE", "message": "No dependencies found"}
 
-        vendor_counts = Counter()
+        vendor_counts: Counter[str] = Counter()
         details = []
 
         for dep in dependencies:
@@ -64,7 +65,7 @@ class CodeSentinel:
         return result
 
 
-def run_audit(target_file):
+def run_audit(target_file: str) -> None:
     sentinel = CodeSentinel()
     result = sentinel.audit_requirements(target_file)
 

@@ -19,7 +19,7 @@ import json
 import os
 import warnings
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 try:
     from nacl.encoding import HexEncoder
@@ -297,7 +297,7 @@ def parse_key_store(keys_str: str) -> dict[str, str]:
     Returns:
         Dict mapping key_id to secret
     """
-    store = {}
+    store: dict[str, str] = {}
     if not keys_str:
         return store
 
@@ -454,7 +454,7 @@ def sign_ed25519(payload_hash: str, private_key_hex: str) -> str:
 
     private_key = SigningKey(private_key_hex, encoder=HexEncoder)
     signed = private_key.sign(payload_hash.encode("utf-8"))
-    return signed.signature.hex()
+    return str(signed.signature.hex())
 
 
 def verify_ed25519(payload_hash: str, signature_hex: str, public_key_hex: str) -> bool:
@@ -674,9 +674,9 @@ def verify_echo_mark_ed25519(badge: dict[str, Any]) -> dict[str, Any]:
             }
 
         # Check 1: Hash integrity
-        canonical = canonical_json(payload)
+        canonical = canonical_json(cast(dict[str, Any], payload))
         expected_hash = sha256_hex(canonical)
-        hash_ok = hmac.compare_digest(payload_hash, expected_hash)
+        hash_ok = hmac.compare_digest(cast(str, payload_hash), expected_hash)
 
         if not hash_ok:
             return {
@@ -691,7 +691,7 @@ def verify_echo_mark_ed25519(badge: dict[str, Any]) -> dict[str, Any]:
             }
 
         # Check 2: Signature verification
-        signature_ok = verify_ed25519(payload_hash, signature_hex, public_key_hex)
+        signature_ok = verify_ed25519(cast(str, payload_hash), cast(str, signature_hex), cast(str, public_key_hex))
 
         if not signature_ok:
             return {
@@ -706,7 +706,7 @@ def verify_echo_mark_ed25519(badge: dict[str, Any]) -> dict[str, Any]:
             }
 
         # Check 3: Timestamp validation (replay attack mitigation)
-        timestamp_ok, timestamp_reason = validate_timestamp(payload.get("issued_at"))
+        timestamp_ok, timestamp_reason = validate_timestamp(cast(dict[str, Any], payload).get("issued_at"))
 
         # All checks passed!
         return {
@@ -777,10 +777,10 @@ def verify_echo_mark_dual(
         signature_hmac = badge.get("signature_hmac")
 
         if all([payload, payload_hash, signature_hmac]):
-            hmac_ok = verify_mark(payload, payload_hash, signature_hmac, hmac_secret, key_store)
+            hmac_ok = verify_mark(cast(dict[str, Any], payload), cast(str, payload_hash), cast(str, signature_hmac), hmac_secret, key_store)
             if hmac_ok:
                 # Timestamp validation
-                timestamp_ok, timestamp_reason = validate_timestamp(payload.get("issued_at"))
+                timestamp_ok, timestamp_reason = validate_timestamp(cast(dict[str, Any], payload).get("issued_at"))
 
                 return {
                     "status": "VERIFIED",
@@ -882,7 +882,7 @@ def load_public_key_registry(registry_path: Path | str = ".keys/registry.json") 
         raise FileNotFoundError(f"Public key registry not found: {registry_file}")
 
     with open(registry_file) as f:
-        return json.load(f)
+        return cast(dict[str, Any], json.load(f))
 
 
 def get_public_key_from_registry(
@@ -913,12 +913,31 @@ def get_public_key_from_registry(
                     )
                     return None
 
-                return key_entry.get("public_key")
+                return cast("str | None", key_entry.get("public_key"))
 
         return None
 
     except FileNotFoundError:
         return None
+
+
+def generate_echo_mark(
+    payload: dict[str, Any],
+    device: str = "",
+    extra_text: str = "",
+) -> dict[str, Any]:
+    """
+    Generate an unsigned Echo Mark for the given payload (gumdrop/no-secret form).
+
+    Args:
+        payload: Audit payload dict
+        device: Device type hint (e.g. "gumdrop")
+        extra_text: Additional text for display
+
+    Returns:
+        Echo Mark dict (unsigned)
+    """
+    return make_echo_mark(audit=payload)
 
 
 def verify_key_in_registry(

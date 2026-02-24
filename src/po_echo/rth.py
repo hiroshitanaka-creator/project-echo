@@ -138,3 +138,19 @@ class RollingTranscriptHash:
         d = asdict(self.state)
         d["h_prev"] = self.state.h_prev.hex()
         return d
+
+
+def compute_rth(transcript: str) -> dict:
+    """
+    Compute a single-window RTH snapshot for a given transcript string.
+
+    Args:
+        transcript: Transcript text to hash
+
+    Returns:
+        RTH snapshot dict (rth_algo, window_ms, t_ms, hash_hex)
+    """
+    rth = RollingTranscriptHash()
+    if transcript:
+        rth.update_text(transcript)
+    return rth.snapshot()

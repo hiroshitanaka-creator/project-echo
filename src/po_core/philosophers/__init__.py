@@ -270,5 +270,6 @@ def load_philosophers_by_preset(preset: str = "cosmic13") -> list[Philosopher]:
         return load_all_philosophers()
 
     philosopher_set = PRESETS[preset]
+    assert philosopher_set is not None
     all_philosophers = load_all_philosophers()
     return [p for p in all_philosophers if p.name in philosopher_set]

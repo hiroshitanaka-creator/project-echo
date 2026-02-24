@@ -39,7 +39,7 @@ class EchoFormatter(logging.Formatter):
             if record.exc_info:
                 log_data["exception"] = self.formatException(record.exc_info)
             if hasattr(record, "audit"):
-                log_data["audit"] = record.audit  # type: ignore[attr-defined]
+                log_data["audit"] = record.audit
             return json.dumps(log_data, ensure_ascii=False)
         else:
             # Human-readable format for development
@@ -102,5 +102,5 @@ def audit_log(logger: logging.Logger, action: str, details: dict[str, Any]) -> N
         (),
         None,
     )
-    record.audit = {"action": action, **details}  # type: ignore[attr-defined]
+    record.audit = {"action": action, **details}
     logger.handle(record)

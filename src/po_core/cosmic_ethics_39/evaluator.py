@@ -24,18 +24,18 @@ except ImportError:
     # Fallback if numpy not available
     class np:  # type: ignore
         @staticmethod
-        def mean(x):
+        def mean(x: list) -> float:
             return sum(x) / len(x) if x else 0.0
 
         @staticmethod
-        def std(x):
+        def std(x: list) -> float:
             if not x:
                 return 0.0
             m = np.mean(x)
-            return (sum((v - m) ** 2 for v in x) / len(x)) ** 0.5
+            return float((sum((v - m) ** 2 for v in x) / len(x)) ** 0.5)
 
         @staticmethod
-        def array(x, dtype=None):
+        def array(x: list, dtype: object = None) -> list:
             return x
 
 
@@ -103,7 +103,7 @@ class BaseScorer:
     all 39 dimensions always have a score (default 0.5 for non-relevant dimensions).
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.framework = CosmicEthicsFramework()
 
     def score(self, scenario_text: str, meta: dict[str, Any]) -> ScoreDict:

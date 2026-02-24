@@ -42,22 +42,22 @@ HARDCODED_SECRETS = [
 
 
 class Doberman(ast.NodeVisitor):
-    def __init__(self, filename):
+    def __init__(self, filename: str) -> None:
         self.filename = filename
-        self.violations = []
-        self.imports = []
+        self.violations: list[str] = []
+        self.imports: list[str] = []
 
-    def visit_Import(self, node):
+    def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
             self._check_vendor(alias.name, node.lineno)
         self.generic_visit(node)
 
-    def visit_ImportFrom(self, node):
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         if node.module:
             self._check_vendor(node.module, node.lineno)
         self.generic_visit(node)
 
-    def visit_Constant(self, node):
+    def visit_Constant(self, node: ast.Constant) -> None:
         # 文字列定数の中にAPIキーが生書きされていないかチェック
         if isinstance(node.value, str):
             for pattern, name in HARDCODED_SECRETS:
@@ -67,7 +67,7 @@ class Doberman(ast.NodeVisitor):
                     )
         self.generic_visit(node)
 
-    def _check_vendor(self, module_name, lineno):
+    def _check_vendor(self, module_name: str, lineno: int) -> None:
         # サブモジュール (google.cloud.storage) も検知するために前方一致
         for risk_mod, vendor in VENDOR_RISK_MAP.items():
             if module_name == risk_mod or module_name.startswith(risk_mod + "."):
@@ -76,7 +76,7 @@ class Doberman(ast.NodeVisitor):
                 )
 
 
-def scan_directory(target_dir):
+def scan_directory(target_dir: str) -> None:
     print(f"🐕 Releasing the Doberman in: {target_dir}\n")
 
     total_files = 0

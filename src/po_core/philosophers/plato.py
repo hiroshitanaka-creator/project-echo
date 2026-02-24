@@ -317,7 +317,7 @@ class Plato(Philosopher):
         has_noesis = sum(1 for word in noesis_words if word in text_lower)
 
         # Determine highest level present
-        levels = []
+        levels: list[dict[str, Any]] = []
         if has_eikasia >= 1:
             levels.append(
                 {
@@ -356,7 +356,7 @@ class Plato(Philosopher):
             epistemic_status = "Indeterminate"
         else:
             highest = max(levels, key=lambda x: x["rank"])
-            highest_level = highest["level"]
+            highest_level = str(highest["level"])
             if highest["rank"] == 4:
                 epistemic_status = "Knowledge (ἐπιστήμη)"
             elif highest["rank"] >= 2:
@@ -408,7 +408,7 @@ class Plato(Philosopher):
         }
 
         dominant_part = (
-            max(parts_scores, key=parts_scores.get)
+            max(parts_scores, key=lambda k: parts_scores[k])
             if max(parts_scores.values()) > 0
             else "None clear"
         )
