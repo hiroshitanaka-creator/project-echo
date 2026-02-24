@@ -7,8 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- P1遷移チェックポイント（v0.4.0 start）を文書群で定義。
+- `PROGRESS.md` に「P1遷移チェックポイント」判定表（候補セット・証拠・責任境界）を追加。
+
+### Changed
+- `README.md`、`AGENT.md`、`docs/threat_model.md` をP1未着手時の責務境界に合わせて更新。
+- KPI表の監視列を「P1開始判定値」に統一。
+
 ### Planned
-- P1（1〜2ヶ月）開始: 音声系 property-based test 拡張、`po-cosmic voice`、Demo C
+- P1（1〜2ヶ月）開始後: 音声系 property-based test 拡張、`po-cosmic voice`、Demo C
 
 ## [v0.3.1] - 2026-02-24
 
@@ -21,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 現在状態を「候補セット＋証拠＋責任境界」哲学に合わせて明文化。
 
 ### Philosophy
-- 「AIはおすすめしない」「選択肢を残す」を運用文書・進捗管理に反映し、
+- 「AIは単一推奨をしない」「選択肢を残す」を運用文書・進捗管理に反映し、
   実装だけでなくプロジェクトガバナンスにも不変原則を適用。
 
 ## [v0.3.0] - 2026-02-24
