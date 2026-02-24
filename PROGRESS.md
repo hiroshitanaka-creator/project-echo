@@ -1,47 +1,77 @@
 # Project Echo Progress Dashboard
 
-最終更新: 2026-02-24  
+最終更新: 2026-02-24
 ステータス: **P0（0〜2週間）完了**
 
+## 🎉 P0完了おめでとう！
+Project EchoのP0スコープは、**不変原則を維持したまま完了**しました。
+この進捗は「機能追加数」ではなく、**候補セット提示・証拠提示・責任境界明示**の実装証跡で判定されています。
+
+> [!IMPORTANT]
+> **次の意思決定ポイント（P1）**
+> - 参照: [P1開始向け実行バックログ](#p1開始向け実行バックログ)
+> - 次マイルストーン: **v0.4.0**（音声テスト拡張 / voice CLI / Demo C）
+
 ## 不変原則（運用中）
+<!-- # Project Echo 不変原則：選択肢を残す -->
 - AIは「おすすめ」を返さず、**候補セット＋証拠＋責任境界**を返す。
 - 商業バイアス対策は道徳訴求ではなく、**機械的強制**で実装する。
 - 最上位哲学は「**選択肢を残す**」。
 
-## P0 完了サマリー
+## P0進捗サマリー（視覚化）
 
-| 項目 | ステータス | 根拠（実装/資料） | 備考 |
+<!-- # Project Echo 不変原則：選択肢を残す -->
+| フェーズ | 進捗率 | 進捗バー | 判定 |
+|---|---:|---|---|
+| P0（0〜2週間） | 100% | `██████████` 10/10 | ✅ 完了 |
+| P1（次段階） | 0% | `░░░░░░░░░░` 0/10 | ⏳ 未着手 |
+| リスク逸脱タスク | 0件 | `██████████` 逸脱なし | ✅ 監視中 |
+
+## P0完了項目（証拠リンク付き）
+
+<!-- # Project Echo 不変原則：選択肢を残す -->
+| 項目 | ステータス | 根拠（実装/資料） | 責任境界 |
 |---|---|---|---|
-| 商業バイアス監査 | ✅ 完了 | `src/po_echo/sentinel.py`, `src/po_echo/sentinel_v2.py`, `tools/threshold_audit.py` | 候補の監査・閾値判定を実装 |
-| 候補多様性注入（MMR + bias penalty） | ✅ 完了 | `src/po_core/diversity.py` | 高バイアス優勢を抑制 |
-| 実行ゲート（Conservative Gate） | ✅ 完了 | `src/po_echo/execution_gate.py` | 実行可否を安全側で制御 |
-| Echo Mark署名（Ed25519 + HMAC Dual） | ✅ 完了 | `src/po_echo/echo_mark.py`, `tools/generate_keypair.py` | 公開検証性と後方互換を両立 |
-| 音声系防御（Voice Boundary / Ear Handshake / RTH） | ✅ 完了 | `src/po_echo/voice_boundary.py`, `src/po_echo/ear_handshake.py`, `src/po_echo/rth.py` | 画面無し環境の責任境界を保持 |
-| Gumdrop / World Register対策 | ✅ 完了 | `src/po_echo/gumdrop_defense.py`, `docs/openai_world_register_threat.md` | 課金モデルの不透明化リスクを防御 |
-| CLI/デモ運用導線 | ✅ 完了 | `src/po_cosmic/cli.py`, `tools/demo_shopping.py`, `docs/DEMO_SHOPPING.md` | 検証可能な再現導線あり |
-| 性質ベーステスト群 | ✅ 完了 | `tests/test_prop_*.py`, `tests/test_invariants.py` | 重要不変条件を継続監視 |
+| 商業バイアス監査 | ✅ 完了 | `src/po_echo/sentinel.py`, `src/po_echo/sentinel_v2.py`, `tools/threshold_audit.py` | 監査ロジックは候補評価まで。最終採否判断は運用者責任。 |
+| 候補多様性注入（MMR + bias penalty） | ✅ 完了 | `src/po_core/diversity.py` | 候補集合の偏り抑制まで。選定ポリシー確定は運用者責任。 |
+| 実行ゲート（Conservative Gate） | ✅ 完了 | `src/po_echo/execution_gate.py` | 実行可否の安全側判定まで。実行承認は人間/上位システム責任。 |
+| Echo Mark署名（Ed25519 + HMAC Dual） | ✅ 完了 | `src/po_echo/echo_mark.py`, `tools/generate_keypair.py` | 署名生成・検証まで。鍵管理・ローテーションは運用責任。 |
+| 音声系防御（Voice Boundary / Ear Handshake / RTH） | ✅ 完了 | `src/po_echo/voice_boundary.py`, `src/po_echo/ear_handshake.py`, `src/po_echo/rth.py` | 音声境界の技術的制約まで。業務適用判断は運用責任。 |
+| Gumdrop / World Register対策 | ✅ 完了 | `src/po_echo/gumdrop_defense.py`, `docs/openai_world_register_threat.md` | リスク検知・抑制まで。契約/事業判断は組織責任。 |
+| CLI/デモ運用導線 | ✅ 完了 | `src/po_cosmic/cli.py`, `tools/demo_shopping.py`, `docs/DEMO_SHOPPING.md` | 再現導線提供まで。本番利用可否判定は運用責任。 |
+| 性質ベーステスト群 | ✅ 完了 | `tests/test_prop_*.py`, `tests/test_invariants.py` | 不変条件の検証まで。合否基準策定は品質管理責任。 |
 
-## 残タスク（P1開始向け）
+## P1開始向け実行バックログ
 
-| 優先度 | タスク | 目的 | 完了条件 |
-|---|---|---|---|
-| P1-High | Audio Channel の property-based test 拡張 | 音声入力系の回帰防止 | `voice_boundary`, `ear_handshake`, `rth` の性質テスト追加 |
-| P1-High | `po-cosmic voice` サブコマンド追加 | 実運用CLI統合 | 音声系フローをCLIから実行可能 |
-| P1-Mid | Demo C（音声起点 booking） | 実戦想定の可視化 | シナリオ・手順書・再現ログ整備 |
-| P1-Mid | 運用ドキュメント強化 | チーム導入性向上 | 鍵ローテーション/監査運用手順を文書化 |
-| P1-Low | パフォーマンス計測（候補1万件） | スケール耐性確認 | 計測レポートと閾値提案を作成 |
+<!-- # Project Echo 不変原則：選択肢を残す -->
+| 優先度 | タスク | 目的 | 完了条件 | ステータス |
+|---|---|---|---|---|
+| P1-High | Audio Channel の property-based test 拡張 | 音声入力系の回帰防止 | `voice_boundary`, `ear_handshake`, `rth` の性質テスト追加 | ⏳ |
+| P1-High | `po-cosmic voice` サブコマンド追加 | 実運用CLI統合 | 音声系フローをCLIから実行可能 | ⏳ |
+| P1-Mid | Demo C（音声起点 booking） | 実戦想定の可視化 | シナリオ・手順書・再現ログ整備 | ⏳ |
+| P1-Mid | 運用ドキュメント強化 | チーム導入性向上 | 鍵ローテーション/監査運用手順を文書化 | ⏳ |
+| P1-Low | パフォーマンス計測（候補1万件） | スケール耐性確認 | 計測レポートと閾値提案を作成 | ⏳ |
 
-## KPI（P0完了時点 / P1監視開始）
+## KPI定義（P0完了時点 / P1監視開始）
 
-| KPI | 定義 | 現在値 | 次マイルストーン目標 |
+<!-- # Project Echo 不変原則：選択肢を残す -->
+| KPI | 定義（計測対象） | 現在値 | 次マイルストーン目標 |
 |---|---|---:|---:|
-| 不変原則準拠率 | 出力が「候補セット＋証拠＋責任境界」を満たす割合 | 100%（設計目標） | 維持 |
-| テスト成功率 | CI/ローカルでのテストパス率 | 100%（最新実行で確認） | 維持 |
-| 高バイアス候補混入率 | 閾値超え候補が最終候補に残る割合 | 低位（監査対象） | さらに低減 |
-| 署名検証成功率 | Echo Mark検証成功の割合 | 100%（正常系） | 維持 |
-| 責任境界明示率 | 出力に責任境界を含む割合 | 100%（設計目標） | 維持 |
+| 不変原則準拠率 | 生成出力が「候補セット＋証拠＋責任境界」を**同時に満たす割合** | 100%（設計目標） | 維持 |
+| Evidence Coverage | 最終出力内の主張に対し、実装/ログ/文書の**検証可能な根拠が紐づく割合** | 100%（P0対象範囲） | 維持 |
+| テスト成功率 | CI/ローカルで実行したテストのパス率 | 100%（最新実行で確認） | 維持 |
+| 高バイアス候補混入率 | 閾値超え候補が最終候補集合に残る割合 | 低位（監査対象） | さらに低減 |
+| 署名検証成功率 | Echo Mark検証成功の割合（正常系） | 100% | 維持 |
+| 責任境界明示率 | 出力に責任境界が含まれる割合 | 100%（設計目標） | 維持 |
 
 ## マイルストーン
-- **v0.3.1（完了）**: P0クローズ、進捗と運用文書の統合更新
-- **v0.4.0（予定）**: P1の主要機能（音声テスト拡張・voice CLI・Demo C）
-- **v1.0.0（将来）**: 公開監査運用を含む本番定着
+<!-- # Project Echo 不変原則：選択肢を残す -->
+- ✅ **v0.3.1（完了）**: P0クローズ、進捗と運用文書の統合更新
+- ⏳ **v0.4.0（予定）**: P1の主要機能（音声テスト拡張・voice CLI・Demo C）
+- ⏳ **v1.0.0（将来）**: 公開監査運用を含む本番定着
+
+## P1遷移時の意思決定境界
+<!-- # Project Echo 不変原則：選択肢を残す -->
+- 候補比較・証拠提示・責任境界明示はシステム責務。
+- 本番反映可否、リスク受容、契約判断は人間/組織責務。
+- 運用中に原則逸脱を検知した場合は、P1進行より是正を優先する。
