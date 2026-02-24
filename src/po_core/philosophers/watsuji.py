@@ -206,7 +206,7 @@ class Watsuji(Philosopher):
 
         # Determine dominant type
         scores = {"Monsoon": monsoon_count, "Desert": desert_count, "Meadow": meadow_count}
-        dominant_type = max(scores, key=scores.get)
+        dominant_type = max(scores, key=lambda k: scores[k])
 
         if scores[dominant_type] == 0:
             type_name = "Neutral"

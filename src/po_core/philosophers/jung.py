@@ -388,7 +388,7 @@ class Jung(Philosopher):
             "Sensation": sensation_count,
             "Intuition": intuition_count,
         }
-        dominant_function = max(function_scores, key=function_scores.get)
+        dominant_function = max(function_scores, key=lambda k: function_scores[k])
 
         return {
             "attitude": attitude,

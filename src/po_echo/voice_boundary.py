@@ -15,7 +15,7 @@ All executions generate Echo Mark receipts regardless of channel.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 Risk = Literal["low", "medium", "high"]
 Confirm = Literal["none", "double_tap", "passphrase", "app_confirm"]
@@ -108,7 +108,7 @@ def attach_boundary(
     Returns:
         Audit with responsibility_boundary attached
     """
-    rb = {
+    rb: dict[str, Any] = {
         "channel": "audio",
         "risk": decision.risk,
         "required_action": decision.required_action,
@@ -122,3 +122,29 @@ def attach_boundary(
     audit = dict(audit)
     audit["responsibility_boundary"] = rb
     return audit
+
+
+def get_voice_boundary_policy(bias_score: float, is_gumdrop: bool = False) -> dict[str, Any]:
+    """
+    Get voice boundary policy dict for the given bias score and device type.
+
+    Args:
+        bias_score: Commercial bias score [0, 1]
+        is_gumdrop: True if device is a gumdrop (screenless) device
+
+    Returns:
+        Policy dict with risk, required_action, and requires_human_confirm
+    """
+    if bias_score >= 0.5:
+        risk: Risk = "high"
+    elif bias_score >= 0.2:
+        risk = "medium"
+    else:
+        risk = "low"
+    pol = POLICY[risk]
+    return {
+        "risk": risk,
+        "required_action": pol["required_action"],
+        "requires_human_confirm": pol["requires_human_confirm"],
+        "is_gumdrop": is_gumdrop,
+    }

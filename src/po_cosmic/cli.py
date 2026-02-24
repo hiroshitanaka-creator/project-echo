@@ -403,11 +403,12 @@ def cmd_badge(args: argparse.Namespace) -> None:
                 private_key = keypair["private_key"]
             else:
                 # Fall back to environment variable
-                private_key = load_ed25519_private_key_from_env()
-                if not private_key:
+                _pk = load_ed25519_private_key_from_env()
+                if not _pk:
                     print("Error: ECHO_MARK_PRIVATE_KEY not set", file=sys.stderr)
                     print("Set environment variable or use --keys-dir", file=sys.stderr)
                     raise SystemExit(1)
+                private_key = _pk
 
             badge = make_echo_mark_ed25519(audit, private_key, key_id, run_id=args.run_id)
             print("Ed25519 signature mode")
@@ -426,10 +427,11 @@ def cmd_badge(args: argparse.Namespace) -> None:
                 keypair = load_ed25519_keypair(key_id, args.keys_dir)
                 private_key = keypair["private_key"]
             else:
-                private_key = load_ed25519_private_key_from_env()
-                if not private_key:
+                _pk = load_ed25519_private_key_from_env()
+                if not _pk:
                     print("Error: ECHO_MARK_PRIVATE_KEY not set", file=sys.stderr)
                     raise SystemExit(1)
+                private_key = _pk
 
             badge = make_echo_mark_dual(audit, secret, private_key, key_id, run_id=args.run_id)
             print("Dual signature mode (HMAC + Ed25519)")

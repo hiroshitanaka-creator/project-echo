@@ -66,7 +66,7 @@ def generate_keypair(key_id: str) -> dict[str, str]:
         "private_key": private_key.encode(HexEncoder).decode(),
         "public_key": public_key.encode(HexEncoder).decode(),
         "algorithm": "Ed25519",
-        "created_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+        "created_at": dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
     }
 
 

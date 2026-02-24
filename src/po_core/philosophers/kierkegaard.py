@@ -177,7 +177,7 @@ class Kierkegaard(Philosopher):
 
         # Determine dominant stage
         scores = {"Aesthetic": has_aesthetic, "Ethical": has_ethical, "Religious": has_religious}
-        dominant = max(scores, key=scores.get)
+        dominant = max(scores, key=lambda k: scores[k])
 
         if scores[dominant] == 0:
             stage_type = "Unclear"

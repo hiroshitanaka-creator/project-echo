@@ -350,7 +350,7 @@ class Aristotle(Philosopher):
         4. Final Cause (τέλος): Its purpose or end
         """
         text_lower = text.lower()
-        causes = {"material": [], "formal": [], "efficient": [], "final": []}
+        causes: dict[str, list[str]] = {"material": [], "formal": [], "efficient": [], "final": []}
 
         # Material cause - composition, matter
         if any(
