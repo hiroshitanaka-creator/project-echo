@@ -38,6 +38,9 @@ POLICY = {
     "high": {"required_action": "app_confirm", "requires_human_confirm": True},
 }
 
+HIGH_BIAS_BLOCK_THRESHOLD = 0.6
+LOW_BATTERY_THRESHOLD = 0.15
+
 CRITICAL_INTENTS = {"payment", "purchase", "identity_disclosure"}
 SENSITIVE_INTENTS = {"booking", "itinerary", "data_share", "home_access"}
 
@@ -148,3 +151,60 @@ def get_voice_boundary_policy(bias_score: float, is_gumdrop: bool = False) -> di
         "requires_human_confirm": pol["requires_human_confirm"],
         "is_gumdrop": is_gumdrop,
     }
+
+
+def evaluate_screenless_safety(
+    *,
+    bias_score: float,
+    battery_level: float,
+    bluetooth_connected: bool,
+    replay_detected: bool = False,
+    tamper_detected: bool = False,
+) -> dict[str, Any]:
+    """
+    Evaluate safety gate for screenless ambient audio channel.
+
+    Why this exists:
+        Screenless devices need mechanical enforcement of fallback and block rules
+        because users cannot inspect rich UI before execution.
+    """
+    policy = get_voice_boundary_policy(bias_score=bias_score, is_gumdrop=True)
+    fallback_mode = "normal"
+
+    if battery_level < LOW_BATTERY_THRESHOLD or not bluetooth_connected:
+        fallback_mode = "on_device_safe_mode"
+
+    should_block = (
+        bias_score >= HIGH_BIAS_BLOCK_THRESHOLD or replay_detected or tamper_detected
+    )
+    if should_block:
+        return {
+            **policy,
+            "execution_allowed": False,
+            "requires_human_confirm": True,
+            "required_action": "app_confirm",
+            "fallback_mode": fallback_mode,
+            "reasons": [
+                "screenless_guard",
+                f"bias_score:{bias_score:.3f}",
+                f"replay_detected:{replay_detected}",
+                f"tamper_detected:{tamper_detected}",
+            ],
+        }
+
+    return {
+        **policy,
+        "execution_allowed": True,
+        "fallback_mode": fallback_mode,
+        "reasons": ["screenless_guard", f"bias_score:{bias_score:.3f}"],
+    }
+
+
+def make_echo_verified_voice_text(candidate_count: int, evidence_count: int, boundary: dict) -> str:
+    """Build voice narration text with responsibility boundary disclosure."""
+    return (
+        "Echo Verified candidate set ready. "
+        f"候補セット{candidate_count}件、証拠{evidence_count}件。"
+        "責任境界: "
+        f"{boundary.get('required_action', 'app_confirm')} まで。"
+    )
