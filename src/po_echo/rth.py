@@ -25,8 +25,56 @@ Privacy guarantees:
 from __future__ import annotations
 
 import hashlib
+import re
 import time
 from dataclasses import asdict, dataclass
+
+
+_STOPWORDS = {
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "at",
+    "be",
+    "for",
+    "from",
+    "in",
+    "is",
+    "it",
+    "of",
+    "on",
+    "or",
+    "that",
+    "the",
+    "to",
+    "with",
+}
+
+
+def normalize_words(text: str) -> list[str]:
+    """Normalize transcript words for robust, low-information feature extraction."""
+    tokens = re.findall(r"[a-z0-9]+", text.lower())
+    return sorted({tok for tok in tokens if tok and tok not in _STOPWORDS})
+
+
+def _simhash64(tokens: list[str]) -> str:
+    """Compute a 64-bit locality-sensitive hash over normalized tokens."""
+    if not tokens:
+        return "0" * 16
+
+    acc = [0] * 64
+    for token in tokens:
+        h = int.from_bytes(hashlib.blake2b(token.encode("utf-8"), digest_size=8).digest(), "big")
+        for i in range(64):
+            acc[i] += 1 if (h >> i) & 1 else -1
+
+    out = 0
+    for i, score in enumerate(acc):
+        if score > 0:
+            out |= 1 << i
+    return f"{out:016x}"
 
 
 def _feat(text: str) -> bytes:
@@ -44,8 +92,8 @@ def _feat(text: str) -> bytes:
         - Discards frequency (set not bag)
         - Discards capitalization, punctuation
     """
-    # Extract sorted unique words (case-insensitive)
-    toks = sorted(set(text.lower().split()))
+    # Extract sorted unique normalized words.
+    toks = normalize_words(text)
     return ("|".join(toks)).encode("utf-8")
 
 
@@ -59,6 +107,7 @@ class RTHState:
     t0_ms: int = 0  # Session start timestamp
     t_ms: int = 0  # Current window timestamp
     last_text: str = ""  # Last window text (for debugging, not persisted)
+    robust_hash_hex: str = "0" * 16  # 64-bit LSH for noise-tolerant comparisons
 
 
 class RollingTranscriptHash:
@@ -105,6 +154,7 @@ class RollingTranscriptHash:
         self.state.last_text = text_window
         f = _feat(text_window)
         self.state.h_prev = hashlib.sha256(self.state.h_prev + f).digest()
+        self.state.robust_hash_hex = _simhash64(normalize_words(text_window))
 
     def snapshot(self) -> dict:
         """
@@ -126,6 +176,7 @@ class RollingTranscriptHash:
             "window_ms": self.state.window_ms,
             "t_ms": self.state.t_ms,
             "hash_hex": self.state.h_prev.hex(),
+            "robust_hash_hex": self.state.robust_hash_hex,
         }
 
     def to_dict(self) -> dict:
