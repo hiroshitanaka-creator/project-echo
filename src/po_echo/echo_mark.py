@@ -452,7 +452,7 @@ def sign_ed25519(payload_hash: str, private_key_hex: str) -> str:
     if not NACL_AVAILABLE:
         raise RuntimeError("PyNaCl not installed. Run: pip install pynacl")
 
-    private_key = SigningKey(private_key_hex, encoder=HexEncoder)
+    private_key = SigningKey(private_key_hex.encode(), encoder=HexEncoder)
     signed = private_key.sign(payload_hash.encode("utf-8"))
     return str(signed.signature.hex())
 
@@ -476,7 +476,7 @@ def verify_ed25519(payload_hash: str, signature_hex: str, public_key_hex: str) -
         raise RuntimeError("PyNaCl not installed. Run: pip install pynacl")
 
     try:
-        public_key = VerifyKey(public_key_hex, encoder=HexEncoder)
+        public_key = VerifyKey(public_key_hex.encode(), encoder=HexEncoder)
         signature = bytes.fromhex(signature_hex)
         public_key.verify(payload_hash.encode("utf-8"), signature)
         return True
@@ -511,7 +511,7 @@ def make_echo_mark_ed25519(
         raise RuntimeError("PyNaCl not installed. Run: pip install pynacl")
 
     # Load private key and derive public key
-    private_key = SigningKey(private_key_hex, encoder=HexEncoder)
+    private_key = SigningKey(private_key_hex.encode(), encoder=HexEncoder)
     public_key = private_key.verify_key
 
     # Build payload (same as v2)
@@ -581,7 +581,7 @@ def make_echo_mark_dual(
         raise RuntimeError("PyNaCl not installed. Run: pip install pynacl")
 
     # Load private key and derive public key
-    private_key = SigningKey(ed25519_private_key, encoder=HexEncoder)
+    private_key = SigningKey(ed25519_private_key.encode(), encoder=HexEncoder)
     public_key = private_key.verify_key
 
     # Build payload
