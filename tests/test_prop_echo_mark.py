@@ -19,6 +19,7 @@ from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from po_echo.echo_mark import (
+    build_payload,
     canonical_json,
     make_echo_mark,
     make_echo_mark_dual,
@@ -127,6 +128,22 @@ def test_mark_verify_true_then_false_on_tamper(allowed, confirm, bo, bf, imp):
         signature=badge["signature"],
         key_store=key_store,
     ), "Tampered badge must fail verification"
+
+
+@settings(max_examples=100, deadline=None)
+@given(
+    st.booleans(),
+    st.booleans(),
+    st.floats(min_value=0, max_value=1, allow_nan=False, allow_infinity=False),
+    st.floats(min_value=0, max_value=1, allow_nan=False, allow_infinity=False),
+    st.floats(min_value=0, max_value=1, allow_nan=False, allow_infinity=False),
+)
+def test_payload_boundary_schema_version_is_unified(allowed, confirm, bo, bf, imp):
+    """Payload must always include unified responsibility boundary schema_version=1.0."""
+    audit = _minimal_audit(allowed, confirm, bo, bf, imp)
+    payload = build_payload(audit, run_id="prop_schema", key_id=KEY_ID)
+
+    assert payload["policy"]["schema_version"] == "1.0"
 
 
 @settings(max_examples=50, deadline=None)

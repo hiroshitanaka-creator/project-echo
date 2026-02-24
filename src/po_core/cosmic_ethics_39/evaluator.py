@@ -368,6 +368,9 @@ def _merge_boundary_and_blocking(
     This ensures that "why execution was blocked/confirmation required" is unified
     across reasons and blocking_dimensions for consistency.
     """
+    # Project Echo 不変原則：責任境界統一（schema_version必須）
+    responsibility_boundary.setdefault("schema_version", "1.0")
+
     dims: set[str] = set()
 
     # 1) From boundary reasons -> mapped dimensions
@@ -607,6 +610,8 @@ def _responsibility_boundary(
         liability_mode = "audit-only"
 
     return {
+        # Project Echo 不変原則：責任境界統一（schema_version必須）
+        "schema_version": "1.0",
         "ai_recommends": False,  # policy: never "recommend"
         "execution_allowed": execution_allowed,
         "requires_human_confirm": requires_human_confirm,
