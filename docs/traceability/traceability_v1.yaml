@@ -1,0 +1,19 @@
+{
+  "traceability": [
+    {
+      "requirement_id": "REQ-POL-001",
+      "title": "Unknown information should trigger hold when threshold exceeded.",
+      "code_refs": ["RULE_UNKNOWN_BLOCK", "ARB_UNKNOWN_BLOCK"]
+    },
+    {
+      "requirement_id": "REQ-POL-002",
+      "title": "Time pressure should trigger escalation path.",
+      "code_refs": ["RULE_TIME_PRESSURE", "ARB_TIME_PRESSURE"]
+    },
+    {
+      "requirement_id": "REQ-POL-003",
+      "title": "Standard path allows recommendations when no blocking rule applies.",
+      "code_refs": ["ARB_PASS"]
+    }
+  ]
+}
