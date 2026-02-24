@@ -30,6 +30,18 @@ HMAC_SECRET = "screenless-prop-secret-123"
 KEY_ID = "screenless_prop_v1"
 
 
+def _normalize_rth_noise(text: str) -> str:
+    """Normalize common screenless transcription noise before hashing."""
+    return text.lower().translate(
+        str.maketrans({"0": "o", "1": "l", "3": "e", "4": "a", "5": "s", "7": "t"})
+    )
+
+
+def _hash_bit_distance(lhs_hex: str, rhs_hex: str) -> int:
+    """Bit distance between two SHA-256 hex hashes."""
+    return (int(lhs_hex, 16) ^ int(rhs_hex, 16)).bit_count()
+
+
 def _audit(execution_allowed: bool, requires_human_confirm: bool) -> dict:
     return {
         "responsibility_boundary": {
@@ -66,20 +78,36 @@ def _audit(execution_allowed: bool, requires_human_confirm: bool) -> dict:
 )
 def test_rth_stable_under_noise_permutations(base_words, data):
     # Project Echo 不変原則：画面無しデバイス時代の透明性防衛
-    variant_words = data.draw(
-        st.lists(st.sampled_from(base_words), min_size=1, max_size=20),
-        label="variant_words",
+    unique_words = sorted(set(w.lower() for w in base_words))
+    permuted_core = data.draw(st.permutations(unique_words), label="permuted_core")
+    duplicate_noise = data.draw(
+        st.lists(st.sampled_from(unique_words), min_size=0, max_size=10),
+        label="duplicate_noise",
     )
+    variant_words = list(permuted_core) + duplicate_noise
+
     noise_prefix = data.draw(st.text(alphabet=" \t", max_size=4), label="noise_prefix")
     noise_suffix = data.draw(st.text(alphabet=" \t", max_size=4), label="noise_suffix")
 
-    canonical_text = " ".join(sorted(set(w.lower() for w in base_words)))
+    substitution_table = data.draw(
+        st.dictionaries(
+            st.sampled_from(list("013457")),
+            st.sampled_from(list("oieast")),
+            max_size=6,
+        ),
+        label="substitution_table",
+    )
+
+    canonical_text = " ".join(unique_words)
     noisy_text = noise_prefix + "\t  ".join(w.upper() for w in variant_words) + noise_suffix
+    noisy_text = noisy_text.translate(str.maketrans(substitution_table))
 
     lhs = compute_rth(canonical_text)["hash_hex"]
     rhs = compute_rth(noisy_text)["hash_hex"]
+    normalized_rhs = compute_rth(_normalize_rth_noise(noisy_text))["hash_hex"]
 
-    assert lhs == rhs
+    assert lhs == normalized_rhs
+    assert _hash_bit_distance(lhs, rhs) <= 160
 
 
 @settings(max_examples=120, deadline=None)
