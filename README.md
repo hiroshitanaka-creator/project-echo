@@ -3,8 +3,10 @@
 **AIが「便利」を装って商業バイアスに操られるのを、システムレベルで防ぐ。**  
 Project Echoは、AI出力を「おすすめ」ではなく**候補セット＋証拠＋責任境界**として扱うための防衛フレームワークです。
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)  
+[![License: AGPLv3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE) [![Commercial License](https://img.shields.io/badge/Commercial-Contact%20Required-orange.svg)](COMMERCIAL_LICENSE.md)
 **Sister Project of [Po_core](https://github.com/hiroshitanaka-creator/Po_core)**
+
+> **Dual License:** Free for non-commercial/research use (AGPLv3). Commercial use requires a separate license — see [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
 
 ---
 
