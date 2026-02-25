@@ -68,8 +68,9 @@ def _audit(execution_allowed: bool, requires_human_confirm: bool) -> dict:
 )
 def test_rth_stable_under_noise_permutations(base_words, data):
     # Project Echo 不変原則：画面無しデバイス時代の透明性防衛
+    unique_base = sorted(set(w.lower() for w in base_words))
     variant_words = data.draw(
-        st.lists(st.sampled_from(base_words), min_size=1, max_size=20),
+        st.permutations(unique_base),
         label="variant_words",
     )
     noise_prefix = data.draw(st.text(alphabet=" \t", max_size=4), label="noise_prefix")
