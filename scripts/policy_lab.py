@@ -6,13 +6,12 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import sys
 from collections import Counter
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
-
-import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
