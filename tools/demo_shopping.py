@@ -134,7 +134,7 @@ def run_demo_case(case_name: str, input_file: Path, output_dir: Path):
             audit=result,
             hmac_secret=secret,
             ed25519_private_key=private_key,
-            key_id="v1",
+            key_id="default",
         )
         print("   Badge mode: Dual signature (HMAC + Ed25519)")
     else:
@@ -142,7 +142,7 @@ def run_demo_case(case_name: str, input_file: Path, output_dir: Path):
         badge = make_echo_mark(
             audit=result,
             secret=secret,
-            key_id="v1",
+            key_id="default",
         )
         print("   Badge mode: HMAC-only (legacy)")
 

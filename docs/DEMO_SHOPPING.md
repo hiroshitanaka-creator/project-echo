@@ -124,10 +124,15 @@ All audit results are signed with HMAC-SHA256:
 po-cosmic verify runs/high_bias_affiliate.badge.json
 
 # Expected output:
-# ✓ ECHO_CHECK (verified with key_id: v1)
-# Bias: 0.92 → 0.85 (improved)
-# Merchants: 1 → 1 (no alternatives available)
-# Execution: requires_human_confirm
+# ================================================================================
+# [Echo Mark Verification]
+# ================================================================================
+# Label: ECHO_CHECK
+# Schema version: echo_mark_v2
+# Verification method: HMAC-SHA256
+#
+# Signature: VALID ✓
+# ================================================================================
 ```
 
 Signature covers: label, bias signals, reasons, timestamp. Tampering detection is constant-time to prevent timing attacks.
