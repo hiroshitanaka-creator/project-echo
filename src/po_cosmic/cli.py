@@ -691,9 +691,10 @@ def cmd_voice(args: argparse.Namespace) -> None:
             keypair = load_ed25519_keypair(args.key_id, args.keys_dir)
             private_key = keypair["private_key"]
         else:
-            private_key = load_ed25519_private_key_from_env()
-            if not private_key:
+            _pk = load_ed25519_private_key_from_env()
+            if not _pk:
                 raise RuntimeError("ECHO_MARK_PRIVATE_KEY not set")
+            private_key = _pk
     except (FileNotFoundError, RuntimeError) as e:
         print(f"Error: {e}", file=sys.stderr)
         raise SystemExit(1) from None
