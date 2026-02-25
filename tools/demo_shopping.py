@@ -194,7 +194,7 @@ def main():
     print(f"📁 Results saved to: {output_dir}")
     print("\nNext steps:")
     print("  1. Review audit results: cat runs/*.audit.json")
-    print("  2. Verify badges: python tools/verify_badge.py runs/*.badge.json")
+    print("  2. Verify badge: po-cosmic verify runs/high_bias_affiliate.badge.json")
     print("  3. Read demo guide: cat docs/DEMO_SHOPPING.md")
 
 

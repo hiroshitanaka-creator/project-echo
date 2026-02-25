@@ -12,9 +12,11 @@ This demo shows how Echo prevents "convenience capture": a system that only pres
 ## Run
 
 ```bash
-export ECHO_MARK_SECRET="your-secret"
+export ECHO_MARK_SECRET="demo-secret-key-16chars"
 make demo-shopping
 ```
+
+※ 上記secretはデモ専用です。本番運用では使わないでください。
 
 ## Expected outcomes
 
@@ -119,7 +121,7 @@ All audit results are signed with HMAC-SHA256:
 
 ```bash
 # Verify Echo Mark badge
-po-cosmic verify runs/demo_b_high_bias.badge.json
+po-cosmic verify runs/high_bias_affiliate.badge.json
 
 # Expected output:
 # ✓ ECHO_CHECK (verified with key_id: v1)
@@ -144,7 +146,7 @@ After this demo:
 ## Files
 
 - Input: `examples/demo_inputs/shopping/*.json`
-- Output: `runs/demo_b_*.audit.json`, `runs/demo_b_*.badge.json`
+- Output: `runs/{case_name}.audit.json`, `runs/{case_name}.badge.json`
 - Makefile: `make demo-shopping`
 
 ---
