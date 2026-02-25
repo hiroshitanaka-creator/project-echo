@@ -4,7 +4,7 @@ version = "0.2.0"
 description = "Responsible AI Development Framework with 39 Philosophers and Cosmic Ethics"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "GPL-3.0-or-later"}
+license = {text = "AGPL-3.0-or-later"}
 
 authors = [
     {name = "hiroshitanaka-creator"}
