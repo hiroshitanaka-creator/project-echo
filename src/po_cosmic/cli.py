@@ -20,6 +20,7 @@ if str(src_path) not in sys.path:
 from po_core.cosmic_ethics_39.evaluator import CosmicEthics39Evaluator
 from po_core.cosmic_ethics_39.scenarios import get_scenario
 from po_core.diversity import Rec, diversify_with_mmr
+from po_echo.ear_handshake import derive_session_key, issue_challenge, new_device, verify_response
 from po_echo.echo_mark import (
     get_secret_from_env,
     load_ed25519_keypair,
@@ -30,6 +31,8 @@ from po_echo.echo_mark import (
     verify_echo_mark_dual,
     verify_mark,
 )
+from po_echo.execution_gate import gate_audio
+from po_echo.voice_boundary import make_echo_verified_voice_text
 
 try:
     import nacl.signing  # noqa: F401 - import check for availability
@@ -596,8 +599,6 @@ def cmd_verify(args: argparse.Namespace) -> None:
 
 def cmd_audio_gate(args: argparse.Namespace) -> None:
     """Execute audio-gate command - apply execution gate for voice actions."""
-    from po_echo.execution_gate import gate_audio
-
     # Load audit result
     audit_path = Path(args.inp)
     if not audit_path.exists():
@@ -640,6 +641,113 @@ def cmd_audio_gate(args: argparse.Namespace) -> None:
     print(f"Requires confirmation: {'YES' if rb['requires_human_confirm'] else 'NO'}")
     if rb.get("rth_snapshot"):
         print(f"RTH snapshot: {rb['rth_snapshot']['hash_hex'][:16]}...")
+    print("=" * 80)
+    print(f"💾 Saved to: {out_path}")
+
+
+def cmd_voice(args: argparse.Namespace) -> None:
+    """Execute voice command - integrated audio flow with handshake + Echo Mark."""
+    audit_path = Path(args.inp)
+    if not audit_path.exists():
+        print(f"Error: Audit file not found: {audit_path}", file=sys.stderr)
+        raise SystemExit(1)
+
+    audit = json.loads(audit_path.read_text(encoding="utf-8"))
+
+    try:
+        meta = json.loads(args.meta)
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON in --meta: {e}", file=sys.stderr)
+        raise SystemExit(1) from None
+
+    # Why this design: Ear handshake produces a per-action evidence boundary that can
+    # be audited without introducing vendor lock-in to platform pairing APIs.
+    try:
+        master_key = bytes.fromhex(args.device_secret) if args.device_secret else None
+    except ValueError:
+        print("Error: --device-secret must be valid hex", file=sys.stderr)
+        raise SystemExit(1) from None
+    device = new_device(master_key=master_key)
+    challenge = issue_challenge(device)
+    handshake_ok = verify_response(device, challenge)
+
+    if not handshake_ok:
+        print("Error: Ear handshake verification failed", file=sys.stderr)
+        raise SystemExit(2)
+
+    session_key = derive_session_key(device, challenge)
+
+    audit_with_gate = gate_audio(
+        audit=audit,
+        intent=args.intent,
+        meta=meta,
+        transcript_tail=args.transcript,
+        simulate_user_ok=args.simulate_ok,
+    )
+
+    try:
+        secret = get_secret_from_env()
+        if args.keys_dir:
+            keypair = load_ed25519_keypair(args.key_id, args.keys_dir)
+            private_key = keypair["private_key"]
+        else:
+            private_key = load_ed25519_private_key_from_env()
+            if not private_key:
+                raise RuntimeError("ECHO_MARK_PRIVATE_KEY not set")
+    except (FileNotFoundError, RuntimeError) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        raise SystemExit(1) from None
+
+    badge = make_echo_mark_dual(
+        audit=audit_with_gate,
+        hmac_secret=secret,
+        ed25519_private_key=private_key,
+        key_id=args.key_id,
+        run_id=args.run_id,
+    )
+
+    boundary = audit_with_gate.get("responsibility_boundary", {})
+    candidate_set = audit_with_gate.get("final_set", [])
+    evidence = [
+        {
+            "type": "ear_handshake",
+            "key_id": challenge.get("key_id"),
+            "challenge_ts": challenge.get("ts"),
+            "session_key_prefix": session_key[:16],
+        },
+        {
+            "type": "rth_snapshot",
+            "hash_hex": boundary.get("rth_snapshot", {}).get("hash_hex", ""),
+        },
+        {
+            "type": "echo_mark",
+            "schema_version": badge.get("schema_version"),
+            "verification_method": badge.get("verification_method"),
+            "signature_prefix": badge.get("signature", "")[:32],
+        },
+    ]
+    voice_text = make_echo_verified_voice_text(len(candidate_set), len(evidence), boundary)
+
+    result = {
+        "candidate_set": candidate_set,
+        "evidence": evidence,
+        "responsibility_boundary": boundary,
+        "voice_text": voice_text,
+        "echo_mark": badge,
+    }
+
+    out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    print("=" * 80)
+    print("[Voice Flow: Candidate Set + Evidence + Responsibility Boundary]")
+    print("=" * 80)
+    print(f"Candidate count: {len(candidate_set)}")
+    print(f"Evidence count: {len(evidence)}")
+    print(f"Execution allowed: {'YES' if boundary.get('execution_allowed') else 'NO'}")
+    print(f"Required action: {boundary.get('required_action', 'app_confirm')}")
+    print(f"Echo Mark: {badge.get('label', 'Echo Verified')}")
     print("=" * 80)
     print(f"💾 Saved to: {out_path}")
 
@@ -742,6 +850,37 @@ def main() -> None:
     audio_gate.add_argument("--in", dest="inp", required=True, help="Input audit JSON file")
     audio_gate.add_argument("--out", dest="out", required=True, help="Output audit JSON file")
 
+    # voice command - integrated voice flow
+    voice = subparsers.add_parser(
+        "voice", help="Run integrated voice flow (ear handshake + audio gate + Echo Mark)"
+    )
+    voice.add_argument("--intent", required=True, help="Intent: booking/payment/search/...")
+    voice.add_argument("--transcript", required=True, help="Last 5-second transcript text")
+    voice.add_argument("--meta", default="{}", help='Metadata JSON (e.g., {"amount": 10000})')
+    voice.add_argument(
+        "--simulate-ok", action="store_true", help="Simulate user confirmation (for testing)"
+    )
+    voice.add_argument("--in", dest="inp", required=True, help="Input audit JSON file")
+    voice.add_argument("--out", dest="out", required=True, help="Output voice JSON file")
+    voice.add_argument("--run-id", dest="run_id", default=None, help="Optional run identifier")
+    voice.add_argument(
+        "--key-id",
+        dest="key_id",
+        default="default",
+        help="Key identifier for Ed25519 (default: 'default')",
+    )
+    voice.add_argument(
+        "--keys-dir",
+        dest="keys_dir",
+        default=None,
+        help="Directory containing Ed25519 keypair files (default: .keys/)",
+    )
+    voice.add_argument(
+        "--device-secret",
+        default=None,
+        help="Optional deterministic 64-hex device secret for test replayability",
+    )
+
     args = parser.parse_args()
 
     if args.cmd == "cosmic-39":
@@ -754,6 +893,8 @@ def main() -> None:
         cmd_verify(args)
     elif args.cmd == "audio-gate":
         cmd_audio_gate(args)
+    elif args.cmd == "voice":
+        cmd_voice(args)
 
 
 if __name__ == "__main__":
