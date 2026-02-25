@@ -26,9 +26,14 @@ HIGH_BIAS_THRESHOLD = 0.7
 
 
 def is_clean(r: Rec) -> bool:
-    """Check if recommendation is clean (safe to select)."""
+    """Check if recommendation is clean (safe to select).
+
+    Mirrors both filters in diversify_with_mmr:
+    1. effective_utility >= MIN_EFFECTIVE_UTILITY
+    2. bias_risk <= HIGH_BIAS_THRESHOLD (applied when enough candidates exist)
+    """
     effective_utility = r.utility - BETA * r.bias_risk
-    return effective_utility >= MIN_EFFECTIVE_UTILITY
+    return effective_utility >= MIN_EFFECTIVE_UTILITY and r.bias_risk <= HIGH_BIAS_THRESHOLD
 
 
 def is_high_bias(r: Rec) -> bool:
