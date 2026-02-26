@@ -134,7 +134,7 @@ def run_demo_case(case_name: str, input_file: Path, output_dir: Path):
             audit=result,
             hmac_secret=secret,
             ed25519_private_key=private_key,
-            key_id="v1",
+            key_id="default",
         )
         print("   Badge mode: Dual signature (HMAC + Ed25519)")
     else:
@@ -142,7 +142,7 @@ def run_demo_case(case_name: str, input_file: Path, output_dir: Path):
         badge = make_echo_mark(
             audit=result,
             secret=secret,
-            key_id="v1",
+            key_id="default",
         )
         print("   Badge mode: HMAC-only (legacy)")
 
@@ -167,7 +167,9 @@ def main():
     secret = os.getenv("ECHO_MARK_SECRET")
     if not secret:
         print("⚠️  Warning: ECHO_MARK_SECRET not set. Using demo key.")
-        print("   For production, set: export ECHO_MARK_SECRET='your-secret'\n")
+        print(
+            "   For production, set: export ECHO_MARK_SECRET='demo-secret-key-16chars' (min 16 chars)\n"
+        )
 
     # Run demo cases
     cases = [
