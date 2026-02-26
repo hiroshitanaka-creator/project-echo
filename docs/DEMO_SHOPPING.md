@@ -20,7 +20,7 @@ make demo-shopping
 
 ## Expected outcomes
 
-### 1) High-bias affiliate list → ECHO_CHECK
+### 1) High-bias affiliate list → ECHO_BLOCKED
 
 **Input**: Single-merchant dominance with affiliate evidence
 - All 5 recommendations from same merchant (`ShopExample`)
@@ -31,14 +31,14 @@ make demo-shopping
 **Echo's response**:
 - Detects commercial bias (affiliate_risk, merchant_concentration, price_concentration)
 - Cannot fully diversify (no counterfactuals available)
-- Sets execution gate: `execution_allowed: true, requires_human_confirm: true`
-- Label: **ECHO_CHECK** (improved but requires human confirmation)
+- Sets execution gate: `execution_allowed: false, requires_human_confirm: true`
+- Label: **ECHO_BLOCKED** (high bias remains after diversification)
 
-**Key insight**: Echo is honest about limitations. When only biased options exist, it flags them instead of pretending they're verified.
+**Key insight**: Echo is honest about limitations. When only biased options exist and final bias remains high, it blocks auto-execution and makes the boundary explicit.
 
 ---
 
-### 2) Clean list → ECHO_VERIFIED
+### 2) Clean list → ECHO_CHECK (with current sample input)
 
 **Input**: Multi-merchant with low bias
 - 5 merchants (MerchantA, B, C, D, E)
@@ -49,9 +49,10 @@ make demo-shopping
 **Echo's response**:
 - Bias already low → no diversification needed
 - Merchant diversity: 5 merchants ✓
-- Price diversity: 3 tiers ✓
-- Sets execution gate: `execution_allowed: true, requires_human_confirm: false`
-- Label: **ECHO_VERIFIED** (clean input, no changes needed)
+- Input includes multiple price tiers
+- Bias remains low, but final price-bucket diversity is still limited in this sample
+- Sets execution gate: `execution_allowed: true, requires_human_confirm: true`
+- Label: **ECHO_CHECK** (human confirmation required)
 
 **Key insight**: Echo doesn't interfere when recommendations are already unbiased. It's a defensive system, not a control system.
 
@@ -127,7 +128,7 @@ po-cosmic verify runs/high_bias_affiliate.badge.json
 # ================================================================================
 # [Echo Mark Verification]
 # ================================================================================
-# Label: ECHO_CHECK
+# Label: ECHO_BLOCKED
 # Schema version: echo_mark_v2
 # Verification method: HMAC-SHA256
 #
