@@ -20,7 +20,7 @@ make demo-shopping
 
 ## Expected outcomes
 
-### 1) High-bias affiliate list → ECHO_CHECK
+### 1) High-bias affiliate list → ECHO_BLOCKED
 
 **Input**: Single-merchant dominance with affiliate evidence
 - All 5 recommendations from same merchant (`ShopExample`)
@@ -31,29 +31,31 @@ make demo-shopping
 **Echo's response**:
 - Detects commercial bias (affiliate_risk, merchant_concentration, price_concentration)
 - Cannot fully diversify (no counterfactuals available)
-- Sets execution gate: `execution_allowed: true, requires_human_confirm: true`
-- Label: **ECHO_CHECK** (improved but requires human confirmation)
+- Sets execution gate: `execution_allowed: false, requires_human_confirm: true`
+- Reasons include `high_bias_after_diversification` (bias_final >= 0.6 has block priority)
+- In this sample, diversity signals can also add `merchant_monopoly_detected` and `insufficient_price_diversity`
+- Label: **ECHO_BLOCKED**
 
 **Key insight**: Echo is honest about limitations. When only biased options exist, it flags them instead of pretending they're verified.
 
 ---
 
-### 2) Clean list → ECHO_VERIFIED
+### 2) Clean list → ECHO_CHECK (with current sample input)
 
 **Input**: Multi-merchant with low bias
 - 5 merchants (MerchantA, B, C, D, E)
-- 3 price tiers (budget ¥6,900, standard ¥8,900-9,900, premium ¥12,900)
+- Prices are all in `mid` bucket under current rules (`5000 <= price < 15000`)
 - Low bias_risk (0.04 - 0.08)
 - No affiliate params
 
 **Echo's response**:
 - Bias already low → no diversification needed
 - Merchant diversity: 5 merchants ✓
-- Price diversity: 3 tiers ✓
-- Sets execution gate: `execution_allowed: true, requires_human_confirm: false`
-- Label: **ECHO_VERIFIED** (clean input, no changes needed)
+- Price diversity: 1 bucket (`mid`) → `insufficient_price_diversity`
+- Sets execution gate: `execution_allowed: true, requires_human_confirm: true`
+- Label: **ECHO_CHECK** (clean but requires confirmation due to price-bucket rule)
 
-**Key insight**: Echo doesn't interfere when recommendations are already unbiased. It's a defensive system, not a control system.
+**Key insight**: Echo enforces both bias and diversity gates. To make this case **ECHO_VERIFIED**, sample prices must include at least two buckets (e.g., include `low` and/or `high` prices).
 
 ---
 
@@ -64,9 +66,9 @@ make demo-shopping
 - 3 high-bias options (BadStore) with bias_risk 0.70-0.90
 - 1 medium-bias option (MidStore) with bias_risk 0.25
 
-**Echo's response** (depends on conditional invariants):
-- **If clean+low-bias candidates >= k**: Filters out high-bias (>0.7) entirely → ECHO_VERIFIED or ECHO_CHECK
-- **If clean candidates insufficient**: Includes some high-bias options, bias proportion doesn't worsen → ECHO_CHECK
+**Echo's response** (depends on filtering conditions):
+- **If candidates with effective_utility >= 0.1 are enough and low-bias set is still >= k**: Filters out high-bias (`bias_risk > 0.7`) before MMR selection → ECHO_VERIFIED or ECHO_CHECK
+- **If that filtering leaves < k candidates**: Falls back to broader candidate set (effective_utility > 0.0, then all candidates if needed) → ECHO_CHECK
 - **If bias cannot be reduced**: May block execution → ECHO_BLOCKED
 
 **Key insight**: This is the "realistic" case. Echo makes bias tradeoffs explicit through the execution gate, rather than hiding them.
@@ -121,14 +123,19 @@ All audit results are signed with HMAC-SHA256:
 
 ```bash
 # Verify Echo Mark badge
+export ECHO_MARK_SECRET="demo-secret-key-16chars"
+export ECHO_MARK_KEYS="v1=$ECHO_MARK_SECRET"
 po-cosmic verify runs/high_bias_affiliate.badge.json
 
 # Expected output:
-# ✓ ECHO_CHECK (verified with key_id: v1)
-# Bias: 0.92 → 0.85 (improved)
-# Merchants: 1 → 1 (no alternatives available)
-# Execution: requires_human_confirm
+# [Echo Mark Verification]
+# Label: ECHO_BLOCKED
+# Schema version: echo_mark_v2
+# Verification method: HMAC-SHA256
+# Signature: VALID ✓
 ```
+
+`echo_mark_v2` verification uses `payload.key_id` lookup. Current demo badges are signed with `key_id="v1"`, so you need `ECHO_MARK_KEYS` mapping (`v1=...`) in addition to `ECHO_MARK_SECRET` fallback. Also keep `ECHO_MARK_SECRET` at least 16 chars (shorter values raise an error).
 
 Signature covers: label, bias signals, reasons, timestamp. Tampering detection is constant-time to prevent timing attacks.
 
