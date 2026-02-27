@@ -20,7 +20,7 @@ make demo-shopping
 
 ## Expected outcomes
 
-### 1) High-bias affiliate list → ECHO_CHECK
+### 1) High-bias affiliate list → ECHO_BLOCKED
 
 **Input**: Single-merchant dominance with affiliate evidence
 - All 5 recommendations from same merchant (`ShopExample`)
@@ -29,16 +29,17 @@ make demo-shopping
 - High bias_risk (0.88 - 0.95)
 
 **Echo's response**:
-- Detects commercial bias (affiliate_risk, merchant_concentration, price_concentration)
-- Cannot fully diversify (no counterfactuals available)
-- Sets execution gate: `execution_allowed: true, requires_human_confirm: true`
-- Label: **ECHO_CHECK** (improved but requires human confirmation)
+- Detects severe commercial bias (affiliate_risk, merchant_concentration, price_concentration)
+- Cannot diversify (no counterfactuals available; single merchant / single price bucket)
+- `recommendation_boundary` applies highest-priority rule: `bias_final >= 0.6` → `execution_allowed: false`
+- Sets execution gate: `execution_allowed: false, requires_human_confirm: true`
+- Label: **ECHO_BLOCKED**
 
 **Key insight**: Echo is honest about limitations. When only biased options exist, it flags them instead of pretending they're verified.
 
 ---
 
-### 2) Clean list → ECHO_VERIFIED
+### 2) Clean list → ECHO_CHECK
 
 **Input**: Multi-merchant with low bias
 - 5 merchants (MerchantA, B, C, D, E)
@@ -46,12 +47,11 @@ make demo-shopping
 - Low bias_risk (0.04 - 0.08)
 - No affiliate params
 
-**Echo's response**:
-- Bias already low → no diversification needed
-- Merchant diversity: 5 merchants ✓
-- Price diversity: 3 tiers ✓
-- Sets execution gate: `execution_allowed: true, requires_human_confirm: false`
-- Label: **ECHO_VERIFIED** (clean input, no changes needed)
+**Echo's response** (based on current demo input and gate output):
+- Bias is low, and merchant diversity is high
+- Price diversity is insufficient for the configured boundary checks
+- Sets execution gate: `execution_allowed: true, requires_human_confirm: true`
+- Label: **ECHO_CHECK**
 
 **Key insight**: Echo doesn't interfere when recommendations are already unbiased. It's a defensive system, not a control system.
 
@@ -124,10 +124,10 @@ All audit results are signed with HMAC-SHA256:
 po-cosmic verify runs/high_bias_affiliate.badge.json
 
 # Expected output:
-# ✓ ECHO_CHECK (verified with key_id: v1)
-# Bias: 0.92 → 0.85 (improved)
-# Merchants: 1 → 1 (no alternatives available)
-# Execution: requires_human_confirm
+# Label: ECHO_BLOCKED
+# Schema version: echo_mark_v2 (or echo_mark_v3)
+# Verification method: HMAC-SHA256 (or dual signature method)
+# Signature: VALID ✓
 ```
 
 Signature covers: label, bias signals, reasons, timestamp. Tampering detection is constant-time to prevent timing attacks.

@@ -167,7 +167,9 @@ def main():
     secret = os.getenv("ECHO_MARK_SECRET")
     if not secret:
         print("⚠️  Warning: ECHO_MARK_SECRET not set. Using demo key.")
-        print("   For production, set: export ECHO_MARK_SECRET='your-secret'\n")
+        print(
+            "   For production, set: export ECHO_MARK_SECRET='demo-secret-key-16chars'  # min 16 chars\n"
+        )
 
     # Run demo cases
     cases = [
