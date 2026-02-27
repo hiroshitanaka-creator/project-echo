@@ -1,7 +1,7 @@
 # Project Echo - Threat Model & Invariants
 
-**Version**: 1.0
-**Last Updated**: 2026-01-12
+**Version**: 1.1
+**Last Updated**: 2026-02-24
 
 ## Purpose
 
@@ -9,10 +9,10 @@ This document defines the **invariants** (unchanging design constraints) that ke
 
 ## Core Philosophy
 
-Echo is **not** a recommendation system. It is a **bias detection and diversity enforcement system** that prevents AI recommendations from monopolizing user choices through commercial bias.
+Echo is **not** a recommendation system. It is a **bias detection and diversity enforcement system** that prevents AI outputs from monopolizing user choices through commercial bias.
 
 - **What Echo does**: Audit bias → Enforce diversity → Present comparables → Let humans decide
-- **What Echo never does**: Recommend "best" options, hide evidence, accept monetization signals
+- **What Echo never does**: Output single-option endorsements, hide evidence, accept monetization signals
 
 ---
 
@@ -20,9 +20,9 @@ Echo is **not** a recommendation system. It is a **bias detection and diversity 
 
 These constraints **MUST** be maintained across all features and updates. Violations are considered critical bugs.
 
-### 1. AI Never Recommends
+### 1. AI Never Outputs Single-Option Endorsement
 
-**Statement**: Echo never outputs a single "recommended" option. It always presents a diverse set of comparable options.
+**Statement**: Echo never outputs a single endorsed option. It always presents a diverse set of comparable options.
 
 **Technical enforcement**:
 - `responsibility_boundary.ai_recommends` must **always** be `false`
@@ -231,7 +231,7 @@ def test_tamper_detection():
 Add `tests/test_invariants.py` with property-based tests:
 
 ```python
-# Test Invariant 1: Never recommend
+# Test Invariant 1: Never output single-option endorsement
 @pytest.mark.parametrize("scenario", all_audit_scenarios)
 def test_invariant_never_recommend(scenario):
     result = run_audit(scenario)
@@ -334,6 +334,21 @@ Long-term: Public audit of:
 - Bias detection accuracy (precision/recall)
 - Diversity enforcement effectiveness
 - Threshold calibration against real-world data
+
+---
+
+
+## P1 Transition Checkpoint Boundary (v0.4.0 start)
+
+At P1 transition, documentation updates must keep the same invariant contract:
+
+- **Candidate set**: `start P1 / defer P1 / prioritize remediation`
+- **Evidence**: aligned statements across `PROGRESS.md`, `README.md`, `AGENT.md`, and this threat model
+- **Responsibility boundary**:
+  - System responsibility: present candidate set, evidence, and boundary text
+  - Human/organization responsibility: approve start timing, accept risk, and sign off on operational adoption
+
+If invariant drift is detected, remediation takes priority over feature start.
 
 ---
 
