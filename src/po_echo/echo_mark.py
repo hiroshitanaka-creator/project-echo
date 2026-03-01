@@ -1,13 +1,12 @@
-"""
-Echo Mark - Signed badge for recommendation audits
+"""Echo Mark v3 signing and verification utilities.
 
-HMAC-SHA256 and Ed25519 based signing system for audit results.
-Provides tamper-evident badges: ECHO_VERIFIED, ECHO_CHECK, ECHO_BLOCKED
+This module provides canonical payload construction, dual-signature generation
+(HMAC + Ed25519), replay protection, and key-rotation-aware verification.
 
-Schema versions:
-- v1: Single secret (ECHO_MARK_SECRET)
-- v2: Multi-key support with key_id (ECHO_MARK_KEYS, ECHO_MARK_ACTIVE_KEY_ID)
-- v3: Ed25519 + HMAC dual signature (Phase 2 migration)
+Design constraints:
+- Preserve existing public APIs used by CLI/tests.
+- Prefer Ed25519 as primary verification while retaining HMAC fallback.
+- Avoid crashes in verification paths; return structured INVALID/VERIFIED results.
 """
 
 from __future__ import annotations
@@ -17,9 +16,11 @@ import hashlib
 import hmac
 import json
 import os
-import warnings
+import secrets
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, TypedDict, cast
+
+UTC = getattr(dt, "UTC", dt.timezone.utc)
 
 try:
     from nacl.encoding import HexEncoder
@@ -27,34 +28,51 @@ try:
     from nacl.signing import SigningKey, VerifyKey
 
     NACL_AVAILABLE = True
-except ImportError:
+except ImportError:  # pragma: no cover - depends on environment
     NACL_AVAILABLE = False
 
 
+class VerificationChecks(TypedDict):
+    """Common verification check shape returned by verification APIs."""
+
+    hash_integrity: bool
+    signature_valid: bool
+    timestamp_valid: bool
+    replay_safe: bool
+
+
 def canonical_json(obj: dict[str, Any]) -> str:
-    """
-    Deterministic JSON (canonical-ish):
-    - sorted keys
-    - no whitespace
-    - ensure_ascii=False
+    """Return deterministic JSON text.
+
+    Args:
+        obj: Source object.
+
+    Returns:
+        Canonical JSON string with sorted keys and no insignificant whitespace.
     """
     return json.dumps(obj, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
 def sha256_hex(s: str) -> str:
-    """SHA256 hash of string, return hex digest."""
+    """Return SHA-256 hex digest for UTF-8 input text."""
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
 
 def hmac_sha256_hex(secret: str, message_hex: str) -> str:
-    """
-    HMAC(secret, payload_hash_hex) -> signature hex
+    """Return HMAC-SHA256 hex digest.
+
+    Args:
+        secret: Shared secret.
+        message_hex: Payload hash string.
+
+    Returns:
+        HMAC signature as hex.
     """
     return hmac.new(secret.encode("utf-8"), message_hex.encode("utf-8"), hashlib.sha256).hexdigest()
 
 
 def label_from_boundary(boundary: dict[str, Any]) -> str:
-    """Determine Echo Mark label from responsibility boundary."""
+    """Derive Echo Mark label from responsibility boundary."""
     allowed = bool(boundary.get("execution_allowed", False))
     confirm = bool(boundary.get("requires_human_confirm", True))
     if not allowed:
@@ -65,12 +83,29 @@ def label_from_boundary(boundary: dict[str, Any]) -> str:
 
 
 def badge_text(label: str) -> str:
-    """Human-readable badge text for label."""
-    if label == "ECHO_VERIFIED":
-        return "ECHO VERIFIED — low bias"
-    if label == "ECHO_CHECK":
-        return "ECHO CHECK — human confirm"
-    return "ECHO BLOCKED — high risk/bias"
+    """Map internal label to user-facing display string."""
+    mapping = {
+        "ECHO_VERIFIED": "ECHO VERIFIED — low bias",
+        "ECHO_CHECK": "ECHO CHECK — human confirm",
+        "ECHO_BLOCKED": "ECHO BLOCKED — high risk/bias",
+    }
+    return mapping.get(label, mapping["ECHO_BLOCKED"])
+
+
+def _utc_now() -> dt.datetime:
+    return dt.datetime.now(UTC)
+
+
+def _now_iso_seconds() -> str:
+    return _utc_now().isoformat(timespec="seconds")
+
+
+def _extract_semantic_evidence(audit: dict[str, Any]) -> dict[str, Any] | None:
+    """Extract semantic evidence map while preserving existing integration."""
+    semantic_evidence = audit.get("semantic_evidence")
+    if isinstance(semantic_evidence, dict):
+        return semantic_evidence
+    return None
 
 
 def build_payload(
@@ -78,44 +113,37 @@ def build_payload(
     run_id: str | None = None,
     key_id: str | None = None,
     audience: str | None = None,
+    nonce: str | None = None,
+    issued_at: str | None = None,
 ) -> dict[str, Any]:
-    """
-    Build minimal payload for signing (v2).
-
-    Extracts essential signals from audit result for tamper-evident signing.
+    """Build Echo Mark v3 payload.
 
     Args:
-        audit: Audit result with responsibility_boundary
-        run_id: Optional run identifier
-        key_id: Key ID for signature (v2 required)
-        audience: Optional audience restriction (e.g., "po-cosmic", "report")
+        audit: Audit object that includes responsibility boundary and signals.
+        run_id: Optional run identifier override.
+        key_id: Optional key id override.
+        audience: Optional audience lock.
+        nonce: Optional nonce override for deterministic tests.
+        issued_at: Optional issued-at timestamp override.
 
     Returns:
-        Payload dict with schema_version v2
+        Canonical payload dictionary with ``schema_version='echo_mark_v3'``.
     """
-    boundary = audit.get("responsibility_boundary") or {}
-    # Project Echo 不変原則：責任境界統一（schema_version必須）
-    boundary_schema_version = str(boundary.get("schema_version") or "1.0")
-    label = label_from_boundary(boundary)
+    boundary = cast(dict[str, Any], audit.get("responsibility_boundary") or {})
+    signals = cast(dict[str, Any], boundary.get("signals") or {})
 
-    # pull minimal signals (robust to missing keys)
-    signals = boundary.get("signals") or {}
-
-    issued_at = dt.datetime.now(dt.UTC)
-
-    payload = {
-        "schema_version": "echo_mark_v2",
-        "key_id": key_id or "default",
-        "issued_at": issued_at.isoformat(timespec="seconds"),
-        "label": label,
+    payload: dict[str, Any] = {
+        "schema_version": "echo_mark_v3",
+        "key_id": key_id or get_active_key_id(),
+        "issued_at": issued_at or _now_iso_seconds(),
+        "nonce": nonce or secrets.token_hex(16),
+        "label": label_from_boundary(boundary),
         "policy": {
             "ai_recommends": False,
-            "liability_mode": (boundary.get("liability_mode") or "audit-only"),
-            # Project Echo 不変原則：責任境界統一（schema_version必須）
-            "schema_version": boundary_schema_version,
+            "liability_mode": str(boundary.get("liability_mode") or "audit-only"),
+            "schema_version": str(boundary.get("schema_version") or "1.0"),
         },
         "signals": {
-            # boundary signals (preferred)
             "bias_original": float(
                 signals.get(
                     "bias_original",
@@ -136,24 +164,64 @@ def build_payload(
         "run_id": run_id or audit.get("run_id") or audit.get("id") or None,
     }
 
-    # Optional: audience restriction
     if audience:
         payload["audience"] = audience
+
+    semantic_evidence = _extract_semantic_evidence(audit)
+    if semantic_evidence is not None:
+        payload["semantic_evidence"] = semantic_evidence
 
     return payload
 
 
-def sign_mark(payload: dict[str, Any], secret: str) -> tuple[str, str]:
-    """
-    Sign payload with HMAC-SHA256.
+def parse_key_store(keys_str: str) -> dict[str, str]:
+    """Parse ``key_id=secret;key_id2=secret2`` format."""
+    store: dict[str, str] = {}
+    for chunk in keys_str.split(";"):
+        if "=" not in chunk:
+            continue
+        key_id, value = chunk.split("=", 1)
+        key_id = key_id.strip()
+        value = value.strip()
+        if key_id and value:
+            store[key_id] = value
+    return store
 
-    Returns:
-        (payload_hash_hex, signature_hex)
-    """
-    canon = canonical_json(payload)
-    payload_hash = sha256_hex(canon)
-    sig = hmac_sha256_hex(secret, payload_hash)
-    return payload_hash, sig
+
+def get_key_store() -> dict[str, str]:
+    """Load HMAC key store from environment with v1 fallback."""
+    store = parse_key_store(os.getenv("ECHO_MARK_KEYS", ""))
+    legacy = os.getenv("ECHO_MARK_SECRET", "")
+    if legacy:
+        store.setdefault("default", legacy)
+    return store
+
+
+def _get_ed25519_private_store() -> dict[str, str]:
+    store = parse_key_store(os.getenv("ECHO_MARK_ED25519_PRIVATE_KEYS", ""))
+    single = os.getenv("ECHO_MARK_PRIVATE_KEY", "")
+    if single:
+        store.setdefault("default", single)
+    return store
+
+
+def _get_ed25519_public_store() -> dict[str, str]:
+    store = parse_key_store(os.getenv("ECHO_MARK_ED25519_PUBLIC_KEYS", ""))
+    single = os.getenv("ECHO_MARK_PUBLIC_KEY", "")
+    if single:
+        store.setdefault("default", single)
+    return store
+
+
+def get_active_key_id() -> str:
+    """Return active key id for signing."""
+    return os.getenv("ECHO_MARK_ACTIVE_KEY_ID", "default")
+
+
+def sign_mark(payload: dict[str, Any], secret: str) -> tuple[str, str]:
+    """Sign payload using HMAC-SHA256 and return (payload_hash, signature)."""
+    payload_hash = sha256_hex(canonical_json(payload))
+    return payload_hash, hmac_sha256_hex(secret, payload_hash)
 
 
 def verify_mark(
@@ -163,393 +231,87 @@ def verify_mark(
     secret: str | None = None,
     key_store: dict[str, str] | None = None,
 ) -> bool:
-    """
-    Verify Echo Mark signature (supports v1 and v2).
-
-    Args:
-        payload: Badge payload
-        payload_hash: Expected hash of canonical payload
-        signature: HMAC signature
-        secret: Secret for v1 (deprecated, for backward compat)
-        key_store: Key store for v2 (key_id -> secret mapping)
-
-    Returns:
-        True if signature is valid, False otherwise
-    """
-    # Check payload hash first
-    canon = canonical_json(payload)
-    computed_hash = sha256_hex(canon)
-    if computed_hash != payload_hash:
+    """Verify HMAC signature against payload and key_id mapping."""
+    computed_hash = sha256_hex(canonical_json(payload))
+    if not hmac.compare_digest(computed_hash, payload_hash):
         return False
 
-    # Determine schema version
-    schema_version = payload.get("schema_version", "echo_mark_v1")
+    resolved_secret = secret
+    if not resolved_secret:
+        store = key_store or get_key_store()
+        resolved_secret = store.get(str(payload.get("key_id", "default")))
 
-    if schema_version == "echo_mark_v2":
-        # v2: Use key_id to lookup secret
-        key_id = payload.get("key_id", "default")
-        if not key_store:
-            key_store = get_key_store()
-
-        if key_id not in key_store:
-            warnings.warn(
-                f"Echo Mark v2: key_id '{key_id}' not found in key store",
-                UserWarning,
-                stacklevel=2,
-            )
-            return False
-
-        secret_to_use = key_store[key_id]
-
-    elif schema_version == "echo_mark_v1":
-        # v1: Use provided secret or fall back to env
-        if not secret:
-            key_store = key_store or get_key_store()
-            secret = key_store.get("default")
-
-        if not secret:
-            warnings.warn(
-                "Echo Mark v1: No secret provided and ECHO_MARK_SECRET not set",
-                UserWarning,
-                stacklevel=2,
-            )
-            return False
-
-        warnings.warn(
-            "Echo Mark v1 is deprecated, please migrate to v2 with key_id",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        secret_to_use = secret
-
-    else:
-        warnings.warn(
-            f"Unknown schema_version: {schema_version}",
-            UserWarning,
-            stacklevel=2,
-        )
+    if not resolved_secret:
         return False
 
-    # Verify signature
-    computed_sig = hmac_sha256_hex(secret_to_use, payload_hash)
-    return hmac.compare_digest(computed_sig, signature)
+    expected = hmac_sha256_hex(resolved_secret, payload_hash)
+    return hmac.compare_digest(expected, signature)
 
 
-def make_echo_mark(
-    audit: dict[str, Any],
-    secret: str | None = None,
-    run_id: str | None = None,
-    key_id: str | None = None,
-    audience: str | None = None,
-) -> dict[str, Any]:
-    """
-    Generate Echo Mark badge from audit result (v2 by default).
-
-    Args:
-        audit: Audit result with responsibility_boundary
-        secret: HMAC secret key (v1 compat, or single key for v2)
-        run_id: Optional run identifier
-        key_id: Key ID for v2 (if None, uses ECHO_MARK_ACTIVE_KEY_ID or "default")
-        audience: Optional audience restriction
-
-    Returns:
-        Complete Echo Mark with signature (v2 schema)
-    """
-    # Determine key_id and secret
-    if key_id is None:
-        key_id = get_active_key_id()
-
-    if secret is None:
-        # Get from key store
-        key_store = get_key_store()
-        if key_id not in key_store:
-            raise RuntimeError(
-                f"key_id '{key_id}' not found in key store. "
-                "Set ECHO_MARK_KEYS or ECHO_MARK_SECRET environment variable."
-            )
-        secret = key_store[key_id]
-
-    # Build v2 payload
-    payload = build_payload(audit, run_id=run_id, key_id=key_id, audience=audience)
-    payload_hash, sig = sign_mark(payload, secret)
-
-    label = payload["label"]
-    out = {
-        "schema_version": "echo_mark_v2",
-        "label": label,
-        "badge_text": badge_text(label),
-        "payload": payload,
-        "payload_hash": payload_hash,
-        "signature": sig,
-        "short": {
-            "bias_original": payload["signals"]["bias_original"],
-            "bias_final": payload["signals"]["bias_final"],
-            "bias_improvement": payload["signals"]["bias_improvement"],
-            "reasons": payload["reasons"],
-            "key_id": key_id,
-        },
-    }
-    return out
-
-
-def parse_key_store(keys_str: str) -> dict[str, str]:
-    """
-    Parse ECHO_MARK_KEYS into key_id -> secret mapping.
-
-    Format: "k2026_01=secret1;k2026_02=secret2"
-
-    Returns:
-        Dict mapping key_id to secret
-    """
-    store: dict[str, str] = {}
-    if not keys_str:
-        return store
-
-    for part in keys_str.split(";"):
-        part = part.strip()
-        if not part or "=" not in part:
-            continue
-        key_id, secret = part.split("=", 1)
-        key_id = key_id.strip()
-        secret = secret.strip()
-        if key_id and secret:
-            store[key_id] = secret
-    return store
-
-
-def get_key_store() -> dict[str, str]:
-    """
-    Get key store from environment (v2).
-
-    Priority:
-    1. ECHO_MARK_KEYS (v2 multi-key)
-    2. ECHO_MARK_SECRET (v1 fallback, maps to "default")
-
-    Returns:
-        Dict mapping key_id to secret
-    """
-    store = {}
-
-    # v2: multi-key
-    keys_str = os.getenv("ECHO_MARK_KEYS", "")
-    if keys_str:
-        store = parse_key_store(keys_str)
-
-    # v1 fallback
-    v1_secret = os.getenv("ECHO_MARK_SECRET", "")
-    if v1_secret:
-        store["default"] = v1_secret
-
-    return store
-
-
-def get_active_key_id() -> str:
-    """
-    Get active key_id for signing (v2).
-
-    Priority:
-    1. ECHO_MARK_ACTIVE_KEY_ID
-    2. "default" (v1 fallback)
-
-    Returns:
-        key_id to use for signing
-    """
-    return os.getenv("ECHO_MARK_ACTIVE_KEY_ID", "default")
-
-
-def get_secret_from_env() -> str:
-    """
-    Get ECHO_MARK_SECRET from environment (v1 compatibility).
+def _ed25519_sign(payload_hash: str, private_key_hex: str) -> str:
+    """Sign payload hash with Ed25519.
 
     Raises:
-        RuntimeError: If secret not set or too short
-    """
-    secret = os.getenv("ECHO_MARK_SECRET", "")
-    if not secret:
-        raise RuntimeError("ECHO_MARK_SECRET is not set")
-    if len(secret) < 16:
-        # 最小限の安全策（短すぎる秘密鍵は事故る）
-        raise RuntimeError("ECHO_MARK_SECRET is too short (min 16 chars recommended)")
-    return secret
-
-
-# ================================================================================
-# Ed25519 Signature Functions (Phase 2: Dual Signature)
-# ================================================================================
-
-
-def load_ed25519_keypair(key_id: str, keys_dir: Path | str = ".keys") -> dict[str, str]:
-    """
-    Load Ed25519 keypair from files.
-
-    Args:
-        key_id: Key identifier (e.g., "v1", "v2")
-        keys_dir: Directory containing keypair files
-
-    Returns:
-        {
-            "key_id": str,
-            "private_key": str (hex-encoded),
-            "public_key": str (hex-encoded)
-        }
-
-    Raises:
-        FileNotFoundError: If keypair files not found
-        RuntimeError: If PyNaCl not installed
+        RuntimeError: If PyNaCl is unavailable.
+        ValueError: If key material is malformed.
     """
     if not NACL_AVAILABLE:
-        raise RuntimeError("PyNaCl not installed. Run: pip install pynacl")
-
-    keys_path = Path(keys_dir)
-    private_file = keys_path / f"{key_id}.private.key"
-    public_file = keys_path / f"{key_id}.public.key"
-
-    if not private_file.exists():
-        raise FileNotFoundError(f"Private key not found: {private_file}")
-    if not public_file.exists():
-        raise FileNotFoundError(f"Public key not found: {public_file}")
-
-    private_key = private_file.read_text().strip()
-    public_key = public_file.read_text().strip()
-
-    return {
-        "key_id": key_id,
-        "private_key": private_key,
-        "public_key": public_key,
-    }
+        raise RuntimeError("PyNaCl not installed")
+    signer = SigningKey(private_key_hex.encode(), encoder=HexEncoder)
+    return signer.sign(payload_hash.encode("utf-8")).signature.hex()
 
 
-def load_ed25519_private_key_from_env() -> str | None:
-    """
-    Load Ed25519 private key from environment variable.
-
-    Returns:
-        Private key (hex-encoded) or None if not set
-    """
-    return os.getenv("ECHO_MARK_PRIVATE_KEY")
-
-
-def load_ed25519_public_key_from_env() -> str | None:
-    """
-    Load Ed25519 public key from environment variable.
-
-    Returns:
-        Public key (hex-encoded) or None if not set
-    """
-    return os.getenv("ECHO_MARK_PUBLIC_KEY")
-
-
-def sign_ed25519(payload_hash: str, private_key_hex: str) -> str:
-    """
-    Sign payload hash with Ed25519 private key.
-
-    Args:
-        payload_hash: SHA-256 hash (hex-encoded)
-        private_key_hex: Ed25519 private key (hex-encoded 32 bytes)
-
-    Returns:
-        Signature (hex-encoded 64 bytes)
-
-    Raises:
-        RuntimeError: If PyNaCl not installed
-    """
+def _ed25519_verify(payload_hash: str, signature_hex: str, public_key_hex: str) -> bool:
+    """Verify Ed25519 signature and return boolean validity."""
     if not NACL_AVAILABLE:
-        raise RuntimeError("PyNaCl not installed. Run: pip install pynacl")
-
-    private_key = SigningKey(private_key_hex.encode(), encoder=HexEncoder)
-    signed = private_key.sign(payload_hash.encode("utf-8"))
-    return str(signed.signature.hex())
-
-
-def verify_ed25519(payload_hash: str, signature_hex: str, public_key_hex: str) -> bool:
-    """
-    Verify Ed25519 signature.
-
-    Args:
-        payload_hash: SHA-256 hash (hex-encoded)
-        signature_hex: Ed25519 signature (hex-encoded 64 bytes)
-        public_key_hex: Ed25519 public key (hex-encoded 32 bytes)
-
-    Returns:
-        True if signature is valid, False otherwise
-
-    Raises:
-        RuntimeError: If PyNaCl not installed
-    """
-    if not NACL_AVAILABLE:
-        raise RuntimeError("PyNaCl not installed. Run: pip install pynacl")
-
+        return False
     try:
-        public_key = VerifyKey(public_key_hex.encode(), encoder=HexEncoder)
-        signature = bytes.fromhex(signature_hex)
-        public_key.verify(payload_hash.encode("utf-8"), signature)
+        verifier = VerifyKey(public_key_hex.encode(), encoder=HexEncoder)
+        verifier.verify(payload_hash.encode("utf-8"), bytes.fromhex(signature_hex))
         return True
-    except (BadSignatureError, ValueError):
+    except (BadSignatureError, ValueError, TypeError):
         return False
 
 
-def make_echo_mark_ed25519(
-    audit: dict[str, Any],
-    private_key_hex: str,
-    key_id: str,
-    run_id: str | None = None,
-    audience: str | None = None,
-) -> dict[str, Any]:
-    """
-    Generate Echo Mark badge with Ed25519 signature (Phase 2).
-
-    Args:
-        audit: Audit result with responsibility_boundary
-        private_key_hex: Ed25519 private key (hex-encoded)
-        key_id: Key identifier (e.g., "v1")
-        run_id: Optional run identifier
-        audience: Optional audience restriction
-
-    Returns:
-        Echo Mark badge with Ed25519 signature (schema_version: "echo_mark_v3")
-
-    Raises:
-        RuntimeError: If PyNaCl not installed
-    """
+def _derive_public_key(private_key_hex: str) -> str | None:
+    """Derive public key from private key hex, returning None on malformed key."""
     if not NACL_AVAILABLE:
-        raise RuntimeError("PyNaCl not installed. Run: pip install pynacl")
+        return None
+    try:
+        signing_key = SigningKey(private_key_hex.encode(), encoder=HexEncoder)
+        return signing_key.verify_key.encode(HexEncoder).decode()
+    except Exception:
+        return None
 
-    # Load private key and derive public key
-    private_key = SigningKey(private_key_hex.encode(), encoder=HexEncoder)
-    public_key = private_key.verify_key
 
-    # Build payload (same as v2)
-    payload = build_payload(audit, run_id=run_id, key_id=key_id, audience=audience)
+def _resolve_ed_keys(key_id: str, private_key_override: str | None = None) -> tuple[str | None, str | None]:
+    """Resolve Ed25519 private/public key pair for signing by key id."""
+    if not NACL_AVAILABLE:
+        return None, None
 
-    # Compute payload hash
-    canon = canonical_json(payload)
-    payload_hash = sha256_hex(canon)
+    candidate_private = private_key_override
+    if not candidate_private:
+        private_store = _get_ed25519_private_store()
+        candidate_private = private_store.get(key_id) or private_store.get("default")
 
-    # Sign with Ed25519
-    signature = sign_ed25519(payload_hash, private_key_hex)
+    if not candidate_private:
+        return None, None
 
-    # Build badge
-    label = payload["label"]
-    badge = {
-        "schema_version": "echo_mark_v3",
-        "verification_method": "Ed25519",
-        "label": label,
-        "badge_text": badge_text(label),
-        "payload": payload,
-        "payload_hash": payload_hash,
-        "signature": signature,
-        "public_key": public_key.encode(HexEncoder).decode(),
-        "short": {
-            "bias_original": payload["signals"]["bias_original"],
-            "bias_final": payload["signals"]["bias_final"],
-            "bias_improvement": payload["signals"]["bias_improvement"],
-            "reasons": payload["reasons"],
-            "key_id": key_id,
-            "verification_method": "Ed25519",
-        },
+    return candidate_private, _derive_public_key(candidate_private)
+
+
+def _build_short_view(payload: dict[str, Any], key_id: str, method: str | None = None) -> dict[str, Any]:
+    """Build compact display object used across badge variants."""
+    short = {
+        "bias_original": payload["signals"]["bias_original"],
+        "bias_final": payload["signals"]["bias_final"],
+        "bias_improvement": payload["signals"]["bias_improvement"],
+        "reasons": payload["reasons"],
+        "key_id": key_id,
     }
-
-    return badge
+    if method:
+        short["verification_method"] = method
+    return short
 
 
 def make_echo_mark_dual(
@@ -560,183 +322,405 @@ def make_echo_mark_dual(
     run_id: str | None = None,
     audience: str | None = None,
 ) -> dict[str, Any]:
-    """
-    Generate Echo Mark badge with DUAL signatures (HMAC + Ed25519).
-
-    This is Phase 2 of the migration strategy. The badge includes both:
-    - HMAC signature (backward compatibility)
-    - Ed25519 signature (public verification)
-
-    Args:
-        audit: Audit result with responsibility_boundary
-        hmac_secret: HMAC secret key
-        ed25519_private_key: Ed25519 private key (hex-encoded)
-        key_id: Key identifier (e.g., "v1")
-        run_id: Optional run identifier
-        audience: Optional audience restriction
-
-    Returns:
-        Echo Mark badge with dual signatures (schema_version: "echo_mark_v3")
+    """Create explicit dual-signature Echo Mark badge.
 
     Raises:
-        RuntimeError: If PyNaCl not installed
+        RuntimeError: If Ed25519 support is unavailable.
     """
     if not NACL_AVAILABLE:
         raise RuntimeError("PyNaCl not installed. Run: pip install pynacl")
 
-    # Load private key and derive public key
-    private_key = SigningKey(ed25519_private_key.encode(), encoder=HexEncoder)
-    public_key = private_key.verify_key
-
-    # Build payload
     payload = build_payload(audit, run_id=run_id, key_id=key_id, audience=audience)
+    payload_hash, signature_hmac = sign_mark(payload, hmac_secret)
+    signature_ed25519 = _ed25519_sign(payload_hash, ed25519_private_key)
+    public_key = _derive_public_key(ed25519_private_key)
 
-    # Compute payload hash
-    canon = canonical_json(payload)
-    payload_hash = sha256_hex(canon)
-
-    # Generate both signatures
-    hmac_sig = hmac_sha256_hex(hmac_secret, payload_hash)
-    ed25519_sig = sign_ed25519(payload_hash, ed25519_private_key)
-
-    # Build badge
-    label = payload["label"]
-    badge = {
+    label = str(payload["label"])
+    return {
         "schema_version": "echo_mark_v3",
-        "verification_method": "Ed25519+HMAC",  # Dual mode
+        "verification_method": "Ed25519+HMAC",
         "label": label,
         "badge_text": badge_text(label),
         "payload": payload,
         "payload_hash": payload_hash,
-        "signature": ed25519_sig,  # Primary (Ed25519)
-        "signature_hmac": hmac_sig,  # Fallback (HMAC)
-        "public_key": public_key.encode(HexEncoder).decode(),
-        "short": {
-            "bias_original": payload["signals"]["bias_original"],
-            "bias_final": payload["signals"]["bias_final"],
-            "bias_improvement": payload["signals"]["bias_improvement"],
-            "reasons": payload["reasons"],
-            "key_id": key_id,
-            "verification_method": "Ed25519+HMAC",
-        },
+        "signature": signature_ed25519,
+        "signature_hmac": signature_hmac,
+        "public_key": public_key,
+        "short": _build_short_view(payload, key_id=key_id, method="Ed25519+HMAC"),
     }
 
+
+def make_echo_mark(
+    audit: dict[str, Any],
+    secret: str | None = None,
+    run_id: str | None = None,
+    key_id: str | None = None,
+    audience: str | None = None,
+) -> dict[str, Any]:
+    """Create Echo Mark v3 badge with graceful key fallback behavior.
+
+    Ed25519 is preferred when private key material is available. HMAC remains
+    for compatibility and migration support.
+    """
+    active_key_id = key_id or get_active_key_id()
+    payload = build_payload(audit, run_id=run_id, key_id=active_key_id, audience=audience)
+    payload_hash = sha256_hex(canonical_json(payload))
+
+    key_store = get_key_store()
+    hmac_secret = secret or key_store.get(active_key_id) or key_store.get("default")
+    ed_private_key, ed_public_key = _resolve_ed_keys(active_key_id)
+
+    badge: dict[str, Any] = {
+        "schema_version": "echo_mark_v3",
+        "label": payload["label"],
+        "badge_text": badge_text(str(payload["label"])),
+        "payload": payload,
+        "payload_hash": payload_hash,
+        "short": _build_short_view(payload, key_id=active_key_id),
+    }
+
+    if hmac_secret:
+        badge["signature_hmac"] = hmac_sha256_hex(hmac_secret, payload_hash)
+
+    if ed_private_key and ed_public_key:
+        badge["signature"] = _ed25519_sign(payload_hash, ed_private_key)
+        badge["public_key"] = ed_public_key
+        badge["verification_method"] = "Ed25519+HMAC" if hmac_secret else "Ed25519"
+        badge["short"]["verification_method"] = badge["verification_method"]
+        return badge
+
+    badge["verification_method"] = "HMAC" if hmac_secret else "UNSIGNED"
+    if not hmac_secret:
+        badge["error"] = "missing_signing_keys"
     return badge
 
 
-def verify_echo_mark_ed25519(badge: dict[str, Any]) -> dict[str, Any]:
-    """
-    Verify Echo Mark badge with Ed25519 signature.
+def make_echo_mark_ed25519(
+    audit: dict[str, Any],
+    private_key_hex: str,
+    key_id: str,
+    run_id: str | None = None,
+    audience: str | None = None,
+) -> dict[str, Any]:
+    """Compatibility helper that emits Ed25519-only badge data.
 
-    Anyone can call this function - no secret needed!
-
-    Args:
-        badge: Echo Mark badge with Ed25519 signature
-
-    Returns:
-        {
-            "status": "VERIFIED" | "UNVERIFIED" | "INVALID",
-            "reason": str,
-            "checks": {
-                "hash_integrity": bool,
-                "signature_valid": bool,
-                "schema_valid": bool,
-                "timestamp_valid": bool,
-            }
-        }
+    Raises:
+        RuntimeError: If Ed25519 support is unavailable.
     """
     if not NACL_AVAILABLE:
-        return {
-            "status": "UNVERIFIED",
-            "reason": "pynacl_not_installed",
-            "checks": {
-                "hash_integrity": False,
-                "signature_valid": False,
-                "schema_valid": False,
-                "timestamp_valid": False,
-            },
-            "note": "PyNaCl not installed. Run: pip install pynacl",
-        }
+        raise RuntimeError("PyNaCl not installed. Run: pip install pynacl")
+
+    payload = build_payload(audit, run_id=run_id, key_id=key_id, audience=audience)
+    payload_hash = sha256_hex(canonical_json(payload))
+    signature = _ed25519_sign(payload_hash, private_key_hex)
+    public_key = _derive_public_key(private_key_hex)
+
+    return {
+        "schema_version": "echo_mark_v3",
+        "verification_method": "Ed25519",
+        "label": payload["label"],
+        "badge_text": badge_text(str(payload["label"])),
+        "payload": payload,
+        "payload_hash": payload_hash,
+        "signature": signature,
+        "public_key": public_key,
+        "short": _build_short_view(payload, key_id=key_id, method="Ed25519"),
+    }
+
+
+def validate_timestamp(
+    issued_at: str | None,
+    now: dt.datetime | None = None,
+    max_age_seconds: int = 300,
+) -> tuple[bool, str | None]:
+    """Validate replay timestamp window.
+
+    Args:
+        issued_at: ISO8601 issued-at timestamp.
+        now: Optional current time override.
+        max_age_seconds: Maximum allowed age.
+
+    Returns:
+        ``(is_valid, reason_or_none)``.
+    """
+    if not issued_at:
+        return False, "missing_timestamp"
 
     try:
-        # Extract fields
-        public_key_hex = badge.get("public_key")
-        payload = badge.get("payload")
-        payload_hash = badge.get("payload_hash")
-        signature_hex = badge.get("signature")
+        issued_dt = dt.datetime.fromisoformat(issued_at.replace("Z", "+00:00"))
+    except Exception as exc:
+        return False, f"invalid_timestamp: {exc}"
 
-        if not all([public_key_hex, payload, payload_hash, signature_hex]):
-            return {
-                "status": "INVALID",
-                "reason": "missing_required_fields",
-                "checks": {
-                    "hash_integrity": False,
-                    "signature_valid": False,
-                    "schema_valid": False,
-                    "timestamp_valid": False,
-                },
-            }
+    current = now or _utc_now()
+    delta_seconds = (current - issued_dt).total_seconds()
 
-        # Check 1: Hash integrity
-        canonical = canonical_json(cast(dict[str, Any], payload))
-        expected_hash = sha256_hex(canonical)
-        hash_ok = hmac.compare_digest(cast(str, payload_hash), expected_hash)
+    if delta_seconds < 0:
+        return False, "timestamp_in_future"
+    if delta_seconds > max_age_seconds:
+        return False, "timestamp_expired"
+    return True, None
 
-        if not hash_ok:
-            return {
-                "status": "INVALID",
-                "reason": "payload_tampered",
-                "checks": {
-                    "hash_integrity": False,
-                    "signature_valid": False,
-                    "schema_valid": True,
-                    "timestamp_valid": False,
-                },
-            }
 
-        # Check 2: Signature verification
-        signature_ok = verify_ed25519(cast(str, payload_hash), cast(str, signature_hex), cast(str, public_key_hex))
+def _verification_checks(
+    hash_integrity: bool,
+    signature_valid: bool,
+    timestamp_valid: bool,
+    replay_safe: bool,
+) -> VerificationChecks:
+    """Create normalized verification checks payload."""
+    return {
+        "hash_integrity": hash_integrity,
+        "signature_valid": signature_valid,
+        "timestamp_valid": timestamp_valid,
+        "replay_safe": replay_safe,
+    }
 
-        if not signature_ok:
-            return {
-                "status": "INVALID",
-                "reason": "signature_invalid",
-                "checks": {
-                    "hash_integrity": True,
-                    "signature_valid": False,
-                    "schema_valid": True,
-                    "timestamp_valid": False,
-                },
-            }
 
-        # Check 3: Timestamp validation (replay attack mitigation)
-        timestamp_ok, timestamp_reason = validate_timestamp(cast(dict[str, Any], payload).get("issued_at"))
+def _verification_result(
+    status: str,
+    reason: str,
+    checks: VerificationChecks,
+    method: str | None = None,
+    key_id: str | None = None,
+) -> dict[str, Any]:
+    """Create normalized verification result dictionary."""
+    result: dict[str, Any] = {
+        "status": status,
+        "reason": reason,
+        "verification_method": method,
+        "checks": checks,
+    }
+    if key_id is not None:
+        result["key_id"] = key_id
+    return result
 
-        # All checks passed!
-        return {
-            "status": "VERIFIED",
-            "reason": "signature_valid",
-            "checks": {
-                "hash_integrity": True,
-                "signature_valid": True,
-                "schema_valid": True,
-                "timestamp_valid": timestamp_ok,
-            },
-            "timestamp_warning": None if timestamp_ok else timestamp_reason,
-            "note": "Cryptographically verified with Ed25519 public key.",
-        }
 
-    except Exception as e:
-        return {
-            "status": "INVALID",
-            "reason": f"verification_error: {str(e)}",
-            "checks": {
-                "hash_integrity": False,
-                "signature_valid": False,
-                "schema_valid": False,
-                "timestamp_valid": False,
-            },
-        }
+def load_public_key_registry(registry_path: Path | str = ".keys/registry.json") -> dict[str, Any]:
+    """Load public key registry JSON from disk.
+
+    Raises:
+        FileNotFoundError: When registry file does not exist.
+        ValueError: When registry JSON shape is invalid.
+    """
+    registry_file = Path(registry_path)
+    if not registry_file.exists():
+        raise FileNotFoundError(f"Public key registry not found: {registry_file}")
+
+    data = json.loads(registry_file.read_text(encoding="utf-8"))
+    if not isinstance(data, dict) or not isinstance(data.get("keys"), list):
+        raise ValueError("Invalid public key registry format")
+    return cast(dict[str, Any], data)
+
+
+def _find_registry_key_entry(
+    key_id: str,
+    registry_path: Path | str = ".keys/registry.json",
+) -> dict[str, Any] | None:
+    """Find registry key entry by key_id with status-aware selection.
+
+    Priority order for same key_id:
+    1) active
+    2) inactive
+    3) revoked (last, because it is non-verifiable)
+    """
+    try:
+        registry = load_public_key_registry(registry_path)
+    except (FileNotFoundError, ValueError):
+        return None
+
+    entries = [entry for entry in registry.get("keys", []) if isinstance(entry, dict)]
+    matches = [entry for entry in entries if entry.get("key_id") == key_id]
+    if not matches:
+        return None
+
+    status_rank = {"active": 0, "inactive": 1, "revoked": 2}
+    matches.sort(key=lambda entry: status_rank.get(str(entry.get("status", "active")), 3))
+    return cast(dict[str, Any], matches[0])
+
+
+def get_public_key_from_registry(
+    key_id: str,
+    registry_path: Path | str = ".keys/registry.json",
+) -> str | None:
+    """Return registry public key for key_id if key is not revoked."""
+    entry = _find_registry_key_entry(key_id, registry_path=registry_path)
+    if not entry:
+        return None
+    if str(entry.get("status", "active")) == "revoked":
+        return None
+
+    public_key = entry.get("public_key")
+    if isinstance(public_key, str) and public_key:
+        return public_key
+    return None
+
+
+def _resolve_public_key_for_badge(
+    badge: dict[str, Any],
+    public_keys: dict[str, str] | None,
+    registry_path: Path | str = ".keys/registry.json",
+) -> tuple[str | None, str | None]:
+    """Resolve public key and status for key-id-aware verification."""
+    payload = cast(dict[str, Any], badge.get("payload") or {})
+    key_id = str(payload.get("key_id") or "default")
+
+    if public_keys and key_id in public_keys:
+        return public_keys[key_id], "active"
+
+    inline_public = badge.get("public_key")
+    if isinstance(inline_public, str) and inline_public:
+        return inline_public, "active"
+
+    env_store = _get_ed25519_public_store()
+    if key_id in env_store:
+        return env_store[key_id], "active"
+
+    entry = _find_registry_key_entry(key_id, registry_path=registry_path)
+    if not entry:
+        return None, None
+    status = str(entry.get("status", "active"))
+    public_key = entry.get("public_key")
+    if not isinstance(public_key, str) or not public_key:
+        return None, status
+    return public_key, status
+
+
+def _replay_guard(
+    payload: dict[str, Any],
+    nonce_cache: set[str] | None,
+    now: dt.datetime | None,
+    max_age_seconds: int,
+) -> tuple[bool, str | None, VerificationChecks]:
+    """Validate timestamp and nonce replay constraints."""
+    timestamp_ok, timestamp_reason = validate_timestamp(payload.get("issued_at"), now=now, max_age_seconds=max_age_seconds)
+    if not timestamp_ok:
+        return False, timestamp_reason, _verification_checks(True, False, False, False)
+
+    nonce = str(payload.get("nonce") or "")
+    if not nonce:
+        return False, "missing_nonce", _verification_checks(True, False, True, False)
+
+    if nonce_cache is not None:
+        if nonce in nonce_cache:
+            return False, "replay_detected", _verification_checks(True, False, True, False)
+        nonce_cache.add(nonce)
+
+    return True, None, _verification_checks(True, False, True, True)
+
+
+def _resolve_hmac_secret(
+    key_id: str,
+    hmac_secret: str | None,
+    key_store: dict[str, str] | None,
+) -> tuple[str | None, dict[str, str]]:
+    """Resolve HMAC secret using explicit value, key_store, and env fallback."""
+    store = key_store or get_key_store()
+    resolved = hmac_secret or store.get(key_id) or store.get("default")
+    return resolved, store
+
+
+def verify_echo_mark(
+    badge: dict[str, Any],
+    hmac_secret: str | None = None,
+    key_store: dict[str, str] | None = None,
+    public_keys: dict[str, str] | None = None,
+    nonce_cache: set[str] | None = None,
+    now: dt.datetime | None = None,
+    max_age_seconds: int = 300,
+) -> dict[str, Any]:
+    """Verify Echo Mark badge with dual-signature and replay protections.
+
+    Verification order:
+    1. Payload hash integrity.
+    2. Replay guards (timestamp + nonce).
+    3. Ed25519 verification (primary).
+    4. HMAC verification (fallback).
+
+    Returns:
+        Structured result with status/reason/checks.
+    """
+    try:
+        payload = cast(dict[str, Any], badge.get("payload") or {})
+        payload_hash = str(badge.get("payload_hash") or "")
+        if not payload or not payload_hash:
+            return _verification_result(
+                "INVALID",
+                "missing_payload",
+                _verification_checks(False, False, False, False),
+            )
+
+        key_id = str(payload.get("key_id") or "default")
+        expected_hash = sha256_hex(canonical_json(payload))
+        if not hmac.compare_digest(expected_hash, payload_hash):
+            return _verification_result(
+                "INVALID",
+                "payload_tampered",
+                _verification_checks(False, False, False, False),
+                key_id=key_id,
+            )
+
+        replay_ok, replay_reason, replay_checks = _replay_guard(
+            payload=payload,
+            nonce_cache=nonce_cache,
+            now=now,
+            max_age_seconds=max_age_seconds,
+        )
+        if not replay_ok and replay_reason:
+            return _verification_result(
+                "INVALID",
+                replay_reason,
+                replay_checks,
+                key_id=key_id,
+            )
+
+        signature = badge.get("signature")
+        if isinstance(signature, str) and signature:
+            public_key, key_status = _resolve_public_key_for_badge(badge, public_keys)
+            if key_status == "revoked":
+                return _verification_result(
+                    "INVALID",
+                    "key_revoked",
+                    _verification_checks(True, False, True, True),
+                    key_id=key_id,
+                )
+            if public_key and _ed25519_verify(payload_hash, signature, public_key):
+                return _verification_result(
+                    "VERIFIED",
+                    "dual_signature_verified",
+                    _verification_checks(True, True, True, True),
+                    method="Ed25519",
+                    key_id=key_id,
+                )
+
+        signature_hmac = badge.get("signature_hmac")
+        resolved_hmac, resolved_store = _resolve_hmac_secret(key_id, hmac_secret, key_store)
+        if isinstance(signature_hmac, str) and resolved_hmac:
+            if verify_mark(payload, payload_hash, signature_hmac, secret=resolved_hmac, key_store=resolved_store):
+                return _verification_result(
+                    "VERIFIED",
+                    "hmac_signature_verified",
+                    _verification_checks(True, True, True, True),
+                    method="HMAC",
+                    key_id=key_id,
+                )
+
+        return _verification_result(
+            "INVALID",
+            "signature_invalid",
+            _verification_checks(True, False, True, True),
+            key_id=key_id,
+        )
+    except Exception as exc:
+        return _verification_result(
+            "INVALID",
+            f"verification_error: {exc}",
+            _verification_checks(False, False, False, False),
+        )
+
+
+def verify_echo_mark_ed25519(badge: dict[str, Any]) -> dict[str, Any]:
+    """Compatibility wrapper for Ed25519 verification path."""
+    return verify_echo_mark(badge)
 
 
 def verify_echo_mark_dual(
@@ -744,204 +728,8 @@ def verify_echo_mark_dual(
     hmac_secret: str | None = None,
     key_store: dict[str, str] | None = None,
 ) -> dict[str, Any]:
-    """
-    Verify Echo Mark badge with dual signature support (Ed25519 + HMAC).
-
-    Priority:
-    1. Try Ed25519 verification first (preferred, public verification)
-    2. Fallback to HMAC verification (if secret available)
-
-    Args:
-        badge: Echo Mark badge
-        hmac_secret: HMAC secret (optional, for fallback)
-        key_store: Key store for HMAC v2 (optional)
-
-    Returns:
-        {
-            "status": "VERIFIED" | "UNVERIFIED" | "INVALID",
-            "reason": str,
-            "verification_method": "Ed25519" | "HMAC" | None,
-            ...
-        }
-    """
-    # Try Ed25519 first (if available)
-    if "signature" in badge and "public_key" in badge:
-        result = verify_echo_mark_ed25519(badge)
-        if result["status"] == "VERIFIED":
-            result["verification_method"] = "Ed25519"
-            return result
-        if result["status"] == "INVALID":
-            # Ed25519 failed, try HMAC fallback
-            pass
-
-    # Fallback to HMAC (if secret available)
-    if hmac_secret or "signature_hmac" in badge:
-        payload = badge.get("payload")
-        payload_hash = badge.get("payload_hash")
-        signature_hmac = badge.get("signature_hmac")
-
-        if all([payload, payload_hash, signature_hmac]):
-            hmac_ok = verify_mark(cast(dict[str, Any], payload), cast(str, payload_hash), cast(str, signature_hmac), hmac_secret, key_store)
-            if hmac_ok:
-                # Timestamp validation
-                timestamp_ok, timestamp_reason = validate_timestamp(cast(dict[str, Any], payload).get("issued_at"))
-
-                return {
-                    "status": "VERIFIED",
-                    "reason": "hmac_signature_valid",
-                    "verification_method": "HMAC",
-                    "checks": {
-                        "hash_integrity": True,
-                        "signature_valid": True,
-                        "schema_valid": True,
-                        "timestamp_valid": timestamp_ok,
-                    },
-                    "timestamp_warning": None if timestamp_ok else timestamp_reason,
-                    "note": "Verified with HMAC (symmetric cryptography). Ed25519 verification failed or not available.",
-                }
-
-    # If Ed25519 verification failed but HMAC not available
-    if hmac_secret is None and "signature_hmac" not in badge:
-        return {
-            "status": "UNVERIFIED",
-            "reason": "no_secret_for_hmac_fallback",
-            "verification_method": None,
-            "checks": {
-                "hash_integrity": False,
-                "signature_valid": False,
-                "schema_valid": True,
-                "timestamp_valid": False,
-            },
-            "note": "Ed25519 verification failed and no HMAC secret available for fallback.",
-        }
-
-    return {
-        "status": "INVALID",
-        "reason": "all_verification_methods_failed",
-        "verification_method": None,
-        "checks": {
-            "hash_integrity": False,
-            "signature_valid": False,
-            "schema_valid": False,
-            "timestamp_valid": False,
-        },
-    }
-
-
-def validate_timestamp(
-    issued_at: str | None,
-    max_age_days: int = 30,
-) -> tuple[bool, str | None]:
-    """
-    Validate timestamp for replay attack mitigation.
-
-    Args:
-        issued_at: ISO8601 timestamp
-        max_age_days: Maximum age in days (default: 30)
-
-    Returns:
-        (is_valid, warning_message)
-    """
-    if not issued_at:
-        return False, "missing_timestamp"
-
-    try:
-        issued_time = dt.datetime.fromisoformat(issued_at.replace("Z", "+00:00"))
-        now = dt.datetime.now(dt.UTC)
-        age = now - issued_time
-
-        if age.days > max_age_days:
-            return False, f"badge_expired (age: {age.days} days, max: {max_age_days} days)"
-
-        if age.total_seconds() < 0:
-            return False, "timestamp_in_future"
-
-        return True, None
-
-    except (ValueError, AttributeError) as e:
-        return False, f"invalid_timestamp_format: {str(e)}"
-
-
-# ================================================================================
-# Public Key Registry
-# ================================================================================
-
-
-def load_public_key_registry(registry_path: Path | str = ".keys/registry.json") -> dict[str, Any]:
-    """
-    Load public key registry from JSON file.
-
-    Args:
-        registry_path: Path to registry JSON file
-
-    Returns:
-        Registry dict with "keys" list
-
-    Raises:
-        FileNotFoundError: If registry file not found
-    """
-    registry_file = Path(registry_path)
-
-    if not registry_file.exists():
-        raise FileNotFoundError(f"Public key registry not found: {registry_file}")
-
-    with open(registry_file) as f:
-        return cast(dict[str, Any], json.load(f))
-
-
-def get_public_key_from_registry(
-    key_id: str,
-    registry_path: Path | str = ".keys/registry.json",
-) -> str | None:
-    """
-    Get public key from registry by key_id.
-
-    Args:
-        key_id: Key identifier (e.g., "v1")
-        registry_path: Path to registry JSON file
-
-    Returns:
-        Public key (hex-encoded) or None if not found
-    """
-    try:
-        registry = load_public_key_registry(registry_path)
-        for key_entry in registry.get("keys", []):
-            if key_entry.get("key_id") == key_id:
-                # Check if key is active
-                status = key_entry.get("status", "active")
-                if status == "revoked":
-                    warnings.warn(
-                        f"Key '{key_id}' is revoked in registry",
-                        UserWarning,
-                        stacklevel=2,
-                    )
-                    return None
-
-                return cast("str | None", key_entry.get("public_key"))
-
-        return None
-
-    except FileNotFoundError:
-        return None
-
-
-def generate_echo_mark(
-    payload: dict[str, Any],
-    device: str = "",
-    extra_text: str = "",
-) -> dict[str, Any]:
-    """
-    Generate an unsigned Echo Mark for the given payload (gumdrop/no-secret form).
-
-    Args:
-        payload: Audit payload dict
-        device: Device type hint (e.g. "gumdrop")
-        extra_text: Additional text for display
-
-    Returns:
-        Echo Mark dict (unsigned)
-    """
-    return make_echo_mark(audit=payload)
+    """Compatibility wrapper for dual-signature verification path."""
+    return verify_echo_mark(badge, hmac_secret=hmac_secret, key_store=key_store)
 
 
 def verify_key_in_registry(
@@ -949,27 +737,81 @@ def verify_key_in_registry(
     public_key: str,
     registry_path: Path | str = ".keys/registry.json",
 ) -> tuple[bool, str]:
-    """
-    Verify that public key matches registry entry.
-
-    Args:
-        key_id: Key identifier
-        public_key: Public key to verify (hex-encoded)
-        registry_path: Path to registry JSON file
+    """Verify registry key binding and status.
 
     Returns:
-        (is_valid, reason)
+        ``(is_valid, reason)`` where reason is one of:
+        - key_not_found_in_registry
+        - key_revoked
+        - public_key_mismatch
+        - key_verified
     """
-    try:
-        registry_key = get_public_key_from_registry(key_id, registry_path)
+    entry = _find_registry_key_entry(key_id, registry_path=registry_path)
+    if not entry:
+        return False, "key_not_found_in_registry"
 
-        if registry_key is None:
-            return False, "key_not_found_in_registry"
+    status = str(entry.get("status", "active"))
+    if status == "revoked":
+        return False, "key_revoked"
 
-        if registry_key != public_key:
-            return False, "public_key_mismatch"
+    registry_key = entry.get("public_key")
+    if not isinstance(registry_key, str) or not hmac.compare_digest(registry_key, public_key):
+        return False, "public_key_mismatch"
 
-        return True, "key_verified"
+    return True, "key_verified"
 
-    except FileNotFoundError:
-        return False, "registry_not_found"
+
+def load_ed25519_keypair(key_id: str, keys_dir: Path | str = ".keys") -> dict[str, str]:
+    """Load Ed25519 key pair from key directory files.
+
+    Raises:
+        FileNotFoundError: If required key files are missing.
+    """
+    key_dir = Path(keys_dir)
+    private_path = key_dir / f"{key_id}.private.key"
+    public_path = key_dir / f"{key_id}.public.key"
+    return {
+        "key_id": key_id,
+        "private_key": private_path.read_text(encoding="utf-8").strip(),
+        "public_key": public_path.read_text(encoding="utf-8").strip(),
+    }
+
+
+def load_ed25519_private_key_from_env() -> str | None:
+    """Compatibility helper for legacy private key env var."""
+    return os.getenv("ECHO_MARK_PRIVATE_KEY")
+
+
+def load_ed25519_public_key_from_env() -> str | None:
+    """Compatibility helper for legacy public key env var."""
+    return os.getenv("ECHO_MARK_PUBLIC_KEY")
+
+
+def sign_ed25519(payload_hash: str, private_key_hex: str) -> str:
+    """Public Ed25519 signing helper."""
+    return _ed25519_sign(payload_hash, private_key_hex)
+
+
+def verify_ed25519(payload_hash: str, signature_hex: str, public_key_hex: str) -> bool:
+    """Public Ed25519 verification helper."""
+    return _ed25519_verify(payload_hash, signature_hex, public_key_hex)
+
+
+def get_secret_from_env() -> str:
+    """Legacy secret loader with minimal guardrails.
+
+    Raises:
+        RuntimeError: If secret is missing or too short.
+    """
+    secret = os.getenv("ECHO_MARK_SECRET", "")
+    if not secret:
+        raise RuntimeError("ECHO_MARK_SECRET is not set")
+    if len(secret) < 16:
+        raise RuntimeError("ECHO_MARK_SECRET is too short (min 16 chars recommended)")
+    return secret
+
+
+def generate_echo_mark(payload: dict[str, Any], device: str = "", extra_text: str = "") -> dict[str, Any]:
+    """Compatibility wrapper used by screenless no-secret paths."""
+    _ = (device, extra_text)
+    return make_echo_mark(audit=payload)
