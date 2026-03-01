@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- ECHO-20260302-002: `docs/GROK-COLLABORATION-BIBLE.md` を v1.2 Full へ更新。
+- ECHO-20260302-001: `tests/test_echo_mark.py` を追加し、Hypothesisベースで dual signature 検証成功・replay拒否・rotation後旧署名無効を検証。
 - `docs/GROK-COLLABORATION-BIBLE.md` を追加し、Grok連携時のマスター参照シート（v1.0）をリポジトリ内で固定化。
 - ECHO-20260301-005: `docs/GROK-COLLABORATION-BIBLE.md` を v1.1 に更新。
 - ECHO-20260301-004: `po_echo.diversity.apply_semantic_diversity` に 6D cosine semantic evidence（`semantic_delta`, `6d_values`, `freedom_pressure_snapshot`）を追加。
@@ -15,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 回帰検知用テストとして `tests/test_diversity.py` と `tests/test_sentinel_v2.py` を追加。
 
 ### Changed
+- ECHO-20260302-002: `src/po_echo/echo_mark.py` を可読性重視で整理（helper分離・ネスト簡略化）し、registry status（active/inactive/revoked）連携を強化。
+- ECHO-20260302-002: `tools/generate_keypair.py` の rotate を堅牢化（atomic registry write / previous-active status制御）。
+- ECHO-20260302-001: `src/po_echo/echo_mark.py` を Echo Mark v3 実装へ刷新し、canonical payload、Ed25519+HMAC dual署名、key_id検証、nonce+timestamp（5分窓）のreplay防御を実装。
+- ECHO-20260302-001: `tools/generate_keypair.py` を v3運用向けに更新し、`generate`/`rotate` サブコマンドで Ed25519 鍵生成とローテーションをサポート。
 - `src/po_echo/sentinel_v2.py` に既存 Doberman / `scan_directory` を保持したまま `apply_semantic_diversity` を末尾追加し、ECHO-20260301-002 の回帰を補正。
 - ECHO-20260301-005: `create_freedom_pressure_v2` 初期化経路を整理し、`compute_v2(text)` ベースの6D計算を安定化。
 - ECHO-20260301-005: `tests/test_diversity.py` の大量候補ケースを 10,000 件に拡張。
