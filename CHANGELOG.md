@@ -111,3 +111,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v0.2.0]: https://github.com/hiroshitanaka-creator/project-echo/releases/tag/v0.2.0
 [v0.1.1]: https://github.com/hiroshitanaka-creator/project-echo/releases/tag/v0.1.1
 [v0.1.0]: https://github.com/hiroshitanaka-creator/project-echo/releases/tag/v0.1.0
+
+## [Unreleased]
+
+### Changed
+- ECHO-20260303-002: `rth` collision追跡を blake2b fingerprint + bounded/TTL prune に更新し、長時間稼働時のメモリ効率と耐障害性を強化。
+- ECHO-20260303-002: `voice_boundary` の screenless fallback 条件を `ScreenlessSafetyConfig` に集約し、ハードコード依存を排除。
+- ECHO-20260303-002: Bible v1.3 Full に Phase 2 Ambient Defense 運用規格（Voice Boundary / RTH）を追記。
+
+### Testing
+- ECHO-20260303-002: `tests/test_rth.py` と `tests/test_voice_boundary.py` を Hypothesis ベースの複合 edge case テストで拡張。

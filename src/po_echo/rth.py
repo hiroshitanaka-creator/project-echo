@@ -28,6 +28,7 @@ import hashlib
 import logging
 import re
 import time
+from collections import OrderedDict
 from dataclasses import asdict, dataclass
 
 _STOPWORDS = {
@@ -113,6 +114,15 @@ class RTHState:
     seen_chain_hash_to_feat_fp: dict[str, dict[str, int | str]] | None = None
 
 
+@dataclass(frozen=True)
+class CollisionTrackerConfig:
+    """Configuration for in-memory chain hash collision tracking."""
+
+    max_seen_count: int = 1000
+    ttl_ms: int = 10 * 60 * 1000
+    chain_hash_fingerprint_bytes: int = 12
+
+
 class RollingTranscriptHash:
     """
     Rolling Transcript Hash for minimal-disclosure voice audit.
@@ -128,7 +138,11 @@ class RollingTranscriptHash:
         # Attach to Echo Mark receipt
     """
 
-    def __init__(self, window_ms: int = 5000):
+    def __init__(
+        self,
+        window_ms: int = 5000,
+        collision_tracker_config: CollisionTrackerConfig | None = None,
+    ):
         """
         Initialize RTH with window size.
 
@@ -138,13 +152,56 @@ class RollingTranscriptHash:
         now = self._now()
         self.state = RTHState(window_ms=window_ms, t0_ms=now, t_ms=now)
         self.state.seen_chain_hash_to_feat_fp = {}
+        self._collision_tracker_config = collision_tracker_config or CollisionTrackerConfig()
+        self._collision_seen_order: OrderedDict[str, int] = OrderedDict()
+
+    def _chain_hash_fp(self, chain_hash_hex: str) -> str:
+        """Return compact blake2b fingerprint for chain hash dictionary key."""
+        digest = hashlib.blake2b(
+            chain_hash_hex.encode("utf-8"),
+            digest_size=self._collision_tracker_config.chain_hash_fingerprint_bytes,
+        ).hexdigest()
+        return digest
+
+    def _prune_collision_tracker(self, now_ms: int) -> None:
+        """Prune collision tracker entries by TTL and max size constraints."""
+        seen = self.state.seen_chain_hash_to_feat_fp
+        if seen is None:
+            return
+
+        ttl_ms = self._collision_tracker_config.ttl_ms
+        while self._collision_seen_order:
+            oldest_fp, oldest_last_seen_ms = next(iter(self._collision_seen_order.items()))
+            if now_ms - oldest_last_seen_ms <= ttl_ms:
+                break
+
+            self._collision_seen_order.popitem(last=False)
+            removed = seen.pop(oldest_fp, None)
+            if removed is not None:
+                _LOGGER.warning(
+                    "rth_chain_hash_collision_dict_pruned reason=ttl removed_chain_hash_fp=%s last_seen_ms=%s ttl_ms=%s",
+                    oldest_fp,
+                    removed.get("last_seen_ms", 0),
+                    ttl_ms,
+                )
+
+        max_seen_count = self._collision_tracker_config.max_seen_count
+        while len(seen) > max_seen_count and self._collision_seen_order:
+            oldest_fp, _ = self._collision_seen_order.popitem(last=False)
+            removed = seen.pop(oldest_fp, None)
+            if removed is not None:
+                _LOGGER.warning(
+                    "rth_chain_hash_collision_dict_pruned reason=max_count removed_chain_hash_fp=%s first_seen_ms=%s max_seen_count=%s",
+                    oldest_fp,
+                    removed.get("first_seen_ms", 0),
+                    max_seen_count,
+                )
 
     def _track_chain_hash_collision(
         self,
         *,
         chain_hash_hex: str,
         feat_fp: str,
-        max_seen_count: int = 1000,
     ) -> None:
         """
         Track observed chain hash → feature fingerprint mapping in-memory.
@@ -152,8 +209,6 @@ class RollingTranscriptHash:
         Args:
             chain_hash_hex: Rolling chain hash (hex) for the current window.
             feat_fp: Feature fingerprint (hex) for the current window.
-            max_seen_count: Maximum number of entries retained in the in-memory
-                tracking dictionary to avoid unbounded growth.
 
         Returns:
             None.
@@ -172,54 +227,35 @@ class RollingTranscriptHash:
             self.state.seen_chain_hash_to_feat_fp = seen
 
         ts = self.state.t_ms
-        prev = seen.get(chain_hash_hex)
+        chain_hash_fp = self._chain_hash_fp(chain_hash_hex)
+        prev = seen.get(chain_hash_fp)
         if prev is None:
-            seen[chain_hash_hex] = {
+            seen[chain_hash_fp] = {
+                "chain_hash_fp": chain_hash_fp,
                 "feat_fp": feat_fp,
                 "first_seen_ms": ts,
                 "last_seen_ms": ts,
                 "seen_count": 1,
             }
-            if len(seen) > max_seen_count:
-                oldest_chain_hash = min(
-                    seen,
-                    key=lambda h: int(seen[h].get("first_seen_ms", 0)),
-                )
-                oldest = seen.pop(oldest_chain_hash, None)
-                if oldest is not None:
-                    _LOGGER.warning(
-                        "rth_chain_hash_collision_dict_pruned removed_chain_hash=%s first_seen_ms=%s max_seen_count=%s",
-                        oldest_chain_hash,
-                        oldest.get("first_seen_ms", 0),
-                        max_seen_count,
-                    )
+            self._collision_seen_order[chain_hash_fp] = ts
+            self._collision_seen_order.move_to_end(chain_hash_fp)
+            self._prune_collision_tracker(ts)
             return
 
         prev_feat_fp = str(prev.get("feat_fp", ""))
         prev["last_seen_ms"] = ts
         prev["seen_count"] = int(prev.get("seen_count", 0)) + 1
+        self._collision_seen_order[chain_hash_fp] = ts
+        self._collision_seen_order.move_to_end(chain_hash_fp)
 
         if prev_feat_fp != feat_fp:
             _LOGGER.warning(
                 "rth_chain_hash_collision_detected chain_hash=%s prev_feat_fp=%s new_feat_fp=%s",
-                chain_hash_hex,
+                chain_hash_fp,
                 prev_feat_fp,
                 feat_fp,
             )
-
-        if len(seen) > max_seen_count:
-            oldest_chain_hash = min(
-                seen,
-                key=lambda h: int(seen[h].get("first_seen_ms", 0)),
-            )
-            oldest = seen.pop(oldest_chain_hash, None)
-            if oldest is not None:
-                _LOGGER.warning(
-                    "rth_chain_hash_collision_dict_pruned removed_chain_hash=%s first_seen_ms=%s max_seen_count=%s",
-                    oldest_chain_hash,
-                    oldest.get("first_seen_ms", 0),
-                    max_seen_count,
-                )
+        self._prune_collision_tracker(ts)
 
     def _now(self) -> int:
         """Current timestamp in milliseconds."""
