@@ -20,7 +20,7 @@ import secrets
 from pathlib import Path
 from typing import Any, TypedDict, cast
 
-UTC = getattr(dt, "UTC", dt.timezone.utc)
+UTC = dt.UTC
 
 try:
     from nacl.encoding import HexEncoder

@@ -73,7 +73,7 @@ def test_replay_attack_is_rejected_on_second_use(nonce):
         key_id=KEY_A,
     )
     badge["payload"] = payload
-    from po_echo.echo_mark import canonical_json, sha256_hex, sign_ed25519, hmac_sha256_hex
+    from po_echo.echo_mark import canonical_json, hmac_sha256_hex, sha256_hex, sign_ed25519
 
     badge["payload_hash"] = sha256_hex(canonical_json(payload))
     badge["signature"] = sign_ed25519(badge["payload_hash"], key.encode(HexEncoder).decode())
