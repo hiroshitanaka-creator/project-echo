@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-
 from typing import get_args
 
 from po_echo.voice_boundary import FieldName, _safe_float, classify_risk, get_voice_boundary_policy
