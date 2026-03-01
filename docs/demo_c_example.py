@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import secrets
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from po_echo.echo_mark import NACL_AVAILABLE, make_echo_mark, make_echo_mark_dual, verify_echo_mark
@@ -107,7 +107,7 @@ def main() -> int:
     _validate_signing_input(args)
     audit = build_demo_c_audit(DEFAULT_BENCHMARK_EVIDENCE)
 
-    run_id = f"demo-c-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
+    run_id = f"demo-c-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
 
     if NACL_AVAILABLE and args.ed25519_private_key:
         hmac_secret = args.hmac_secret or secrets.token_hex(32)
@@ -145,7 +145,7 @@ def main() -> int:
     output = {
         "demo": "Demo C",
         "task": "ECHO-20260305-002",
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "benchmark_evidence": DEFAULT_BENCHMARK_EVIDENCE,
         "echo_mark_badge": badge,
         "verification": verification,

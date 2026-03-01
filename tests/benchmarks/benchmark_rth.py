@@ -9,7 +9,6 @@ from pathlib import Path
 import pytest
 
 
-
 def _resolve_module_path(filename: str) -> Path:
     """Resolve po_echo module path for editable installs and local source trees."""
     for entry in sys.path:

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 """Build a distributable xAI gift package zip from tracked project artifacts."""
 
-from datetime import datetime, timezone
-from pathlib import Path
 import zipfile
+from datetime import UTC, datetime
+from pathlib import Path
 
 
 def _collect_existing(root: Path, relative_paths: list[str]) -> list[Path]:
@@ -31,7 +31,7 @@ def build_xai_gift_zip() -> Path:
     dist_dir = root / "dist"
     dist_dir.mkdir(parents=True, exist_ok=True)
 
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     zip_path = dist_dir / f"xai-gift-package-{timestamp}.zip"
 
     explicit_files = _collect_existing(
