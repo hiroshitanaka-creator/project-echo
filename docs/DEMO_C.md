@@ -1,54 +1,48 @@
-# Demo C（Phase 3 Skeleton）
+# Demo C（Phase 4 Implementation）
 
-Task: **ECHO-20260304-002 Benchmark Final Polish & CI Integration**
+Task: **ECHO-20260305-001 xAI Presentation Materials & Demo C Finalization**
 
 ## 目的
 
-- 公開ベンチマーク結果を Echo Mark 形式で可視化し、CLI から再現可能に表示する。
-- Project Echo の不変原則（候補セット + 証拠 + 責任境界）をデモ出力に保持する。
+- Phase 3 benchmark実測を **Echo Mark v3署名付きreceipt** として提示する。
+- 発表会場でCLI実行し、署名検証とKPI整合性を即時に確認可能にする。
+- 不変原則（候補セット + 証拠 + 責任境界）をDemo出力でも維持する。
 
-## 軽量CLIスケルトン（例）
+## 実装ファイル
 
-```python
-from __future__ import annotations
+- `docs/demo_c_example.py`
+  - benchmark証跡を構造化データで保持
+  - Echo Mark v3署名（PyNaCl利用時はEd25519+HMAC、未導入時はHMAC fallback）
+  - `verify_echo_mark` で検証して結果を同時出力
 
-import json
-from datetime import UTC, datetime
-
-
-def build_demo_c_echo_mark(voice_10k_seconds: float, rth_tracker_entries: int, rth_max_seen: int) -> dict:
-    """Build a lightweight Echo Mark style payload for Demo C benchmark output."""
-    return {
-        "schema_version": "echo_mark_v3",
-        "issued_at": datetime.now(UTC).isoformat(),
-        "policy": {
-            "responsibility_boundary": "human_review_required_for_release",
-            "required_action": "review_benchmark_receipt",
-        },
-        "signals": {
-            "voice_boundary_10k_min_seconds": voice_10k_seconds,
-            "rth_tracker_entries": rth_tracker_entries,
-            "rth_max_seen_count": rth_max_seen,
-            "kpi_voice_10k_under_0_3": voice_10k_seconds < 0.3,
-            "kpi_rth_bounded": rth_tracker_entries <= rth_max_seen,
-        },
-        "semantic_evidence": [
-            "phase3_public_benchmark",
-            "non_destructive_policy",
-            "ci_integrated_kpi_gate",
-        ],
-    }
-
-
-if __name__ == "__main__":
-    receipt = build_demo_c_echo_mark(voice_10k_seconds=0.21, rth_tracker_entries=1980, rth_max_seen=2000)
-    print(json.dumps(receipt, ensure_ascii=False, indent=2, sort_keys=True))
-```
-
-## 実行例
+## 実行コマンド
 
 ```bash
-python docs/demo_c_example.py
+python docs/demo_c_example.py --pretty
 ```
 
-> この文書はスケルトンであり、本番Demo Cでは既存 Echo Mark 署名/検証フローと統合する。
+## CLIオプション
+
+- `--key-id`: receiptに埋め込む key ID（default: `demo-key-20260305`）
+- `--hmac-secret`: demo用HMAC secret
+- `--ed25519-private-key`: demo用Ed25519 private key（hex）
+- `--pretty`: pretty JSONで出力
+
+## 検証観点
+
+1. `verification.status == "VERIFIED"`
+2. `echo_mark_badge.verification_method == "Ed25519+HMAC"`（PyNaCl未導入環境では `HMAC` fallback）
+3. `benchmark_evidence.voice_boundary.measured_min_seconds < 0.3`
+4. `benchmark_evidence.rth.tracker_entries <= benchmark_evidence.rth.max_seen_count`
+
+## 出力の意味
+
+- `benchmark_evidence`: Phase 3実測証跡（プレゼン提示値）
+- `echo_mark_badge`: tamper-evidentな署名済みreceipt
+- `verification`: 署名・hash・timestamp・replayの検証結果
+
+## 運用注意
+
+- デフォルト鍵は **デモ専用**。本番では `tools/generate_keypair.py` で生成した鍵を利用すること。
+- benchmark evidenceを更新する際は、先に benchmark を再実行し、`docs/BENCHMARK_RESULTS.md` の履歴整合を維持すること。
+- `BLOCKED` と `INVALID` は運用上の意味が異なるため、監査時に混同しないこと。
