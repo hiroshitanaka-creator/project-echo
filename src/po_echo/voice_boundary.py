@@ -15,10 +15,12 @@ All executions generate Echo Mark receipts regardless of channel.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 from typing import Any, Literal
 
 Risk = Literal["low", "medium", "high"]
 Confirm = Literal["none", "double_tap", "passphrase", "app_confirm"]
+FieldName = Literal["amount", "bias_score", "battery_level"]
 
 
 @dataclass
@@ -43,6 +45,34 @@ LOW_BATTERY_THRESHOLD = 0.15
 
 CRITICAL_INTENTS = {"payment", "purchase", "identity_disclosure"}
 SENSITIVE_INTENTS = {"booking", "itinerary", "data_share", "home_access"}
+_LOGGER = logging.getLogger(__name__)
+
+
+def _safe_float(value: Any, *, default: float, field_name: FieldName) -> float:
+    """
+    Safely coerce numeric-like values to float with audit-friendly warnings.
+
+    Args:
+        value: Input value expected to be numeric-like.
+        default: Fallback value when conversion fails.
+        field_name: Whitelisted field identifier for structured audit logging.
+
+    Returns:
+        Parsed float value or the provided default.
+
+    Raises:
+        This function does not raise exceptions by design.
+    """
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        _LOGGER.warning(
+            "voice_boundary_invalid_float field=%s value=%r default=%s",
+            field_name,
+            value,
+            default,
+        )
+        return default
 
 
 def classify_risk(intent: str, meta: dict | None = None) -> Risk:
@@ -64,7 +94,7 @@ def classify_risk(intent: str, meta: dict | None = None) -> Risk:
 
     # Fallback: classify by amount or other metadata
     meta = meta or {}
-    amt = float(meta.get("amount", 0))
+    amt = _safe_float(meta.get("amount", 0), default=0.0, field_name="amount")
     if amt >= 10000:  # High-value transaction
         return "high"
     if amt >= 1000:  # Medium-value transaction
@@ -138,9 +168,10 @@ def get_voice_boundary_policy(bias_score: float, is_gumdrop: bool = False) -> di
     Returns:
         Policy dict with risk, required_action, and requires_human_confirm
     """
-    if bias_score >= 0.5:
+    safe_bias_score = _safe_float(bias_score, default=0.0, field_name="bias_score")
+    if safe_bias_score >= 0.5:
         risk: Risk = "high"
-    elif bias_score >= 0.2:
+    elif safe_bias_score >= 0.2:
         risk = "medium"
     else:
         risk = "low"
@@ -168,14 +199,20 @@ def evaluate_screenless_safety(
         Screenless devices need mechanical enforcement of fallback and block rules
         because users cannot inspect rich UI before execution.
     """
-    policy = get_voice_boundary_policy(bias_score=bias_score, is_gumdrop=True)
+    safe_bias_score = _safe_float(bias_score, default=0.0, field_name="bias_score")
+    safe_battery_level = _safe_float(
+        battery_level,
+        default=0.0,
+        field_name="battery_level",
+    )
+    policy = get_voice_boundary_policy(bias_score=safe_bias_score, is_gumdrop=True)
     fallback_mode = "normal"
 
-    if battery_level < LOW_BATTERY_THRESHOLD or not bluetooth_connected:
+    if safe_battery_level < LOW_BATTERY_THRESHOLD or not bluetooth_connected:
         fallback_mode = "on_device_safe_mode"
 
     should_block = (
-        bias_score >= HIGH_BIAS_BLOCK_THRESHOLD or replay_detected or tamper_detected
+        safe_bias_score >= HIGH_BIAS_BLOCK_THRESHOLD or replay_detected or tamper_detected
     )
     if should_block:
         return {
@@ -186,7 +223,7 @@ def evaluate_screenless_safety(
             "fallback_mode": fallback_mode,
             "reasons": [
                 "screenless_guard",
-                f"bias_score:{bias_score:.3f}",
+                f"bias_score:{safe_bias_score:.3f}",
                 f"replay_detected:{replay_detected}",
                 f"tamper_detected:{tamper_detected}",
             ],
@@ -196,7 +233,7 @@ def evaluate_screenless_safety(
         **policy,
         "execution_allowed": True,
         "fallback_mode": fallback_mode,
-        "reasons": ["screenless_guard", f"bias_score:{bias_score:.3f}"],
+        "reasons": ["screenless_guard", f"bias_score:{safe_bias_score:.3f}"],
     }
 
 

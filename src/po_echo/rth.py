@@ -25,6 +25,7 @@ Privacy guarantees:
 from __future__ import annotations
 
 import hashlib
+import logging
 import re
 import time
 from dataclasses import asdict, dataclass
@@ -50,6 +51,8 @@ _STOPWORDS = {
     "to",
     "with",
 }
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def normalize_words(text: str) -> list[str]:
@@ -107,6 +110,7 @@ class RTHState:
     t_ms: int = 0  # Current window timestamp
     last_text: str = ""  # Last window text (for debugging, not persisted)
     robust_hash_hex: str = "0" * 16  # 64-bit LSH for noise-tolerant comparisons
+    seen_chain_hash_to_feat_fp: dict[str, dict[str, int | str]] | None = None
 
 
 class RollingTranscriptHash:
@@ -133,6 +137,89 @@ class RollingTranscriptHash:
         """
         now = self._now()
         self.state = RTHState(window_ms=window_ms, t0_ms=now, t_ms=now)
+        self.state.seen_chain_hash_to_feat_fp = {}
+
+    def _track_chain_hash_collision(
+        self,
+        *,
+        chain_hash_hex: str,
+        feat_fp: str,
+        max_seen_count: int = 1000,
+    ) -> None:
+        """
+        Track observed chain hash → feature fingerprint mapping in-memory.
+
+        Args:
+            chain_hash_hex: Rolling chain hash (hex) for the current window.
+            feat_fp: Feature fingerprint (hex) for the current window.
+            max_seen_count: Maximum number of entries retained in the in-memory
+                tracking dictionary to avoid unbounded growth.
+
+        Returns:
+            None.
+
+        Raises:
+            This function does not raise exceptions by design.
+
+        Notes:
+            This structure is intentionally JSON-serializable so future
+            persistence can be added without state schema migration.
+            Current behavior is in-memory only; collisions emit warning logs.
+        """
+        seen = self.state.seen_chain_hash_to_feat_fp
+        if seen is None:
+            seen = {}
+            self.state.seen_chain_hash_to_feat_fp = seen
+
+        ts = self.state.t_ms
+        prev = seen.get(chain_hash_hex)
+        if prev is None:
+            seen[chain_hash_hex] = {
+                "feat_fp": feat_fp,
+                "first_seen_ms": ts,
+                "last_seen_ms": ts,
+                "seen_count": 1,
+            }
+            if len(seen) > max_seen_count:
+                oldest_chain_hash = min(
+                    seen,
+                    key=lambda h: int(seen[h].get("first_seen_ms", 0)),
+                )
+                oldest = seen.pop(oldest_chain_hash, None)
+                if oldest is not None:
+                    _LOGGER.warning(
+                        "rth_chain_hash_collision_dict_pruned removed_chain_hash=%s first_seen_ms=%s max_seen_count=%s",
+                        oldest_chain_hash,
+                        oldest.get("first_seen_ms", 0),
+                        max_seen_count,
+                    )
+            return
+
+        prev_feat_fp = str(prev.get("feat_fp", ""))
+        prev["last_seen_ms"] = ts
+        prev["seen_count"] = int(prev.get("seen_count", 0)) + 1
+
+        if prev_feat_fp != feat_fp:
+            _LOGGER.warning(
+                "rth_chain_hash_collision_detected chain_hash=%s prev_feat_fp=%s new_feat_fp=%s",
+                chain_hash_hex,
+                prev_feat_fp,
+                feat_fp,
+            )
+
+        if len(seen) > max_seen_count:
+            oldest_chain_hash = min(
+                seen,
+                key=lambda h: int(seen[h].get("first_seen_ms", 0)),
+            )
+            oldest = seen.pop(oldest_chain_hash, None)
+            if oldest is not None:
+                _LOGGER.warning(
+                    "rth_chain_hash_collision_dict_pruned removed_chain_hash=%s first_seen_ms=%s max_seen_count=%s",
+                    oldest_chain_hash,
+                    oldest.get("first_seen_ms", 0),
+                    max_seen_count,
+                )
 
     def _now(self) -> int:
         """Current timestamp in milliseconds."""
@@ -154,6 +241,8 @@ class RollingTranscriptHash:
         f = _feat(text_window)
         self.state.h_prev = hashlib.sha256(self.state.h_prev + f).digest()
         self.state.robust_hash_hex = _simhash64(normalize_words(text_window))
+        feat_fp = hashlib.sha256(f).hexdigest()
+        self._track_chain_hash_collision(chain_hash_hex=self.state.h_prev.hex(), feat_fp=feat_fp)
 
     def snapshot(self) -> dict:
         """
