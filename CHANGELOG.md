@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- ECHO-20260305-002: `scripts/make_xai_gift.py` を追加し、docs一式・Demo C CLI・benchmark証跡・履歴文書を1コマンドでzip化する xAI Gift Package 生成を実装。
+- ECHO-20260305-002: `docs/README.md` を新規追加し、xAI Gift Package の資料一覧・zip生成コマンド・贈呈メッセージテンプレートを整備。
 - ECHO-20260304-002: `.github/workflows/benchmark.yml` を新規追加し、`RUN_PUBLIC_BENCHMARKS=1` の定期 benchmark gate（schedule + manual dispatch）を導入。
 - ECHO-20260304-002: `docs/DEMO_C.md` を新規追加し、ベンチマーク結果を Echo Mark 形式で表示する軽量CLIスケルトンを定義。
 - ECHO-20260305-001: `docs/XAI_PRESENTATION.md` を追加し、xAI向けプレゼン構成（不変原則・benchmark結果・脅威対策証跡・運用手順）を即使用可能な形で固定化。
@@ -15,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ECHO-20260305-001: `docs/demo_c_example.py` を追加し、Phase 3 benchmark証跡を Echo Mark v3 dual signature 付き receipt として出力・検証する Demo C CLI を実装。
 
 ### Changed
+- ECHO-20260305-002: `docs/demo_c_example.py` のデフォルト鍵を削除し、`--ed25519-private-key` または `--hmac-secret` 未指定時は安全な鍵生成ガイド付きで即時エラー化。
+- ECHO-20260305-002: `.github/workflows/benchmark.yml` の依存導線を `pip install -e .[dev]` のみに統一し、`pyproject.toml` ベース運用へ整理。
+- ECHO-20260305-002: `docs/XAI_PRESENTATION.md` に Markdown→PDF 変換コマンドを追記し、配布導線を補完。
+- ECHO-20260305-002: `docs/GROK-COLLABORATION-BIBLE.md` を v1.5 Full へ更新し、Phase 4運用規格として xAI贈呈手順を追加。
 - ECHO-20260304-002: `docs/GROK-COLLABORATION-BIBLE.md` を v1.4 Full へ更新し、Phase 3 Benchmark & Quality 運用規格（再現性 / KPI / CI統合 / 非破壊）を追加。
 - ECHO-20260304-002: `tests/benchmarks/benchmark_voice_boundary.py` のケース生成を Hypothesis 固定seed + `register_type_strategy` で再現可能化し、10k KPI（`< 0.3s`）を厳格化。
 - ECHO-20260304-002: `tests/benchmarks/benchmark_rth.py` / `benchmark_voice_boundary.py` の import を poetry / editable install 両対応の安全な import パターンへ更新。

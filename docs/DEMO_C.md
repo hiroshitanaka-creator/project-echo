@@ -18,14 +18,14 @@ Task: **ECHO-20260305-001 xAI Presentation Materials & Demo C Finalization**
 ## 実行コマンド
 
 ```bash
-python docs/demo_c_example.py --pretty
+python docs/demo_c_example.py --pretty --hmac-secret "$(python -c 'import secrets; print(secrets.token_hex(32))')"
 ```
 
 ## CLIオプション
 
 - `--key-id`: receiptに埋め込む key ID（default: `demo-key-20260305`）
-- `--hmac-secret`: demo用HMAC secret
-- `--ed25519-private-key`: demo用Ed25519 private key（hex）
+- `--hmac-secret`: demo用HMAC secret（`--ed25519-private-key` 未指定時は必須）
+- `--ed25519-private-key`: demo用Ed25519 private key（hex、`--hmac-secret` とどちらか必須）
 - `--pretty`: pretty JSONで出力
 
 ## 検証観点
@@ -43,6 +43,6 @@ python docs/demo_c_example.py --pretty
 
 ## 運用注意
 
-- デフォルト鍵は **デモ専用**。本番では `tools/generate_keypair.py` で生成した鍵を利用すること。
+- デフォルト鍵は廃止済み。`--ed25519-private-key` または `--hmac-secret` を必ず明示し、本番では `tools/generate_keypair.py` で生成した鍵を利用すること。
 - benchmark evidenceを更新する際は、先に benchmark を再実行し、`docs/BENCHMARK_RESULTS.md` の履歴整合を維持すること。
 - `BLOCKED` と `INVALID` は運用上の意味が異なるため、監査時に混同しないこと。
