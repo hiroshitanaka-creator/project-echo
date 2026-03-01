@@ -151,3 +151,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 - ECHO-20260304-001: `PROGRESS.md` に Phase 3開始宣言と公開検証耐性（再現性）方針を追記。
+
+
+## ECHO-20260306-001 Final Pre-Gift Cleanup & Test Reconciliation
+
+- Echo Mark v3仕様に合わせて `tests/test_prop_echo_mark.py` / `tests/test_invariants.py` の引数・schema期待値・HMACフィールド・警告期待を同期。
+- `hidden_lockin.py` を `tests/fixtures/hidden_lockin_demo.py` へ移動し、`sk-dummy-...` のデモ用ダミー鍵へ置換。
+- `scripts/make_xai_gift.py` に Doberman 事前スキャンを追加し、漏洩検知時は Gift package 生成を停止。
+- `src/po_echo/gumdrop_defense.py` の軽量監査を FreedomPressureV2 連携ベースへ更新し、affiliateフラグ依存を除去。
+- `src/echo_register/` と `src/world_register/` を明示的ディレクトリ化（`.gitkeep` + README stub）。
+- `src/pocore/__init__.py` に deprecated warning と `po_core` 互換エイリアスを追加。

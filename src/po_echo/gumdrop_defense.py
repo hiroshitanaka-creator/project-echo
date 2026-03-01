@@ -4,29 +4,22 @@ Gumdrop（画面無しデバイス）向けEcho Mark強化
 OpenAI World Register戦略（状態保持チップ＋「失敗しなかった意図」課金）への直接カウンター
 """
 
+from __future__ import annotations
+
+from typing import Any
+
+from .diversity import _safe_create_freedom_pressure_v2
 from .echo_mark import generate_echo_mark
 from .rth import compute_rth
 from .voice_boundary import get_voice_boundary_policy
 
 
-def apply_gumdrop_defense(recommendation: dict, context: dict) -> dict:
-    """
-    画面無しデバイス用処理フロー
-    1. 商業バイアスを音声用に簡略監査
-    2. Diversity Noiseを音声候補に変換
-    3. Execution Gate適用
-    4. Echo Mark発行（音声読み上げ用テキスト付き）
-    """
-    # 1. 簡略バイアス監査（画面なしでも可能な軽量版）
-    bias_score = _light_commercial_bias_audit(recommendation)
-
-    # 2. 音声用多様性ノイズ（2〜3候補に圧縮）
+def apply_gumdrop_defense(recommendation: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+    """Run lightweight gumdrop defense flow with non-destructive safeguards."""
+    bias_score = _light_commercial_bias_audit(recommendation, context)
     diversified = _voice_diversity_noise(recommendation, bias_score)
-
-    # 3. 音声境界ポリシー適用
     policy = get_voice_boundary_policy(bias_score, context.get("device_type") == "gumdrop")
 
-    # 4. Echo Mark生成（音声読み上げテキスト付き）
     mark = generate_echo_mark(
         payload=diversified,
         device="gumdrop",
@@ -37,15 +30,42 @@ def apply_gumdrop_defense(recommendation: dict, context: dict) -> dict:
         "candidates": diversified["candidates"],
         "policy": policy,
         "echo_mark": mark,
-        "rth": compute_rth(context.get("transcript", "")),  # プライバシー保護
+        "rth": compute_rth(context.get("transcript", "")),
+        "freedom_pressure_snapshot": diversified.get("freedom_pressure_snapshot"),
     }
 
 
-def _light_commercial_bias_audit(rec: dict) -> float:
-    # 簡易版（将来的に拡張）
-    return 0.0 if not rec.get("affiliate") else 0.8
+def _light_commercial_bias_audit(rec: dict[str, Any], context: dict[str, Any] | None = None) -> float:
+    """Estimate bias score using candidate risk + FreedomPressureV2 snapshot.
+
+    This intentionally avoids affiliate-flag dependency and relies on observable
+    candidate signals plus lightweight semantic pressure.
+    """
+    candidates = rec.get("alternatives") or [rec]
+    risk_values = [float(item.get("bias_risk", 0.0) or 0.0) for item in candidates if isinstance(item, dict)]
+    avg_risk = sum(risk_values) / len(risk_values) if risk_values else 0.0
+
+    snapshot = _safe_create_freedom_pressure_v2()
+    engine = snapshot.get("engine")
+    prompt_text = str((context or {}).get("prompt", ""))
+    pressure_score = 0.0
+
+    compute_v2 = getattr(engine, "compute_v2", None)
+    if callable(compute_v2):
+        try:
+            raw = compute_v2(prompt_text)
+            values = raw.get("values") if isinstance(raw, dict) else raw
+            if isinstance(values, (list, tuple)) and values:
+                nums = [abs(float(v)) for v in values[:6]]
+                pressure_score = min(1.0, sum(nums) / max(len(nums), 1))
+        except Exception:
+            pressure_score = 0.0
+
+    return max(0.0, min(1.0, (avg_risk * 0.8) + (pressure_score * 0.2)))
 
 
-def _voice_diversity_noise(rec: dict, bias: float) -> dict:
-    # 音声で読みやすい2〜3候補に制限
-    return {"candidates": rec.get("alternatives", [rec])[:3]}
+def _voice_diversity_noise(rec: dict[str, Any], bias: float) -> dict[str, Any]:
+    """Limit candidates to voice-friendly top-three while preserving transparency."""
+    candidates = (rec.get("alternatives") or [rec])[:3]
+    snapshot = _safe_create_freedom_pressure_v2()
+    return {"candidates": candidates, "bias_score": bias, "freedom_pressure_snapshot": snapshot}

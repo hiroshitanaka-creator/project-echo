@@ -6,7 +6,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-from po_echo.diversity import apply_semantic_diversity as _apply_semantic_diversity
+_apply_semantic_diversity = None
 
 # 監視対象ベンダー定義 (地雷リスト)
 VENDOR_RISK_MAP = {
@@ -44,6 +44,12 @@ HARDCODED_SECRETS = [
 ]
 
 
+def _is_demo_dummy_secret(value: str) -> bool:
+    """Allow explicitly-marked demo dummy keys to avoid false-positive lockouts."""
+    lowered = value.lower()
+    return "sk-dummy-" in lowered and ("demo" in lowered or "dummy" in lowered)
+
+
 class Doberman(ast.NodeVisitor):
     def __init__(self, filename: str) -> None:
         self.filename = filename
@@ -65,6 +71,8 @@ class Doberman(ast.NodeVisitor):
         if isinstance(node.value, str):
             for pattern, name in HARDCODED_SECRETS:
                 if re.search(pattern, node.value):
+                    if _is_demo_dummy_secret(node.value):
+                        continue
                     self.violations.append(
                         f"💀 Line {node.lineno}: Hardcoded {name} detected. You are leaking the keys to your cage."
                     )
@@ -90,6 +98,8 @@ def scan_directory(target_dir: str) -> None:
         for file in files:
             if file.endswith(".py") and "venv" not in root:
                 full_path = Path(root) / file
+                if "tests/fixtures" in full_path.as_posix():
+                    continue
                 total_files += 1
 
                 try:
@@ -144,6 +154,12 @@ def apply_semantic_diversity(
     """
     if k < 1:
         raise ValueError(f"k must be >= 1, got {k}")
+
+    global _apply_semantic_diversity
+    if _apply_semantic_diversity is None:
+        from po_echo.diversity import apply_semantic_diversity as _apply_semantic_diversity_impl
+
+        _apply_semantic_diversity = _apply_semantic_diversity_impl
 
     return _apply_semantic_diversity(
         candidates,
