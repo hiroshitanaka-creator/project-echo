@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- ECHO-20260304-002: `.github/workflows/benchmark.yml` を新規追加し、`RUN_PUBLIC_BENCHMARKS=1` の定期 benchmark gate（schedule + manual dispatch）を導入。
+- ECHO-20260304-002: `docs/DEMO_C.md` を新規追加し、ベンチマーク結果を Echo Mark 形式で表示する軽量CLIスケルトンを定義。
+
+### Changed
+- ECHO-20260304-002: `docs/GROK-COLLABORATION-BIBLE.md` を v1.4 Full へ更新し、Phase 3 Benchmark & Quality 運用規格（再現性 / KPI / CI統合 / 非破壊）を追加。
+- ECHO-20260304-002: `tests/benchmarks/benchmark_voice_boundary.py` のケース生成を Hypothesis 固定seed + `register_type_strategy` で再現可能化し、10k KPI（`< 0.3s`）を厳格化。
+- ECHO-20260304-002: `tests/benchmarks/benchmark_rth.py` / `benchmark_voice_boundary.py` の import を poetry / editable install 両対応の安全な import パターンへ更新。
+- ECHO-20260304-002: `docs/BENCHMARK_RESULTS.md` のKPI定義を厳格化し、Phase 3最終運用コマンドを明確化。
+
+### Added
 - ECHO-20260302-002: `docs/GROK-COLLABORATION-BIBLE.md` を v1.2 Full へ更新。
 - ECHO-20260302-001: `tests/test_echo_mark.py` を追加し、Hypothesisベースで dual signature 検証成功・replay拒否・rotation後旧署名無効を検証。
 - `docs/GROK-COLLABORATION-BIBLE.md` を追加し、Grok連携時のマスター参照シート（v1.0）をリポジトリ内で固定化。

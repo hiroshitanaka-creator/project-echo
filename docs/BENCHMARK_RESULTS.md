@@ -1,6 +1,6 @@
 # Public Benchmark Suite & Performance Testing
 
-Task: **ECHO-20260304-001 Public Benchmark Suite & Performance Testing**  
+Task: **ECHO-20260304-001 / ECHO-20260304-002 Public Benchmark Suite & Final Polish**  
 Phase: **Phase 3 Benchmark & Quality**
 
 ## Reproducibility Policy
@@ -14,8 +14,10 @@ Phase: **Phase 3 Benchmark & Quality**
 
 ```bash
 pytest -q tests/test_voice_boundary.py tests/test_rth.py
-RUN_PUBLIC_BENCHMARKS=1 pytest -q tests/benchmarks/benchmark_voice_boundary.py -k '10k or 100k'
+RUN_PUBLIC_BENCHMARKS=1 pytest -q tests/benchmarks/benchmark_voice_boundary.py
 RUN_PUBLIC_BENCHMARKS=1 pytest -q tests/benchmarks/benchmark_rth.py
+# CI benchmark workflow
+gh workflow run benchmark.yml
 ```
 
 ## Result Table (local reference)
@@ -30,7 +32,7 @@ RUN_PUBLIC_BENCHMARKS=1 pytest -q tests/benchmarks/benchmark_rth.py
 
 | KPI | Definition | Target |
 |---|---|---|
-| Risk classification throughput | `classify_risk` over 10k/100k generated cases | Complete without crash + positive throughput |
+| Risk classification throughput | `classify_risk` over 10k/100k generated cases | `10k min_seconds < 0.3` + `100k` completes without crash |
 | RTH memory boundedness | collision tracker entry count during 100k rolling windows | `tracker_entries <= max_seen_count` |
 | Reproducibility | command-based benchmark rerun behavior | Same commands reproduce pass/fail conditions |
 
