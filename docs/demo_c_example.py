@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import secrets
 from datetime import datetime, timezone
 from typing import Any
 
@@ -76,38 +77,64 @@ def build_demo_c_audit(evidence: dict[str, Any]) -> dict[str, Any]:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate Phase 4 Demo C signed benchmark receipt.")
     parser.add_argument("--key-id", default="demo-key-20260305", help="Echo Mark key_id for this receipt.")
-    parser.add_argument("--hmac-secret", default="demo-hmac-secret-change-before-prod", help="HMAC secret.")
+    parser.add_argument(
+        "--hmac-secret",
+        help="HMAC secret. Required when --ed25519-private-key is not provided.",
+    )
     parser.add_argument(
         "--ed25519-private-key",
-        default="1f1e1d1c1b1a191817161514131211100102030405060708090a0b0c0d0e0f00",
         help="Hex Ed25519 private key for demo output.",
     )
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output.")
     return parser.parse_args()
 
 
+def _validate_signing_input(args: argparse.Namespace) -> None:
+    """Ensure at least one signing secret is explicitly provided by the caller."""
+    if args.ed25519_private_key or args.hmac_secret:
+        return
+
+    raise SystemExit(
+        "Missing signing key material. Provide --ed25519-private-key or --hmac-secret. "
+        "Safe examples: `python -c \"from nacl.signing import SigningKey; "
+        "print(SigningKey.generate().encode().hex())\"` or "
+        "`python -c \"import secrets; print(secrets.token_hex(32))\"`."
+    )
+
+
 def main() -> int:
     args = parse_args()
+    _validate_signing_input(args)
     audit = build_demo_c_audit(DEFAULT_BENCHMARK_EVIDENCE)
 
-    if NACL_AVAILABLE:
+    run_id = f"demo-c-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
+
+    if NACL_AVAILABLE and args.ed25519_private_key:
+        hmac_secret = args.hmac_secret or secrets.token_hex(32)
         badge = make_echo_mark_dual(
             audit=audit,
-            hmac_secret=args.hmac_secret,
+            hmac_secret=hmac_secret,
             ed25519_private_key=args.ed25519_private_key,
             key_id=args.key_id,
-            run_id=f"demo-c-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}",
+            run_id=run_id,
             audience="xai-presentation",
         )
     else:
+        if args.hmac_secret is None:
+            raise SystemExit(
+                "PyNaCl unavailable or --ed25519-private-key omitted. "
+                "Provide --hmac-secret for HMAC signing."
+            )
+
         badge = make_echo_mark(
             audit=audit,
             secret=args.hmac_secret,
             key_id=args.key_id,
-            run_id=f"demo-c-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}",
+            run_id=run_id,
             audience="xai-presentation",
         )
-        badge["warning"] = "PyNaCl unavailable: emitted HMAC-only signature for local demo"
+        if not NACL_AVAILABLE:
+            badge["warning"] = "PyNaCl unavailable: emitted HMAC-only signature for local demo"
 
     verification = verify_echo_mark(
         badge=badge,
@@ -117,7 +144,7 @@ def main() -> int:
 
     output = {
         "demo": "Demo C",
-        "task": "ECHO-20260305-001",
+        "task": "ECHO-20260305-002",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "benchmark_evidence": DEFAULT_BENCHMARK_EVIDENCE,
         "echo_mark_badge": badge,
