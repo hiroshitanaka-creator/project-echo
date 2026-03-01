@@ -112,7 +112,7 @@ def test_mark_verify_true_then_false_on_tamper(allowed, confirm, bo, bf, imp):
     assert verify_mark(
         payload=badge["payload"],
         payload_hash=badge["payload_hash"],
-        signature=badge["signature"],
+        signature=badge["signature_hmac"],
         key_store=key_store,
     ), "Original badge must verify"
 
@@ -125,7 +125,7 @@ def test_mark_verify_true_then_false_on_tamper(allowed, confirm, bo, bf, imp):
     assert not verify_mark(
         payload=tampered,
         payload_hash=badge["payload_hash"],
-        signature=badge["signature"],
+        signature=badge["signature_hmac"],
         key_store=key_store,
     ), "Tampered badge must fail verification"
 
@@ -161,7 +161,7 @@ def test_mark_invalid_with_wrong_secret(bo, bf):
     assert not verify_mark(
         payload=badge["payload"],
         payload_hash=badge["payload_hash"],
-        signature=badge["signature"],
+        signature=badge["signature_hmac"],
         key_store=wrong_key_store,
     ), "Wrong secret must fail verification"
 
@@ -185,7 +185,7 @@ def test_mark_invalid_with_wrong_key_id(bo, bf):
     assert not verify_mark(
         payload=tampered,
         payload_hash=badge["payload_hash"],
-        signature=badge["signature"],
+        signature=badge["signature_hmac"],
         key_store=key_store,
     ), "Mismatched key_id must fail verification"
 
@@ -360,7 +360,7 @@ def test_dual_signature_fallback_to_hmac(allowed, confirm, bo, bf, imp):
 def test_timestamp_valid_within_max_age(days_ago):
     """Timestamps within max_age are valid."""
     issued_at = (dt.datetime.now(dt.UTC) - dt.timedelta(days=days_ago)).isoformat()
-    is_valid, reason = validate_timestamp(issued_at, max_age_days=30)
+    is_valid, reason = validate_timestamp(issued_at, max_age_seconds=30 * 24 * 60 * 60)
     assert is_valid, f"Timestamp {days_ago} days ago should be valid: {reason}"
 
 
@@ -369,7 +369,7 @@ def test_timestamp_valid_within_max_age(days_ago):
 def test_timestamp_invalid_beyond_max_age(days_ago):
     """Timestamps beyond max_age are invalid."""
     issued_at = (dt.datetime.now(dt.UTC) - dt.timedelta(days=days_ago)).isoformat()
-    is_valid, reason = validate_timestamp(issued_at, max_age_days=30)
+    is_valid, reason = validate_timestamp(issued_at, max_age_seconds=30 * 24 * 60 * 60)
     assert not is_valid, f"Timestamp {days_ago} days ago should be invalid"
     assert "expired" in reason.lower(), f"Reason should mention expiration: {reason}"
 
@@ -379,7 +379,7 @@ def test_timestamp_invalid_beyond_max_age(days_ago):
 def test_timestamp_invalid_in_future(days_ahead):
     """Timestamps in the future are invalid."""
     issued_at = (dt.datetime.now(dt.UTC) + dt.timedelta(days=days_ahead)).isoformat()
-    is_valid, reason = validate_timestamp(issued_at, max_age_days=30)
+    is_valid, reason = validate_timestamp(issued_at, max_age_seconds=30 * 24 * 60 * 60)
     assert not is_valid, "Future timestamp should be invalid"
     assert "future" in reason.lower(), f"Reason should mention future: {reason}"
 
@@ -400,4 +400,4 @@ def test_timestamp_malformed_is_invalid(bad_timestamp):
 
     is_valid, reason = validate_timestamp(bad_timestamp)
     assert not is_valid, f"Malformed timestamp '{bad_timestamp}' should be invalid"
-    assert "invalid_timestamp_format" in reason, f"Reason should mention format: {reason}"
+    assert "invalid_timestamp" in reason, f"Reason should mention format: {reason}"

@@ -2,8 +2,11 @@ from __future__ import annotations
 
 """Build a distributable xAI gift package zip from tracked project artifacts."""
 
+import os
+import subprocess
+import sys
 import zipfile
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -25,13 +28,25 @@ def _collect_docs(root: Path) -> list[Path]:
     return sorted(path for path in docs_dir.glob("*") if path.is_file())
 
 
+def _run_doberman_scan(root: Path) -> None:
+    """Run Doberman secret/vendor scan before package generation."""
+    cmd = [sys.executable, str(root / "src" / "po_echo" / "sentinel_v2.py"), str(root)]
+    env = dict(os.environ)
+    try:
+        subprocess.run(cmd, cwd=root, env=env, check=True)
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError("Doberman scan failed. Gift packaging blocked.") from exc
+
+
 def build_xai_gift_zip() -> Path:
     """Create a timestamped xAI gift package zip and return the archive path."""
     root = Path(__file__).resolve().parents[1]
+    _run_doberman_scan(root)
+
     dist_dir = root / "dist"
     dist_dir.mkdir(parents=True, exist_ok=True)
 
-    timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     zip_path = dist_dir / f"xai-gift-package-{timestamp}.zip"
 
     explicit_files = _collect_existing(

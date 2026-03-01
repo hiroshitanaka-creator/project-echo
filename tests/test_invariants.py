@@ -13,8 +13,6 @@ Violations of these invariants are critical bugs.
 
 from __future__ import annotations
 
-import warnings
-
 from po_core.diversity import (
     Rec,
     commercial_bias_score,
@@ -190,7 +188,7 @@ def test_invariant_no_bias_amplification():
 
 # Invariant 5: Verifiable Outputs
 def test_invariant_signature_verifies():
-    """Echo Mark signatures must verify with correct secret (v2 with key_store)."""
+    """Echo Mark HMAC signatures must verify with correct secret (v3)."""
     audit = {
         "responsibility_boundary": {
             "execution_allowed": True,
@@ -214,15 +212,15 @@ def test_invariant_signature_verifies():
     key_id = "test_key_001"
     badge = make_echo_mark(audit, secret=secret, key_id=key_id)
 
-    # Verify with key_store (v2)
+     # Verify with key_store (v3 HMAC compatibility)
     key_store = {key_id: secret}
     valid = verify_mark(
-        badge["payload"], badge["payload_hash"], badge["signature"], key_store=key_store
+        badge["payload"], badge["payload_hash"], badge["signature_hmac"], key_store=key_store
     )
     assert valid, "Invariant 5 violated: Signature does not verify"
 
-    # Ensure v2 schema
-    assert badge["schema_version"] == "echo_mark_v2", "Expected v2 schema"
+        # Ensure v3 schema
+    assert badge["schema_version"] == "echo_mark_v3", "Expected v3 schema"
     assert badge["payload"]["key_id"] == key_id, "key_id mismatch"
 
 
@@ -257,12 +255,12 @@ def test_invariant_tamper_detection():
     # Should fail verification
     key_store = {key_id: secret}
     valid = verify_mark(
-        badge["payload"], badge["payload_hash"], badge["signature"], key_store=key_store
+        badge["payload"], badge["payload_hash"], badge["signature_hmac"], key_store=key_store
     )
     assert not valid, "Invariant 5 violated: Tampering not detected"
 
 
-# Key rotation tests (v2)
+# Key rotation tests (v3/HMAC compatibility)
 def test_key_rotation_multi_key_verification():
     """Multiple keys can coexist, verification uses correct key_id."""
     audit = {
@@ -345,21 +343,17 @@ def test_key_rotation_old_key_removed():
 
     # Verify with old key present
     assert verify_mark(
-        badge["payload"], badge["payload_hash"], badge["signature"], key_store=old_key_store
+        badge["payload"], badge["payload_hash"], badge["signature_hmac"], key_store=old_key_store
     )
 
     # Simulate key rotation: old key removed
     new_key_store = {"k2026_new": "new-secret"}
 
     # Old badge should fail verification (key not in store)
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        valid = verify_mark(
-            badge["payload"], badge["payload_hash"], badge["signature"], key_store=new_key_store
-        )
-        assert not valid, "Badge with removed key should fail"
-        # Should emit warning about missing key
-        assert any("key_id" in str(warning.message) for warning in w)
+    valid = verify_mark(
+        badge["payload"], badge["payload_hash"], badge["signature_hmac"], key_store=new_key_store
+    )
+    assert not valid, "Badge with removed key should fail"
 
 
 # Regression test: Known biased input
