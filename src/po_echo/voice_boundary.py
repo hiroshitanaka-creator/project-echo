@@ -14,8 +14,8 @@ All executions generate Echo Mark receipts regardless of channel.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import logging
+from dataclasses import dataclass
 from typing import Any, Literal
 
 Risk = Literal["low", "medium", "high"]
