@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `docs/GROK-COLLABORATION-BIBLE.md` を追加し、Grok連携時のマスター参照シート（v1.0）をリポジトリ内で固定化。
+- ECHO-20260301-005: `docs/GROK-COLLABORATION-BIBLE.md` を v1.1 に更新。
+- ECHO-20260301-004: `po_echo.diversity.apply_semantic_diversity` に 6D cosine semantic evidence（`semantic_delta`, `6d_values`, `freedom_pressure_snapshot`）を追加。
+- `src/po_echo/diversity.py` を追加し、`po_core` API互換のセマンティック多様性ラッパーと安全フォールバックを実装。
+- 回帰検知用テストとして `tests/test_diversity.py` と `tests/test_sentinel_v2.py` を追加。
+
+### Changed
+- `src/po_echo/sentinel_v2.py` に既存 Doberman / `scan_directory` を保持したまま `apply_semantic_diversity` を末尾追加し、ECHO-20260301-002 の回帰を補正。
+- ECHO-20260301-005: `create_freedom_pressure_v2` 初期化経路を整理し、`compute_v2(text)` ベースの6D計算を安定化。
+- ECHO-20260301-005: `tests/test_diversity.py` の大量候補ケースを 10,000 件に拡張。
+- `src/po_echo/execution_gate.py` に `enrich_audit_with_semantic_evidence` を追加し、既存 `gate_audio` フローを維持したまま監査証跡を拡張。
+
+### Fixed
+- ECHO-20260301-002 で発生した semantic 統合の不安定化（`po_core` import 揺れ、Rec変換の脆弱性、テスト欠落）を ECHO-20260301-003 で是正。
+
 ### Planned
 - P1（1〜2ヶ月）開始: 音声系 property-based test 拡張、`po-cosmic voice`、Demo C
 

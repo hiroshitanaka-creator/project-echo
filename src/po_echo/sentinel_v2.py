@@ -4,6 +4,9 @@ import re
 import sys
 from collections import defaultdict
 from pathlib import Path
+from typing import Any
+
+from po_echo.diversity import apply_semantic_diversity as _apply_semantic_diversity
 
 # 監視対象ベンダー定義 (地雷リスト)
 VENDOR_RISK_MAP = {
@@ -118,6 +121,36 @@ def scan_directory(target_dir: str) -> None:
     else:
         print(f"✅ Scanned {total_files} files. No vendor chains detected. You are free.")
         sys.exit(0)
+
+
+def apply_semantic_diversity(
+    candidates: list[dict[str, Any]],
+    *,
+    counterfactuals: list[dict[str, Any]] | None = None,
+    k: int = 5,
+) -> dict[str, Any]:
+    """Apply semantic diversity while preserving existing sentinel flow.
+
+    Args:
+        candidates: Candidate set from upstream audit pipeline.
+        counterfactuals: Optional counterfactual set for diversification.
+        k: Number of records to keep after MMR selection.
+
+    Returns:
+        Diversity audit payload from ``po_core.diversify_with_mmr``.
+
+    Raises:
+        ValueError: If ``k`` is smaller than 1.
+    """
+    if k < 1:
+        raise ValueError(f"k must be >= 1, got {k}")
+
+    return _apply_semantic_diversity(
+        candidates,
+        counterfactuals=counterfactuals,
+        prompt_text="sentinel_semantic_scan",
+        k=k,
+    )
 
 
 if __name__ == "__main__":
