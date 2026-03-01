@@ -1,0 +1,48 @@
+name: Benchmark
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+jobs:
+  public-benchmark-gate:
+    name: Public Benchmark Gate (Phase 3)
+    runs-on: ubuntu-latest
+    env:
+      RUN_PUBLIC_BENCHMARKS: "1"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          pip install -e .[dev]
+
+      - name: Benchmark voice boundary (10k / 100k)
+        run: RUN_PUBLIC_BENCHMARKS=1 pytest -q tests/benchmarks/benchmark_voice_boundary.py
+
+      - name: Benchmark RTH rolling hash (100k windows)
+        run: RUN_PUBLIC_BENCHMARKS=1 pytest -q tests/benchmarks/benchmark_rth.py
+
+      - name: Benchmark summary
+        if: always()
+        run: |
+          {
+            echo "## Phase 3 Benchmark Summary"
+            echo ""
+            if [ "${{ job.status }}" = "success" ]; then
+              echo "✅ KPI gate passed (10k < 0.3s and 100k RTH boundedness maintained)."
+            else
+              echo "❌ KPI gate failed. Review benchmark logs for KPI violation evidence."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

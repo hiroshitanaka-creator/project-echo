@@ -1,21 +1,38 @@
 from __future__ import annotations
 
-import importlib.util
 import os
 import sys
 import tracemalloc
+from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
 import pytest
 
 
-def _load_rth_symbols():
+
+def _resolve_module_path(filename: str) -> Path:
+    """Resolve po_echo module path for editable installs and local source trees."""
+    for entry in sys.path:
+        if not entry:
+            continue
+        candidate = Path(entry) / "po_echo" / filename
+        if candidate.exists():
+            return candidate
+
+    fallback = Path(__file__).resolve().parents[2] / "src" / "po_echo" / filename
+    if fallback.exists():
+        return fallback
+    raise RuntimeError(f"Unable to resolve po_echo/{filename}")
+
+
+
+def _load_rth_symbols() -> tuple[type, type]:
     """Load RTH symbols without importing po_echo package __init__."""
-    module_path = Path(__file__).resolve().parents[2] / "src" / "po_echo" / "rth.py"
-    spec = importlib.util.spec_from_file_location("po_echo_rth_benchmark", module_path)
+    module_path = _resolve_module_path("rth.py")
+    spec = spec_from_file_location("po_echo_rth_benchmark", module_path)
     if spec is None or spec.loader is None:
         raise RuntimeError("Failed to resolve rth module spec")
-    module = importlib.util.module_from_spec(spec)
+    module = module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module.CollisionTrackerConfig, module.RollingTranscriptHash
@@ -23,6 +40,7 @@ def _load_rth_symbols():
 
 CollisionTrackerConfig, RollingTranscriptHash = _load_rth_symbols()
 RUN_PUBLIC_BENCHMARKS = os.getenv("RUN_PUBLIC_BENCHMARKS") == "1"
+
 
 
 def _run_rolling_hash(window_count: int) -> dict[str, int | float]:
