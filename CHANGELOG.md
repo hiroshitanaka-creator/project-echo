@@ -10,12 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - ECHO-20260304-002: `.github/workflows/benchmark.yml` を新規追加し、`RUN_PUBLIC_BENCHMARKS=1` の定期 benchmark gate（schedule + manual dispatch）を導入。
 - ECHO-20260304-002: `docs/DEMO_C.md` を新規追加し、ベンチマーク結果を Echo Mark 形式で表示する軽量CLIスケルトンを定義。
+- ECHO-20260305-001: `docs/XAI_PRESENTATION.md` を追加し、xAI向けプレゼン構成（不変原則・benchmark結果・脅威対策証跡・運用手順）を即使用可能な形で固定化。
+- ECHO-20260305-001: `docs/OPERATING_PROCEDURE.md` を追加し、benchmark運用・key rotation・監査フローをPhase 4手順として明文化。
+- ECHO-20260305-001: `docs/demo_c_example.py` を追加し、Phase 3 benchmark証跡を Echo Mark v3 dual signature 付き receipt として出力・検証する Demo C CLI を実装。
 
 ### Changed
 - ECHO-20260304-002: `docs/GROK-COLLABORATION-BIBLE.md` を v1.4 Full へ更新し、Phase 3 Benchmark & Quality 運用規格（再現性 / KPI / CI統合 / 非破壊）を追加。
 - ECHO-20260304-002: `tests/benchmarks/benchmark_voice_boundary.py` のケース生成を Hypothesis 固定seed + `register_type_strategy` で再現可能化し、10k KPI（`< 0.3s`）を厳格化。
 - ECHO-20260304-002: `tests/benchmarks/benchmark_rth.py` / `benchmark_voice_boundary.py` の import を poetry / editable install 両対応の安全な import パターンへ更新。
 - ECHO-20260304-002: `docs/BENCHMARK_RESULTS.md` のKPI定義を厳格化し、Phase 3最終運用コマンドを明確化。
+- ECHO-20260305-001: `docs/DEMO_C.md` をスケルトンから本実装手順へ更新し、署名付きbenchmark receipt CLIの運用観点を追加。
+- ECHO-20260305-001: `docs/THREAT_MODEL_UPDATE.md` を追加し、Phase 3 benchmark証跡を脅威対策シナリオへ接続して公開検証耐性を明文化。
 
 ### Added
 - ECHO-20260302-002: `docs/GROK-COLLABORATION-BIBLE.md` を v1.2 Full へ更新。
