@@ -15,6 +15,8 @@ Integrates with:
 
 from __future__ import annotations
 
+from typing import Any
+
 from po_echo.rth import RollingTranscriptHash
 from po_echo.voice_boundary import attach_boundary, decide
 
@@ -74,3 +76,35 @@ def gate_audio(
     audit = attach_boundary(audit, decision, rth_snapshot=rth.snapshot())
 
     return audit
+
+
+def enrich_audit_with_semantic_evidence(
+    audit: dict[str, Any],
+    semantic_result: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Attach semantic evidence blocks without mutating execution-gate behavior.
+
+    Args:
+        audit: Existing audit payload returned by the diversity pipeline.
+        semantic_result: Optional semantic-analysis output to be embedded.
+
+    Returns:
+        New audit dictionary that includes ``semantic_evidence`` and
+        ``semantic_evidence_present`` fields.
+
+    Raises:
+        TypeError: If ``audit`` is not a dictionary.
+    """
+    if not isinstance(audit, dict):
+        raise TypeError("audit must be a dictionary")
+
+    merged = dict(audit)
+    semantic_evidence = semantic_result or {}
+    merged["semantic_evidence"] = semantic_evidence
+    merged["semantic_evidence_present"] = bool(semantic_evidence)
+
+    for key in ("semantic_delta", "6d_values", "freedom_pressure_snapshot"):
+        if key in semantic_evidence:
+            merged[key] = semantic_evidence[key]
+
+    return merged
