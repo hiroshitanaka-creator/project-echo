@@ -28,7 +28,7 @@ except ImportError:
 
 KEY_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 VALID_STATUS = {"active", "inactive", "revoked"}
-UTC = getattr(dt, "UTC", dt.timezone.utc)
+UTC = dt.UTC
 
 
 def validate_key_id(key_id: str) -> str:
