@@ -113,6 +113,20 @@ class RTHState:
     robust_hash_hex: str = "0" * 16  # 64-bit LSH for noise-tolerant comparisons
     seen_chain_hash_to_feat_fp: dict[str, dict[str, int | str]] | None = None
 
+    def __repr__(self) -> str:
+        """Return compact, non-sensitive state representation for debugging."""
+        seen_count = len(self.seen_chain_hash_to_feat_fp or {})
+        return (
+            "RTHState("
+            f"algo='{self.algo}', "
+            f"window_ms={self.window_ms}, "
+            f"t_ms={self.t_ms}, "
+            f"hash_prefix='{self.h_prev.hex()[:12]}', "
+            f"robust_hash_hex='{self.robust_hash_hex}', "
+            f"seen_chain_hash_count={seen_count}"
+            ")"
+        )
+
 
 @dataclass(frozen=True)
 class CollisionTrackerConfig:
@@ -260,6 +274,17 @@ class RollingTranscriptHash:
     def _now(self) -> int:
         """Current timestamp in milliseconds."""
         return int(time.time() * 1000)
+
+    def __str__(self) -> str:
+        """Return lightweight object summary for operational diagnostics."""
+        seen = self.state.seen_chain_hash_to_feat_fp or {}
+        return (
+            "RollingTranscriptHash("
+            f"window_ms={self.state.window_ms}, "
+            f"current_hash_prefix='{self.state.h_prev.hex()[:12]}', "
+            f"tracker_entries={len(seen)}"
+            ")"
+        )
 
     def update_text(self, text_window: str) -> None:
         """

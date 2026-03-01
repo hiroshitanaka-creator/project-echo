@@ -121,3 +121,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Testing
 - ECHO-20260303-002: `tests/test_rth.py` と `tests/test_voice_boundary.py` を Hypothesis ベースの複合 edge case テストで拡張。
+
+- ECHO-20260304-001: `tests/benchmarks/benchmark_voice_boundary.py` と `tests/benchmarks/benchmark_rth.py` を追加し、Phase 3公開ベンチマーク（性能・メモリ）を再現可能コマンド付きで整備。
+- ECHO-20260304-001: `docs/BENCHMARK_RESULTS.md` を追加し、実行手順・結果テーブル・Phase 3 KPIを明文化。
+
+### Changed
+- ECHO-20260304-001: `src/po_echo/voice_boundary.py` と `src/po_echo/rth.py` に軽量 `__repr__` / `__str__` を追加し、非機能デバッグ性を向上。
+
+### Documentation
+- ECHO-20260304-001: `PROGRESS.md` に Phase 3開始宣言と公開検証耐性（再現性）方針を追記。

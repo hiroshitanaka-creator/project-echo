@@ -33,6 +33,16 @@ class VoiceBoundaryDecision:
     requires_human_confirm: bool
     reasons: list[str]
 
+    def __str__(self) -> str:
+        """Return concise decision text for audit/debug logs."""
+        return (
+            "VoiceBoundaryDecision("
+            f"risk={self.risk}, "
+            f"required_action={self.required_action}, "
+            f"execution_allowed={self.execution_allowed}"
+            ")"
+        )
+
 
 POLICY = {
     "low": {"required_action": "none", "requires_human_confirm": False},
@@ -57,6 +67,18 @@ class ScreenlessSafetyConfig:
     fallback_mode_normal: str = "normal"
     fallback_mode_safe: str = "on_device_safe_mode"
     block_required_action: Confirm = "app_confirm"
+
+    def __repr__(self) -> str:
+        """Return lightweight config representation for diagnostics."""
+        return (
+            "ScreenlessSafetyConfig("
+            f"high_bias_block_threshold={self.high_bias_block_threshold:.2f}, "
+            f"low_battery_threshold={self.low_battery_threshold:.2f}, "
+            f"fallback_mode_normal='{self.fallback_mode_normal}', "
+            f"fallback_mode_safe='{self.fallback_mode_safe}', "
+            f"block_required_action='{self.block_required_action}'"
+            ")"
+        )
 
 
 def _safe_float(value: Any, *, default: float, field_name: FieldName) -> float:
