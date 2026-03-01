@@ -48,6 +48,17 @@ SENSITIVE_INTENTS = {"booking", "itinerary", "data_share", "home_access"}
 _LOGGER = logging.getLogger(__name__)
 
 
+@dataclass(frozen=True)
+class ScreenlessSafetyConfig:
+    """Configurable thresholds and modes for screenless safety fallback."""
+
+    high_bias_block_threshold: float = HIGH_BIAS_BLOCK_THRESHOLD
+    low_battery_threshold: float = LOW_BATTERY_THRESHOLD
+    fallback_mode_normal: str = "normal"
+    fallback_mode_safe: str = "on_device_safe_mode"
+    block_required_action: Confirm = "app_confirm"
+
+
 def _safe_float(value: Any, *, default: float, field_name: FieldName) -> float:
     """
     Safely coerce numeric-like values to float with audit-friendly warnings.
@@ -191,6 +202,7 @@ def evaluate_screenless_safety(
     bluetooth_connected: bool,
     replay_detected: bool = False,
     tamper_detected: bool = False,
+    config: ScreenlessSafetyConfig | None = None,
 ) -> dict[str, Any]:
     """
     Evaluate safety gate for screenless ambient audio channel.
@@ -205,21 +217,24 @@ def evaluate_screenless_safety(
         default=0.0,
         field_name="battery_level",
     )
+    screenless_config = config or ScreenlessSafetyConfig()
     policy = get_voice_boundary_policy(bias_score=safe_bias_score, is_gumdrop=True)
-    fallback_mode = "normal"
+    fallback_mode = screenless_config.fallback_mode_normal
 
-    if safe_battery_level < LOW_BATTERY_THRESHOLD or not bluetooth_connected:
-        fallback_mode = "on_device_safe_mode"
+    if safe_battery_level < screenless_config.low_battery_threshold or not bluetooth_connected:
+        fallback_mode = screenless_config.fallback_mode_safe
 
     should_block = (
-        safe_bias_score >= HIGH_BIAS_BLOCK_THRESHOLD or replay_detected or tamper_detected
+        safe_bias_score >= screenless_config.high_bias_block_threshold
+        or replay_detected
+        or tamper_detected
     )
     if should_block:
         return {
             **policy,
             "execution_allowed": False,
             "requires_human_confirm": True,
-            "required_action": "app_confirm",
+            "required_action": screenless_config.block_required_action,
             "fallback_mode": fallback_mode,
             "reasons": [
                 "screenless_guard",
