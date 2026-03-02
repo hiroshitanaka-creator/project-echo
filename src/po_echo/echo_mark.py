@@ -24,9 +24,9 @@ from po_echo.echo_mark_core import (
 )
 from po_echo.echo_mark_registry import (
     get_active_key_id,
+    get_key_store,
     get_public_key_from_registry,
     get_secret_from_env,
-    get_key_store,
     load_ed25519_keypair,
     load_ed25519_private_key_from_env,
     load_ed25519_public_key_from_env,
