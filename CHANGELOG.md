@@ -161,3 +161,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `src/po_echo/gumdrop_defense.py` の軽量監査を FreedomPressureV2 連携ベースへ更新し、affiliateフラグ依存を除去。
 - `src/echo_register/` と `src/world_register/` を明示的ディレクトリ化（`.gitkeep` + README stub）。
 - `src/pocore/__init__.py` に deprecated warning と `po_core` 互換エイリアスを追加。
+
+## [Unreleased]
+
+### Changed
+- ECHO-20260306-002: `src/po_echo/echo_mark.py` を互換レイヤー化し、実装責務を `echo_mark_core.py`（payload/署名）, `echo_mark_verify.py`（検証）, `echo_mark_registry.py`（key管理/rotation）へ分割。
+- ECHO-20260306-002: `src/po_echo/diversity.py` の `__all__` から `_safe_*` 内部関数を除外し、公開API境界を明確化。
+- ECHO-20260306-002: `VoiceBoundaryDecision` を `@dataclass(frozen=True)` 化し、`execution_gate.py` は immutable update (`dataclasses.replace`) で確認待ち状態を更新。
+- ECHO-20260306-002: `vendor_db.py` に low-risk OSS分類を追加し、`protobuf` / `requests` / `numpy` を low-riskへ移管（`toxic_reqs.txt` から `requests` / `numpy` を除去）。
