@@ -23,7 +23,7 @@ Confirm = Literal["none", "double_tap", "passphrase", "app_confirm"]
 FieldName = Literal["amount", "bias_score", "battery_level"]
 
 
-@dataclass
+@dataclass(frozen=True)
 class VoiceBoundaryDecision:
     """Voice-specific responsibility boundary decision."""
 

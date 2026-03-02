@@ -177,7 +177,4 @@ __all__ = [
     "create_freedom_pressure_v2",
     "diversify_with_mmr",
     "apply_semantic_diversity",
-    "_safe_cosine_similarity",
-    "_safe_create_freedom_pressure_v2",
-    "_safe_rec_from_data",
 ]

@@ -15,6 +15,7 @@ Integrates with:
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any
 
 from po_echo.rth import RollingTranscriptHash
@@ -69,8 +70,11 @@ def gate_audio(
 
     # If requires human confirmation and not provided, block execution
     if decision.requires_human_confirm and not simulate_user_ok:
-        decision.execution_allowed = False
-        decision.reasons.append("awaiting_user_confirmation")
+        decision = replace(
+            decision,
+            execution_allowed=False,
+            reasons=[*decision.reasons, "awaiting_user_confirmation"],
+        )
 
     # Attach boundary with RTH snapshot
     audit = attach_boundary(audit, decision, rth_snapshot=rth.snapshot())
