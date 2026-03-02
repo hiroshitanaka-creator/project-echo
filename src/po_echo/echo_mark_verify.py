@@ -133,15 +133,30 @@ def _resolve_public_key_for_badge(
     public_keys: dict[str, str] | None,
     registry_path: Path | str = ".keys/registry.json",
 ) -> tuple[str | None, str | None]:
+    """Resolve public key for badge verification.
+
+    Trust resolution order:
+    1. Explicit ``public_keys`` map (caller-controlled trust anchor).
+       When provided, the inline badge key is intentionally skipped for
+       key_ids absent from the map — this prevents self-authenticating badges.
+    2. Inline badge public key (only when no explicit map is given).
+    3. Environment key store.
+    4. File-based key registry.
+    """
     payload = cast(dict[str, Any], badge.get("payload") or {})
     key_id = str(payload.get("key_id") or "default")
 
-    if public_keys and key_id in public_keys:
-        return public_keys[key_id], "active"
-
-    inline_public = badge.get("public_key")
-    if isinstance(inline_public, str) and inline_public:
-        return inline_public, "active"
+    if public_keys is not None:
+        # Caller supplied an explicit trust store: honour it exclusively.
+        # Do NOT fall back to the inline key — that would allow self-signed badges
+        # to bypass key-rotation policies.
+        if key_id in public_keys:
+            return public_keys[key_id], "active"
+    else:
+        # No explicit trust store: accept the inline key as a convenience fallback.
+        inline_public = badge.get("public_key")
+        if isinstance(inline_public, str) and inline_public:
+            return inline_public, "active"
 
     env_store = get_ed25519_public_store()
     if key_id in env_store:
