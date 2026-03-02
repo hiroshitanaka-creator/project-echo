@@ -299,10 +299,10 @@ def test_key_rotation_multi_key_verification():
 
     # Both should verify with the key store
     valid1 = verify_mark(
-        badge1["payload"], badge1["payload_hash"], badge1["signature"], key_store=key_store
+        badge1["payload"], badge1["payload_hash"], badge1["signature_hmac"], key_store=key_store
     )
     valid2 = verify_mark(
-        badge2["payload"], badge2["payload_hash"], badge2["signature"], key_store=key_store
+        badge2["payload"], badge2["payload_hash"], badge2["signature_hmac"], key_store=key_store
     )
 
     assert valid1, "Badge with k2026_01 should verify"
@@ -314,7 +314,7 @@ def test_key_rotation_multi_key_verification():
     badge3["payload"]["key_id"] = "k2026_02"  # Mismatch key_id
 
     valid3 = verify_mark(
-        badge3["payload"], badge3["payload_hash"], badge3["signature"], key_store=key_store
+        badge3["payload"], badge3["payload_hash"], badge3["signature_hmac"], key_store=key_store
     )
     assert not valid3, "Mismatched key_id should fail verification"
 

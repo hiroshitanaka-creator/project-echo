@@ -7,7 +7,6 @@ Demo-only lock-in anti-pattern fixture used by Doberman scanner tests.
 import json
 
 # こっそりインポート（エイリアスで隠したつもり）
-import openai as my_ai_brain
 
 
 def think() -> None:
