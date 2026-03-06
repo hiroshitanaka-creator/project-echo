@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from typing import Any
+from typing import Any, cast
 
 from po_core.diversity import Rec, diversify_with_mmr
 
@@ -32,7 +32,7 @@ def _safe_rec_from_data(candidate: dict[str, Any] | Rec) -> Rec:
 
     rec_from_dict = getattr(Rec, "from_dict", None)
     if callable(rec_from_dict):
-        return rec_from_dict(candidate)
+        return cast(Rec, rec_from_dict(candidate))
 
     return Rec(
         id=str(candidate.get("id", "unknown")),
