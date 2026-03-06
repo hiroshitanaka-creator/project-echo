@@ -6,6 +6,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
+from po_core.diversity import Rec
+
 _apply_semantic_diversity = None
 
 # 監視対象ベンダー定義 (地雷リスト)
@@ -134,9 +136,9 @@ def scan_directory(target_dir: str) -> None:
 
 
 def apply_semantic_diversity(
-    candidates: list[dict[str, Any]],
+    candidates: list[dict[str, Any] | Rec],
     *,
-    counterfactuals: list[dict[str, Any]] | None = None,
+    counterfactuals: list[dict[str, Any] | Rec] | None = None,
     k: int = 5,
 ) -> dict[str, Any]:
     """Apply semantic diversity while preserving existing sentinel flow.
