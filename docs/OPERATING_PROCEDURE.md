@@ -56,13 +56,41 @@ python docs/demo_c_example.py --key-id echo-prod-202603 --pretty
    - INVALID: 署名・整合性破綻のため公開不可
 4. **保管**: 監査チケットに証跡を添付（削除禁止）
 
-## 6. インシデント時対応
+## 6. CI失敗時トリアージ手順（再現→分類→修正→再検証）
+
+1. **再現（Reproduce）**
+   - 失敗したジョブをローカルで同じコマンドで再現する。
+   - 例（PR必須ゲート）:
+     ```bash
+     pytest -q tests/test_smoke.py
+     pytest -q tests/test_invariants.py
+     pytest -q tests/test_prop_*.py --hypothesis-show-statistics
+     ```
+
+2. **分類（Classify）**
+   - 失敗種別を以下に分類する。
+     - `smoke`: lint / typing / import破綻
+     - `invariants`: 不変原則違反（例: responsibility boundary missing/invalid）
+     - `prop-core`: 境界条件・確率的反例
+     - `benchmark`: KPI劣化（週次重ゲート）
+   - `invariants` 失敗時はCI summaryの「Violated principle candidates」を一次判定として利用する。
+
+3. **修正（Fix）**
+   - まず不変原則違反を優先（AI never recommends / conservative gate / evidence-first / no hidden monetization / verifiable outputs）。
+   - 次に副作用（型、lint、周辺property）を解消。
+   - 修正内容には「どの原則を回復したか」をコミットメッセージまたはPR説明に明記する。
+
+4. **再検証（Re-verify）**
+   - 失敗ジョブ単体 → PR必須ゲート一式 → 必要に応じてbenchmarkの順で再実行する。
+   - 合格後、監査ログに「原因・対処・再検証結果」を追記する。
+
+## 7. インシデント時対応
 
 - replay検知: 該当nonceを封鎖し、発表用receiptを再発行。
 - key漏えい疑い: 即時revoked + 新key_idへ切替。
 - KPI劣化: 公開停止、原因分析後に再計測。
 
-## 7. 変更管理ルール
+## 8. 変更管理ルール
 
 - 既存 `docs/BENCHMARK_RESULTS.md` の履歴は累積追記のみ。
 - 防御ロジック変更時は不変原則適合レビューを先行。

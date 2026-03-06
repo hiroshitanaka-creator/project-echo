@@ -1,4 +1,4 @@
-name: CI
+name: CI (PR Required Gates)
 
 on:
   push:
@@ -7,33 +7,30 @@ on:
     branches: [main]
 
 jobs:
-  p0-1-quality-gate:
-    name: P0-1 Quality Gate (lint / typing / property tests)
+  smoke:
+    name: Smoke Gate (lint / typing / smoke)
     runs-on: ubuntu-latest
 
     steps:
-      - name: P0-1 Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: P0-1 Setup Python 3.12
+      - name: Setup Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: "pip"
 
-      # Project Echo 不変原則：テストが落ちたら即修正必須
-      - name: P0-1 Install dependencies (requirements-dev + editable)
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
           pip install -e .[dev]
 
-      - name: P0-1 Ruff lint
-        id: ruff
+      - name: Ruff lint
         run: ruff check . --output-format=github
 
-      - name: P0-1 mypy type check (strictness ramp)
-        id: mypy
+      - name: mypy type check (strictness ramp)
         run: |
           # TODO(Project Echo): 段階的 strict 化のため、将来的に --ignore-missing-imports を外して --strict を有効化する。
           mypy src \
@@ -45,27 +42,118 @@ jobs:
             --check-untyped-defs \
             --disallow-incomplete-defs
 
-      - name: P0-1 pytest (property-based + quick)
-        id: pytest
-        run: |
-          # Project Echo 不変原則：テストが落ちたら即修正必須
-          pytest tests/ -q --hypothesis-show-statistics
+      - name: Smoke tests
+        run: pytest -q tests/test_smoke.py
 
-      - name: P0-1 CI summary
+  invariants:
+    name: Invariants Gate (core principles)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          pip install -e .[dev]
+
+      - name: Run invariant tests
+        id: invariants_run
+        continue-on-error: true
+        run: |
+          pytest -q tests/test_invariants.py 2>&1 | tee invariant_test_output.log
+          echo "pytest_exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Invariant violation summary
         if: always()
         run: |
           {
-            echo "## P0-1 CI Summary"
+            echo "## Invariants Gate Summary"
             echo ""
-            echo "| Check | Result |"
-            echo "|---|---|"
-            echo "| Ruff | ${{ steps.ruff.outcome }} |"
-            echo "| mypy | ${{ steps.mypy.outcome }} |"
-            echo "| pytest | ${{ steps.pytest.outcome }} |"
-            echo ""
-            if [ "${{ job.status }}" != "success" ]; then
-              echo "❌ One or more gates failed. See failed step logs above for evidence and fix immediately."
+            if [ "${{ steps.invariants_run.outputs.pytest_exit_code }}" = "0" ]; then
+              echo "✅ Invariants gate passed."
             else
-              echo "✅ All gates passed."
+              echo "❌ Invariants gate failed. Violated principle candidates:"
+              if rg -n "Invariant 1 violated|AI must never recommend" invariant_test_output.log >/dev/null; then
+                echo "- AI never recommends"
+              fi
+              if rg -n "Invariant 2 violated|must not auto-allow|Monopoly must not auto-allow" invariant_test_output.log >/dev/null; then
+                echo "- Execution gate is conservative"
+              fi
+              if rg -n "Invariant 3 violated|Cannot reconstruct" invariant_test_output.log >/dev/null; then
+                echo "- Evidence-first decision making"
+              fi
+              if rg -n "Invariant 4 violated|No hidden monetization" invariant_test_output.log >/dev/null; then
+                echo "- No hidden monetization inputs"
+              fi
+              if rg -n "Invariant 5 violated|Signature does not verify|Tampering not detected" invariant_test_output.log >/dev/null; then
+                echo "- Verifiable outputs"
+              fi
+              if rg -n "responsibility_boundary|boundary|reasons" invariant_test_output.log >/dev/null; then
+                echo "- Responsibility boundary missing/invalid"
+              fi
+              echo ""
+              echo "詳細は \`Run invariant tests\` のログを参照してください。"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail workflow when invariant tests failed
+        if: steps.invariants_run.outputs.pytest_exit_code != '0'
+        run: |
+          echo "Invariant tests failed. See summary for violated principles."
+          exit 1
+
+  prop-core:
+    name: Prop Core Gate (property-based)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          pip install -e .[dev]
+
+      - name: Property-based core tests
+        run: pytest -q tests/test_prop_*.py --hypothesis-show-statistics
+
+  ci-summary:
+    name: CI Summary
+    if: always()
+    needs: [smoke, invariants, prop-core]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write gate summary
+        run: |
+          {
+            echo "## PR Required Gates Summary"
+            echo ""
+            echo "| Gate | Result |"
+            echo "|---|---|"
+            echo "| Smoke | ${{ needs.smoke.result }} |"
+            echo "| Invariants | ${{ needs.invariants.result }} |"
+            echo "| Prop Core | ${{ needs.prop-core.result }} |"
+            echo ""
+            if [ "${{ needs.smoke.result }}" = "success" ] && [ "${{ needs.invariants.result }}" = "success" ] && [ "${{ needs.prop-core.result }}" = "success" ]; then
+              echo "✅ PR required gates passed."
+            else
+              echo "❌ PR required gates failed."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
