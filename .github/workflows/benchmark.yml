@@ -1,4 +1,4 @@
-name: Benchmark
+name: Benchmark (Periodic Heavy Gate)
 
 on:
   schedule:
@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  public-benchmark-gate:
-    name: Public Benchmark Gate (Phase 3)
+  benchmark:
+    name: Benchmark Gate (weekly heavy)
     runs-on: ubuntu-latest
     env:
       RUN_PUBLIC_BENCHMARKS: "1"
@@ -25,6 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
           pip install -e .[dev]
 
       - name: Benchmark voice boundary (10k / 100k)
@@ -37,7 +38,7 @@ jobs:
         if: always()
         run: |
           {
-            echo "## Phase 3 Benchmark Summary"
+            echo "## Periodic Heavy Benchmark Summary"
             echo ""
             if [ "${{ job.status }}" = "success" ]; then
               echo "✅ KPI gate passed (10k < 0.3s and 100k RTH boundedness maintained)."
