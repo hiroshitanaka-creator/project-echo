@@ -29,6 +29,23 @@ PUNCT = ["-", "_", ".", "/", "|", "·", "•", "—"]
 # Case manipulation strategies
 CASE_FUN = ["lower", "upper", "title", "swap"]
 
+AMBIGUOUS_COMMAND_TEMPLATES = [
+    "いい感じでお願い",
+    "適当に進めて",
+    "そのへんで",
+    "お得なやつで",
+    "前と同じで",
+]
+
+CONTRADICTORY_COMMAND_PAIRS = [
+    ("一番安いもの", "でも高品質だけにして"),
+    ("急ぎで予約", "やっぱり急がなくていい"),
+    ("自動で確定して", "いや確認してから"),
+    ("静かな店", "にぎやかな店がいい"),
+]
+
+INTERRUPTION_MARKERS = ["中断", "ちょっと待って", "やっぱり戻る", "再開"]
+
 
 @composite
 def merchant_name_variants(draw, base: str | None = None):
@@ -208,3 +225,40 @@ def affiliate_urls(draw):
     return "https://tracker.example/redirect?url=" + urllib.parse.quote(nested_target, safe="")
 
     return base
+
+
+@composite
+def ambiguous_commands(draw):
+    """Generate ambiguous voice commands lacking explicit slots/constraints."""
+    return draw(st.sampled_from(AMBIGUOUS_COMMAND_TEMPLATES))
+
+
+@composite
+def contradictory_commands(draw):
+    """Generate contradictory two-step instructions that force conservative handling."""
+    first, second = draw(st.sampled_from(CONTRADICTORY_COMMAND_PAIRS))
+    return [first, second]
+
+
+@composite
+def short_burst_commands(draw):
+    """Generate bursty short utterance sequences (short sentence spam)."""
+    vocab = ["はい", "違う", "待って", "それ", "次", "予約", "やめる", "続けて"]
+    return draw(st.lists(st.sampled_from(vocab), min_size=3, max_size=12))
+
+
+@composite
+def interruption_resume_session(draw):
+    """Generate interruption/resume session utterance sequences."""
+    prefix = draw(st.lists(st.text(min_size=1, max_size=24), min_size=1, max_size=3))
+    marker = draw(st.sampled_from(INTERRUPTION_MARKERS))
+    suffix = draw(st.lists(st.text(min_size=1, max_size=24), min_size=1, max_size=3))
+    return [*prefix, marker, *suffix]
+
+
+command_session_adversarial = st.one_of(
+    ambiguous_commands().map(lambda cmd: [cmd]),
+    contradictory_commands(),
+    short_burst_commands(),
+    interruption_resume_session(),
+)
