@@ -76,6 +76,26 @@ po-cosmic verify runs/high_bias_affiliate.badge.json
 
 ---
 
+
+
+## 🎙️ Voice CLI（`po-cosmic voice`）
+
+`src/po_echo` の Voice Boundary / Ear Handshake / RTH を薄いオーケストレーション層で束ね、CLIから**候補セット＋証拠＋責任境界**を返します。
+
+固定JSON schema:
+- Input: `{"intent": string, "transcript": string, "metadata": object}`
+- Output: `{"candidate_set": array, "evidence": array, "responsibility_boundary": object, "voice_text": string, "echo_mark": object}`
+
+```bash
+export ECHO_MARK_SECRET="demo-secret-1234567890"
+export ECHO_MARK_PRIVATE_KEY="1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100"
+
+po-cosmic voice   --intent booking   --transcript "土曜夜、2名、予算1万円で予約候補"   --meta '{"amount": 10000}'   --simulate-ok   --in runs/high_bias_affiliate.audit.json   --out runs/voice_demo.json
+
+# 固定schemaの確認
+po-cosmic voice --show-schema --intent search --transcript "候補" --in runs/high_bias_affiliate.audit.json --out /tmp/unused.json
+```
+
 ## 📍 OpenAI World Register 脅威モデル
 
 Project Echoは、画面無しデバイス時代における「失敗しなかった意図」課金モデルの不透明化リスクを、
