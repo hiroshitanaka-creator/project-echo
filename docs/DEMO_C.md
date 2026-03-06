@@ -46,3 +46,31 @@ python docs/demo_c_example.py --pretty --hmac-secret "$(python -c 'import secret
 - デフォルト鍵は廃止済み。`--ed25519-private-key` または `--hmac-secret` を必ず明示し、本番では `tools/generate_keypair.py` で生成した鍵を利用すること。
 - benchmark evidenceを更新する際は、先に benchmark を再実行し、`docs/BENCHMARK_RESULTS.md` の履歴整合を維持すること。
 - `BLOCKED` と `INVALID` は運用上の意味が異なるため、監査時に混同しないこと。
+
+
+## Voice CLI 最小実行例（棚卸し + オーケストレーション層）
+
+`po-cosmic voice` は `src/po_echo` 配下の実装を以下の順で薄く束ねます。
+
+1. Voice Boundary (`po_echo.voice_boundary`) で責任境界を決定
+2. Ear Handshake (`po_echo.ear_handshake`) でデバイス境界を証跡化
+3. RTH (`po_echo.rth`, `po_echo.execution_gate`) で transcript 近傍ハッシュを付与
+4. Echo Mark (`po_echo.echo_mark`) を dual signature で発行
+
+固定JSON schema（ヘルプと同一）:
+
+- Input: `{"intent": string, "transcript": string, "metadata": object}`
+- Output: `{"candidate_set": array, "evidence": array, "responsibility_boundary": object, "voice_text": string, "echo_mark": object}`
+
+```bash
+# 1) スキーマ表示（固定仕様）
+po-cosmic voice --show-schema --intent search --transcript "候補を出して" --in runs/high_bias_affiliate.audit.json --out /tmp/unused.json
+
+# 2) 最小実行
+export ECHO_MARK_SECRET="demo-secret-1234567890"
+export ECHO_MARK_PRIVATE_KEY="1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100"
+po-cosmic voice   --intent booking   --transcript "土曜夜、2名、予算1万円で予約候補"   --meta '{"amount": 10000}'   --simulate-ok   --in runs/high_bias_affiliate.audit.json   --out runs/demo_voice.json
+
+# 3) 検証（候補セット＋証拠＋責任境界）
+python -c 'import json;d=json.load(open("runs/demo_voice.json"));print(sorted(d.keys()));assert {"candidate_set","evidence","responsibility_boundary"}.issubset(d.keys())'
+```

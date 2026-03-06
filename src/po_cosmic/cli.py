@@ -20,7 +20,6 @@ if str(src_path) not in sys.path:
 from po_core.cosmic_ethics_39.evaluator import CosmicEthics39Evaluator
 from po_core.cosmic_ethics_39.scenarios import get_scenario
 from po_core.diversity import Rec, diversify_with_mmr
-from po_echo.ear_handshake import derive_session_key, issue_challenge, new_device, verify_response
 from po_echo.echo_mark import (
     get_secret_from_env,
     load_ed25519_keypair,
@@ -32,7 +31,15 @@ from po_echo.echo_mark import (
     verify_mark,
 )
 from po_echo.execution_gate import gate_audio
-from po_echo.voice_boundary import make_echo_verified_voice_text
+from po_echo.voice_orchestration import (
+    VOICE_INPUT_SCHEMA,
+    VOICE_OUTPUT_SCHEMA,
+    VOICE_SCHEMA_HELP,
+    VoiceFlowError,
+    VoiceFlowInput,
+    inventory_voice_stack,
+    run_voice_flow,
+)
 
 try:
     import nacl.signing  # noqa: F401 - import check for availability
@@ -660,31 +667,6 @@ def cmd_voice(args: argparse.Namespace) -> None:
         print(f"Error: Invalid JSON in --meta: {e}", file=sys.stderr)
         raise SystemExit(1) from None
 
-    # Why this design: Ear handshake produces a per-action evidence boundary that can
-    # be audited without introducing vendor lock-in to platform pairing APIs.
-    try:
-        master_key = bytes.fromhex(args.device_secret) if args.device_secret else None
-    except ValueError:
-        print("Error: --device-secret must be valid hex", file=sys.stderr)
-        raise SystemExit(1) from None
-    device = new_device(master_key=master_key)
-    challenge = issue_challenge(device)
-    handshake_ok = verify_response(device, challenge)
-
-    if not handshake_ok:
-        print("Error: Ear handshake verification failed", file=sys.stderr)
-        raise SystemExit(2)
-
-    session_key = derive_session_key(device, challenge)
-
-    audit_with_gate = gate_audio(
-        audit=audit,
-        intent=args.intent,
-        meta=meta,
-        transcript_tail=args.transcript,
-        simulate_user_ok=args.simulate_ok,
-    )
-
     try:
         secret = get_secret_from_env()
         if args.keys_dir:
@@ -699,43 +681,27 @@ def cmd_voice(args: argparse.Namespace) -> None:
         print(f"Error: {e}", file=sys.stderr)
         raise SystemExit(1) from None
 
-    badge = make_echo_mark_dual(
-        audit=audit_with_gate,
-        hmac_secret=secret,
-        ed25519_private_key=private_key,
-        key_id=args.key_id,
+    payload = VoiceFlowInput(
+        intent=args.intent,
+        transcript=args.transcript,
+        metadata=meta,
+        simulate_ok=args.simulate_ok,
         run_id=args.run_id,
+        key_id=args.key_id,
+        device_secret_hex=args.device_secret,
     )
 
-    boundary = audit_with_gate.get("responsibility_boundary", {})
-    candidate_set = audit_with_gate.get("final_set", [])
-    evidence = [
-        {
-            "type": "ear_handshake",
-            "key_id": challenge.get("key_id"),
-            "challenge_ts": challenge.get("ts"),
-            "session_key_prefix": session_key[:16],
-        },
-        {
-            "type": "rth_snapshot",
-            "hash_hex": boundary.get("rth_snapshot", {}).get("hash_hex", ""),
-        },
-        {
-            "type": "echo_mark",
-            "schema_version": badge.get("schema_version"),
-            "verification_method": badge.get("verification_method"),
-            "signature_prefix": badge.get("signature", "")[:32],
-        },
-    ]
-    voice_text = make_echo_verified_voice_text(len(candidate_set), len(evidence), boundary)
-
-    result = {
-        "candidate_set": candidate_set,
-        "evidence": evidence,
-        "responsibility_boundary": boundary,
-        "voice_text": voice_text,
-        "echo_mark": badge,
-    }
+    try:
+        result = run_voice_flow(
+            audit=audit,
+            payload=payload,
+            hmac_secret=secret,
+            ed25519_private_key=private_key,
+            require_execution_allowed=args.require_execution_allowed,
+        )
+    except VoiceFlowError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        raise SystemExit(3) from None
 
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -744,11 +710,12 @@ def cmd_voice(args: argparse.Namespace) -> None:
     print("=" * 80)
     print("[Voice Flow: Candidate Set + Evidence + Responsibility Boundary]")
     print("=" * 80)
-    print(f"Candidate count: {len(candidate_set)}")
-    print(f"Evidence count: {len(evidence)}")
+    boundary = result.get("responsibility_boundary", {})
+    print(f"Candidate count: {len(result.get('candidate_set', []))}")
+    print(f"Evidence count: {len(result.get('evidence', []))}")
     print(f"Execution allowed: {'YES' if boundary.get('execution_allowed') else 'NO'}")
     print(f"Required action: {boundary.get('required_action', 'app_confirm')}")
-    print(f"Echo Mark: {badge.get('label', 'Echo Verified')}")
+    print(f"Echo Mark: {result.get('echo_mark', {}).get('label', 'Echo Verified')}")
     print("=" * 80)
     print(f"💾 Saved to: {out_path}")
 
@@ -853,7 +820,12 @@ def main() -> None:
 
     # voice command - integrated voice flow
     voice = subparsers.add_parser(
-        "voice", help="Run integrated voice flow (ear handshake + audio gate + Echo Mark)"
+        "voice",
+        help="Run integrated voice flow (ear handshake + audio gate + Echo Mark)",
+        description=(
+            "Voice flow returns candidate_set + evidence + responsibility_boundary only. "
+            + VOICE_SCHEMA_HELP
+        ),
     )
     voice.add_argument("--intent", required=True, help="Intent: booking/payment/search/...")
     voice.add_argument("--transcript", required=True, help="Last 5-second transcript text")
@@ -881,6 +853,16 @@ def main() -> None:
         default=None,
         help="Optional deterministic 64-hex device secret for test replayability",
     )
+    voice.add_argument(
+        "--require-execution-allowed",
+        action="store_true",
+        help="Fail with exit code 3 when responsibility boundary blocks execution",
+    )
+    voice.add_argument(
+        "--show-schema",
+        action="store_true",
+        help="Print fixed JSON schemas for voice input/output and exit",
+    )
 
     args = parser.parse_args()
 
@@ -895,6 +877,13 @@ def main() -> None:
     elif args.cmd == "audio-gate":
         cmd_audio_gate(args)
     elif args.cmd == "voice":
+        if args.show_schema:
+            print(json.dumps({"input_schema": VOICE_INPUT_SCHEMA, "output_schema": VOICE_OUTPUT_SCHEMA}, ensure_ascii=False, indent=2))
+            return
+
+        print("Voice stack inventory:")
+        for item in inventory_voice_stack():
+            print(f"- {item['component']}: {item['module']} ({item['role']})")
         cmd_voice(args)
 
 
