@@ -1,0 +1,6 @@
+{
+  "name": "my-mcp-server",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
