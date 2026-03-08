@@ -95,3 +95,28 @@ python docs/demo_c_example.py --key-id echo-prod-202603 --pretty
 - 既存 `docs/BENCHMARK_RESULTS.md` の履歴は累積追記のみ。
 - 防御ロジック変更時は不変原則適合レビューを先行。
 - プレゼン資料更新時も、署名付き証跡の再生成を必須化。
+
+
+## 9. P2 Sprint-2 監査アーカイブ運用（定例）
+
+### 9.1 命名規約
+- 週次アーカイブディレクトリ: `reports/audit/YYYY-Www/`
+- 必須ファイル:
+  - `benchmark_voice_boundary.txt`
+  - `benchmark_rth.txt`
+  - `demo_c_receipt.json`
+  - `registry_snapshot.json`
+  - `triage_note.md`
+
+### 9.2 テンプレート
+- 監査アーカイブmanifest: `docs/templates/p2_audit_archive_manifest.md`
+- KPI差分レポート雛形: `docs/templates/p2_kpi_delta_report.md`
+
+### 9.3 初期化コマンド例
+```bash
+WEEK_ID=$(date +%G-W%V)
+mkdir -p "reports/audit/${WEEK_ID}"
+cp docs/templates/p2_audit_archive_manifest.md "reports/audit/${WEEK_ID}/manifest.md"
+cp docs/templates/p2_kpi_delta_report.md "reports/audit/${WEEK_ID}/kpi_delta.md"
+```
+

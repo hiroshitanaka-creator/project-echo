@@ -8,6 +8,8 @@ Project Echo の xAI/Elon 向け最終贈呈パッケージ。
 - `docs/GROK-COLLABORATION-BIBLE.md`（v1.5 Full / 最上位運用規格）
 - `docs/XAI_PRESENTATION.md`（プレゼン本体）
 - `docs/OPERATING_PROCEDURE.md`（運用手順）
+- `docs/templates/p2_audit_archive_manifest.md`（監査証跡manifest雛形）
+- `docs/templates/p2_kpi_delta_report.md`（週次KPI差分レポート雛形）
 - `docs/THREAT_MODEL_UPDATE.md`（脅威対策証跡）
 - `docs/BENCHMARK_RESULTS.md`（Phase 3実測）
 - `docs/DEMO_C.md`（Demo C運用ガイド）
