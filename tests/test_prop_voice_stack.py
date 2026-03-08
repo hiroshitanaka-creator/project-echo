@@ -3,12 +3,21 @@
 from __future__ import annotations
 
 import copy
+import hashlib
+import hmac
+from unittest.mock import patch
 
+from hypothesis import assume
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from po_core.diversity import Rec, diversify_with_mmr
-from po_echo.ear_handshake import issue_challenge, new_device, verify_response
+from po_echo.ear_handshake import (
+    derive_session_key,
+    issue_challenge,
+    new_device,
+    verify_response,
+)
 from po_echo.rth import compute_rth
 from po_echo.voice_boundary import classify_risk
 from tests.invariant_logging import assert_or_log
@@ -115,6 +124,49 @@ def test_ear_handshake_rejects_tampered_signature(master_key: bytes) -> None:
     tampered = copy.deepcopy(challenge)
     tampered["sig_hex"] = (tampered["sig_hex"][:-1] + ("0" if tampered["sig_hex"][-1] != "0" else "1"))
     assert verify_response(device, tampered) is False
+
+
+@settings(max_examples=100, deadline=None)
+@given(st.binary(min_size=32, max_size=32), st.integers(min_value=1, max_value=10_000_000))
+def test_ear_handshake_timestamp_expiry_boundary(master_key: bytes, now_s: int) -> None:
+    """Why: replay防御の責務境界を固定し、期限切れchallengeの通過を防ぐ。"""
+    device = new_device(master_key=master_key)
+    challenge = issue_challenge(device)
+
+    live_challenge = copy.deepcopy(challenge)
+    live_challenge["ts"] = now_s
+    msg_live = bytes.fromhex(live_challenge["nonce"]) + now_s.to_bytes(8, "big")
+    live_challenge["sig_hex"] = hmac.new(device["device_secret"], msg_live, hashlib.sha256).digest().hex()
+
+    stale_challenge = copy.deepcopy(live_challenge)
+    stale_challenge["ts"] = now_s - 61
+    msg_stale = bytes.fromhex(stale_challenge["nonce"]) + stale_challenge["ts"].to_bytes(8, "big")
+    stale_challenge["sig_hex"] = hmac.new(device["device_secret"], msg_stale, hashlib.sha256).digest().hex()
+
+    with patch("po_echo.ear_handshake.time.time", return_value=float(now_s)):
+        assert verify_response(device, live_challenge) is True
+        assert verify_response(device, stale_challenge) is False
+
+
+@settings(max_examples=100, deadline=None)
+@given(st.binary(min_size=32, max_size=32), st.binary(min_size=16, max_size=16))
+def test_ear_handshake_session_key_changes_when_nonce_changes(
+    master_key: bytes, replacement_nonce: bytes
+) -> None:
+    """Why: セッション鍵がchallenge固有であることを保証し、再利用リスクを減らす。"""
+    device = new_device(master_key=master_key)
+    challenge = issue_challenge(device)
+
+    altered = copy.deepcopy(challenge)
+    altered["nonce"] = replacement_nonce.hex()
+    assume(altered["nonce"] != challenge["nonce"])
+
+    base_key = derive_session_key(device, challenge)
+    altered_key = derive_session_key(device, altered)
+
+    assert len(base_key) == 64
+    assert len(altered_key) == 64
+    assert base_key != altered_key
 
 
 @settings(max_examples=120, deadline=None)
