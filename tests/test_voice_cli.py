@@ -7,6 +7,8 @@ import os
 import subprocess
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 CLI = ["/root/.pyenv/shims/python3.11", str(ROOT / "bin" / "po-cosmic")]
 
@@ -119,3 +121,76 @@ def test_voice_cli_fails_on_dangerous_or_unconfirmed_action(tmp_path: Path) -> N
 
     assert proc.returncode == 3
     assert "dangerous_or_unconfirmed_action_blocked" in proc.stderr
+
+
+def test_voice_cli_show_schema_outputs_fixed_contract(tmp_path: Path) -> None:
+    """Why: CLI契約を固定し、運用チームがI/O仕様を機械検証できる状態を保つ。"""
+    proc = subprocess.run(
+        [
+            *CLI,
+            "voice",
+            "--intent",
+            "search",
+            "--transcript",
+            "schema only",
+            "--in",
+            str(tmp_path / "unused-in.json"),
+            "--out",
+            str(tmp_path / "unused-out.json"),
+            "--show-schema",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        env=_base_env(),
+    )
+
+    assert proc.returncode == 0
+    payload = json.loads(proc.stdout)
+    assert "input_schema" in payload
+    assert "output_schema" in payload
+    assert payload["input_schema"].get("type") == "object"
+    assert payload["output_schema"].get("type") == "object"
+
+
+def test_voice_cli_succeeds_for_safe_search_flow(tmp_path: Path) -> None:
+    """Why: P1導線として voice サブコマンドが実行可能であることを継続保証する。"""
+    audit = tmp_path / "audit.json"
+    _write_audit(audit)
+    out = tmp_path / "voice.json"
+
+    proc = subprocess.run(
+        [
+            *CLI,
+            "voice",
+            "--intent",
+            "search",
+            "--transcript",
+            "候補を比較したい",
+            "--meta",
+            "{}",
+            "--in",
+            str(audit),
+            "--out",
+            str(out),
+            "--simulate-ok",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        env=_env_with_signing_keys(),
+    )
+
+    if proc.returncode != 0 and "PyNaCl not installed" in proc.stderr:
+        # Why: subprocess側の実行Pythonに依存が無い環境では、成功系検証を安全にスキップする。
+        pytest.skip("PyNaCl missing in CLI runtime interpreter")
+
+    assert proc.returncode == 0
+    assert out.exists()
+    data = json.loads(out.read_text(encoding="utf-8"))
+    assert isinstance(data.get("candidate_set"), list)
+    assert len(data["candidate_set"]) >= 1
+    assert isinstance(data.get("evidence"), list)
+    assert data.get("responsibility_boundary", {}).get("ai_recommends") is False
+    assert "voice" == data.get("responsibility_boundary", {}).get("channel")
+    assert isinstance(data.get("echo_mark"), dict)
