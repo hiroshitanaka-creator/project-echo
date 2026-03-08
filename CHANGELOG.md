@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- ECHO-20260308-001: `tests/test_prop_voice_stack.py` に Ear Handshake 向け property-based test を2件追加（timestamp 60秒期限境界 / nonce変更時session key差分）し、Audio Channel 回帰検知を強化。
 - ECHO-20260305-002: `scripts/make_xai_gift.py` を追加し、docs一式・Demo C CLI・benchmark証跡・履歴文書を1コマンドでzip化する xAI Gift Package 生成を実装。
 - ECHO-20260305-002: `docs/README.md` を新規追加し、xAI Gift Package の資料一覧・zip生成コマンド・贈呈メッセージテンプレートを整備。
 - ECHO-20260304-002: `.github/workflows/benchmark.yml` を新規追加し、`RUN_PUBLIC_BENCHMARKS=1` の定期 benchmark gate（schedule + manual dispatch）を導入。
