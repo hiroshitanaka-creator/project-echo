@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- ECHO-20260308-003: `tests/test_demo_c_example.py` を追加し、Demo C CLIの署名キー必須境界と HMAC 署名時の `verification.status == VERIFIED` を検証する回帰テストを追加。
 - ECHO-20260308-002: `tests/test_voice_cli.py` に `po-cosmic voice --show-schema` 契約テストと safe search 成功系テストを追加し、voice CLI の運用導線を回帰検知可能化。
 - ECHO-20260308-001: `tests/test_prop_voice_stack.py` に Ear Handshake 向け property-based test を2件追加（timestamp 60秒期限境界 / nonce変更時session key差分）し、Audio Channel 回帰検知を強化。
 - ECHO-20260305-002: `scripts/make_xai_gift.py` を追加し、docs一式・Demo C CLI・benchmark証跡・履歴文書を1コマンドでzip化する xAI Gift Package 生成を実装。
@@ -19,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ECHO-20260305-001: `docs/demo_c_example.py` を追加し、Phase 3 benchmark証跡を Echo Mark v3 dual signature 付き receipt として出力・検証する Demo C CLI を実装。
 
 ### Changed
+- ECHO-20260308-003: `docs/demo_c_example.py` の実行互換性を改善し、`src` パス自動解決と Python 3.10互換（`timezone.utc`）へ修正。
 - ECHO-20260305-002: `docs/demo_c_example.py` のデフォルト鍵を削除し、`--ed25519-private-key` または `--hmac-secret` 未指定時は安全な鍵生成ガイド付きで即時エラー化。
 - ECHO-20260305-002: `.github/workflows/benchmark.yml` の依存導線を `pip install -e .[dev]` のみに統一し、`pyproject.toml` ベース運用へ整理。
 - ECHO-20260305-002: `docs/XAI_PRESENTATION.md` に Markdown→PDF 変換コマンドを追記し、配布導線を補完。
