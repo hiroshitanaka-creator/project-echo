@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ECHO-20260305-001: `docs/demo_c_example.py` を追加し、Phase 3 benchmark証跡を Echo Mark v3 dual signature 付き receipt として出力・検証する Demo C CLI を実装。
 
 ### Changed
+- docs: OpenAPIライセンス表記を AGPL-3.0-or-later + Commercial に修正し、商用ライセンス参照を明記。
 - ECHO-20260305-002: `docs/demo_c_example.py` のデフォルト鍵を削除し、`--ed25519-private-key` または `--hmac-secret` 未指定時は安全な鍵生成ガイド付きで即時エラー化。
 - ECHO-20260305-002: `.github/workflows/benchmark.yml` の依存導線を `pip install -e .[dev]` のみに統一し、`pyproject.toml` ベース運用へ整理。
 - ECHO-20260305-002: `docs/XAI_PRESENTATION.md` に Markdown→PDF 変換コマンドを追記し、配布導線を補完。
