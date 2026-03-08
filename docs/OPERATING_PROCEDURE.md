@@ -120,3 +120,16 @@ cp docs/templates/p2_audit_archive_manifest.md "reports/audit/${WEEK_ID}/manifes
 cp docs/templates/p2_kpi_delta_report.md "reports/audit/${WEEK_ID}/kpi_delta.md"
 ```
 
+### 9.4 自動生成コマンド（推奨）
+
+手作業による漏れを防ぐため、週次証跡は以下の1コマンドで生成する。
+
+```bash
+python scripts/weekly_audit_archive.py --operator "ops-team" --compare-to "<previous-week-id>" --hmac-secret "$DEMO_C_HMAC_SECRET"
+```
+
+出力:
+- `reports/audit/YYYY-Www/` へ benchmarkログ・Demo C receipt・registry snapshot・triage noteを保存
+- `manifest.md` / `kpi_delta.md` をテンプレートから初期化
+- 実行結果のreturn codeと status（PASS/FAIL/SKIPPED）をJSON summaryで標準出力
+- 既定では `FAIL` を含む場合にスクリプトは非0終了（`--no-fail-on-fail` で抑止可能）
