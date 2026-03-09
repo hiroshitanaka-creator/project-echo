@@ -19,6 +19,12 @@ from po_echo.gift_rehearsal import MONTH_ID_PATTERN
 
 _WEEK_SORT_PATTERN = re.compile(r"^(\d{4})-W(\d{2})$")
 _MONTH_SORT_PATTERN = re.compile(r"^(\d{4})-(\d{2})$")
+_DIFF_EXCLUDE_PATHS = {
+    "generated_at_utc",
+    "responsibility_boundary",
+    "output_path",
+    "diff_path",
+}
 
 
 @dataclass(frozen=True)
@@ -120,10 +126,62 @@ def build_integrated_summary(root: Path) -> dict[str, Any]:
     }
 
 
+def _flatten_diff_paths(value: Any, prefix: str = "") -> dict[str, Any]:
+    if not isinstance(value, dict):
+        return {prefix: value} if prefix else {"": value}
+
+    flattened: dict[str, Any] = {}
+    for key, nested in value.items():
+        path = f"{prefix}.{key}" if prefix else key
+        if isinstance(nested, dict):
+            flattened.update(_flatten_diff_paths(nested, path))
+        else:
+            flattened[path] = nested
+    return flattened
+
+
+def build_integrated_summary_diff(previous: dict[str, Any] | None, current: dict[str, Any]) -> dict[str, Any]:
+    """Create machine-readable diff between current and previous integrated summary.
+
+    Why: operators need deterministic delta output to reduce review time during
+    weekly/monthly handoffs.
+    """
+
+    if previous is None:
+        return {
+            "has_previous": False,
+            "changed": True,
+            "changed_field_count": 0,
+            "changed_fields": [],
+            "previous_latest_windows": None,
+            "current_latest_windows": current.get("overall", {}).get("latest_windows"),
+            "previous_read_error": None,
+        }
+
+    prev_flat = _flatten_diff_paths(previous)
+    curr_flat = _flatten_diff_paths(current)
+    keys = sorted(set(prev_flat) | set(curr_flat))
+    changed_fields = [
+        key
+        for key in keys
+        if key not in _DIFF_EXCLUDE_PATHS and prev_flat.get(key) != curr_flat.get(key)
+    ]
+
+    return {
+        "has_previous": True,
+        "changed": bool(changed_fields),
+        "changed_field_count": len(changed_fields),
+        "changed_fields": changed_fields,
+        "previous_latest_windows": previous.get("overall", {}).get("latest_windows"),
+        "current_latest_windows": current.get("overall", {}).get("latest_windows"),
+        "previous_read_error": None,
+    }
+
+
 def write_integrated_summary(
     root: Path,
     out_path: Path | None = None,
-) -> tuple[dict[str, Any], Path]:
+) -> tuple[dict[str, Any], Path, Path]:
     """Build and write integrated summary JSON.
 
     Why: weekly/monthly automation should share one write contract so output
@@ -135,6 +193,14 @@ def write_integrated_summary(
     elif not out_path.is_absolute():
         out_path = root / out_path
 
+    previous: dict[str, Any] | None = None
+    previous_read_error: str | None = None
+    if out_path.exists():
+        try:
+            previous = json.loads(out_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            previous_read_error = f"invalid_previous_summary_json:{exc.msg}"
+
     payload = build_integrated_summary(root)
     payload["generated_at_utc"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     payload["responsibility_boundary"] = {
@@ -142,6 +208,14 @@ def write_integrated_summary(
         "human_scope": "公開可否・リスク受容・対外説明の最終判断",
     }
 
+    diff_path = out_path.with_name("p2_integrated_summary_diff.json")
+    diff_payload = build_integrated_summary_diff(previous=previous, current=payload)
+    diff_payload["generated_at_utc"] = payload["generated_at_utc"]
+    diff_payload["source_summary_path"] = str(out_path.relative_to(root))
+    if previous_read_error:
+        diff_payload["previous_read_error"] = previous_read_error
+
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    return payload, out_path
+    diff_path.write_text(json.dumps(diff_payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return payload, out_path, diff_path

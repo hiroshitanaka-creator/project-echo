@@ -41,7 +41,9 @@ def test_weekly_audit_archive_writes_integrated_summary_path() -> None:
     assert summary["integrated_summary_path"] == integrated_rel
 
     integrated_path = repo_root / integrated_rel
+    integrated_diff_path = repo_root / summary["integrated_summary_diff_path"]
     assert integrated_path.exists()
+    assert integrated_diff_path.exists()
 
     # cleanup for git status expectations
     archive_dir = repo_root / summary["archive_dir"]
@@ -55,6 +57,8 @@ def test_weekly_audit_archive_writes_integrated_summary_path() -> None:
 
     if integrated_path.exists():
         integrated_path.unlink()
+    if integrated_diff_path.exists():
+        integrated_diff_path.unlink()
     operations_dir = integrated_path.parent
     if operations_dir.exists() and not any(operations_dir.iterdir()):
         operations_dir.rmdir()
