@@ -133,3 +133,19 @@ python scripts/weekly_audit_archive.py --operator "ops-team" --compare-to "<prev
 - `manifest.md` / `kpi_delta.md` をテンプレートから初期化
 - 実行結果のreturn codeと status（PASS/FAIL/SKIPPED）をJSON summaryで標準出力
 - 既定では `FAIL` を含む場合にスクリプトは非0終了（`--no-fail-on-fail` で抑止可能）
+
+### 9.5 月次 Gift Package リハーサル（推奨）
+
+外部共有の再現性を担保するため、月次でGift Package再生成の実行証跡を保存する。
+
+```bash
+python scripts/monthly_gift_rehearsal.py --operator "ops-team"
+python scripts/monthly_gift_rehearsal.py --operator "ops-team" --dry-run  # 月次事前検証
+```
+
+出力:
+- `reports/gift_rehearsal/YYYY-MM/` へ `make_xai_gift.py` 実行ログを保存
+- `manifest.md` をテンプレートから初期化し、required token 欠落時は失敗させて記録不整合を防止
+- `summary.json` にステータス（PASS/FAIL/DRY_RUN）と実行メタデータ、および `manifest_consistent` / `dry_run` を記録
+- `triage_note.md` に責任境界（記録責務と最終判断責務の分離）を明示
+- 既定では失敗時に非0終了（`--no-fail-on-fail` で抑止可能）
