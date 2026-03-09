@@ -8,8 +8,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
+import json
 from pathlib import Path
 import re
+from typing import Any
 
 MONTH_ID_PATTERN = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 
@@ -99,3 +101,56 @@ def validate_manifest_summary_consistency(manifest_text: str, summary: dict[str,
         and headers["generated_at_utc"] == str(summary.get("generated_at_utc", ""))
         and headers["operator"] == str(summary.get("operator", ""))
     )
+
+
+def rebuild_gift_rehearsal_history_index(root_dir: Path) -> dict[str, Any]:
+    """Rebuild month_id-based history index from rehearsal archives.
+
+    Why: Sprint-3 requires stable references to past rehearsals so operators can
+    quickly trace package readiness across months.
+    """
+
+    base = root_dir / "reports" / "gift_rehearsal"
+    records: list[dict[str, Any]] = []
+    if base.exists():
+        for entry in sorted(base.iterdir(), key=lambda p: p.name):
+            if not entry.is_dir() or not MONTH_ID_PATTERN.match(entry.name):
+                continue
+
+            summary_path = entry / "summary.json"
+            triage_path = entry / "triage_note.md"
+            manifest_path = entry / "manifest.md"
+
+            summary_payload: dict[str, Any] | None = None
+            summary_error: str | None = None
+            if summary_path.exists():
+                try:
+                    summary_payload = json.loads(summary_path.read_text(encoding="utf-8"))
+                except json.JSONDecodeError as exc:
+                    summary_error = f"invalid_summary_json:{exc.msg}"
+
+            records.append(
+                {
+                    "month_id": entry.name,
+                    "archive_dir": str(entry.relative_to(root_dir)),
+                    "summary_path": str(summary_path.relative_to(root_dir)),
+                    "manifest_path": str(manifest_path.relative_to(root_dir)),
+                    "triage_path": str(triage_path.relative_to(root_dir)),
+                    "status": (summary_payload or {}).get("status"),
+                    "dry_run": (summary_payload or {}).get("dry_run"),
+                    "manifest_consistent": (summary_payload or {}).get("manifest_consistent"),
+                    "summary_error": summary_error,
+                }
+            )
+
+    latest = records[-1]["month_id"] if records else None
+    payload = {
+        "generated_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "latest_month_id": latest,
+        "records": records,
+    }
+
+    index_path = base / "history_index.json"
+    index_path.parent.mkdir(parents=True, exist_ok=True)
+    index_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return payload
