@@ -34,8 +34,9 @@ def main() -> int:
     out_path = Path(args.out)
     if not out_path.is_absolute():
         out_path = root / out_path
-    summary, out_path = write_integrated_summary(root=root, out_path=out_path)
+    summary, out_path, diff_path = write_integrated_summary(root=root, out_path=out_path)
     summary["output_path"] = str(out_path.relative_to(root))
+    summary["diff_path"] = str(diff_path.relative_to(root))
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0
 

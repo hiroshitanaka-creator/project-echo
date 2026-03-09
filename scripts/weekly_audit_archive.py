@@ -157,8 +157,9 @@ def main() -> int:
         "overall_status": "FAIL" if had_failures else "PASS_OR_SKIPPED",
     }
 
-    _, integrated_path = write_integrated_summary(root=root, out_path=Path(args.integrated_summary_out))
+    _, integrated_path, integrated_diff_path = write_integrated_summary(root=root, out_path=Path(args.integrated_summary_out))
     summary["integrated_summary_path"] = str(integrated_path.relative_to(root))
+    summary["integrated_summary_diff_path"] = str(integrated_diff_path.relative_to(root))
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     if had_failures and not args.no_fail_on_fail:
         return 1

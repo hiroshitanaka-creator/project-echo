@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- ECHO-20260309-014: `src/po_echo/ops_summary.py` に統合サマリー差分出力を追加し、`reports/operations/p2_integrated_summary_diff.json` を生成。CLI/週次アーカイブ出力へ diff path を追加し、差分契約テストを拡張。
+- ECHO-20260309-013: `README.md` と `PROGRESS.md` を更新し、P2進捗を Sprint-4準備中（85%）へ更新。Sprint-4の次タスク（差分比較/アラート記入チェック/異常通知導線）を計画として明記。
 - ECHO-20260308-003: `tests/test_demo_c_example.py` を追加し、Demo C CLIの署名キー必須境界と HMAC 署名時の `verification.status == VERIFIED` を検証する回帰テストを追加。
 - ECHO-20260308-002: `tests/test_voice_cli.py` に `po-cosmic voice --show-schema` 契約テストと safe search 成功系テストを追加し、voice CLI の運用導線を回帰検知可能化。
 - ECHO-20260308-001: `tests/test_prop_voice_stack.py` に Ear Handshake 向け property-based test を2件追加（timestamp 60秒期限境界 / nonce変更時session key差分）し、Audio Channel 回帰検知を強化。
