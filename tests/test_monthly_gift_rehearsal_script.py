@@ -34,15 +34,19 @@ def test_monthly_gift_rehearsal_dry_run_generates_consistent_summary(tmp_path) -
     assert summary["status"] == "DRY_RUN"
     assert summary["dry_run"] is True
     assert summary["manifest_consistent"] is True
+    assert summary["history_index_latest_month_id"] == month_id
+    assert summary["history_index_records"] >= 1
 
     archive_dir = repo_root / summary["archive_dir"]
     summary_path = archive_dir / "summary.json"
     manifest_path = archive_dir / "manifest.md"
     triage_path = archive_dir / "triage_note.md"
+    history_index_path = repo_root / "reports" / "gift_rehearsal" / "history_index.json"
 
     assert summary_path.exists()
     assert manifest_path.exists()
     assert triage_path.exists()
+    assert history_index_path.exists()
     assert "- dry_run: True" in triage_path.read_text(encoding="utf-8")
 
     # keep repository clean for git status expectations
@@ -53,3 +57,5 @@ def test_monthly_gift_rehearsal_dry_run_generates_consistent_summary(tmp_path) -
         if path.is_dir():
             path.rmdir()
     archive_dir.rmdir()
+    if history_index_path.exists():
+        history_index_path.unlink()

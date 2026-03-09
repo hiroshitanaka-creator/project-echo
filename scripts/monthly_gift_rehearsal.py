@@ -22,6 +22,7 @@ from po_echo.audit_archive import utc_now_iso
 from po_echo.gift_rehearsal import (
     ensure_monthly_gift_rehearsal,
     iso_month_id,
+    rebuild_gift_rehearsal_history_index,
     render_monthly_manifest,
     validate_manifest_summary_consistency,
 )
@@ -89,6 +90,9 @@ def main() -> int:
     }
     manifest_text = rehearsal.manifest.read_text(encoding="utf-8")
     summary["manifest_consistent"] = validate_manifest_summary_consistency(manifest_text, summary)
+    history = rebuild_gift_rehearsal_history_index(root)
+    summary["history_index_latest_month_id"] = history.get("latest_month_id")
+    summary["history_index_records"] = len(history.get("records", []))
     rehearsal.summary_json.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     triage = [

@@ -28,6 +28,7 @@ from po_echo.audit_archive import (
     iso_week_id,
     utc_now_iso,
 )
+from po_echo.ops_summary import write_integrated_summary
 
 
 def _run_to_file(cmd: Sequence[str], out_path: Path, env: dict[str, str]) -> tuple[int, str, str]:
@@ -63,6 +64,11 @@ def main() -> int:
         "--no-fail-on-fail",
         action="store_true",
         help="Do not return non-zero even when one or more commands are FAIL.",
+    )
+    parser.add_argument(
+        "--integrated-summary-out",
+        default="reports/operations/p2_integrated_summary.json",
+        help="Path for integrated weekly/monthly summary output.",
     )
     args = parser.parse_args()
 
@@ -150,6 +156,9 @@ def main() -> int:
         "statuses": {x.name: x.status for x in outcomes},
         "overall_status": "FAIL" if had_failures else "PASS_OR_SKIPPED",
     }
+
+    _, integrated_path = write_integrated_summary(root=root, out_path=Path(args.integrated_summary_out))
+    summary["integrated_summary_path"] = str(integrated_path.relative_to(root))
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     if had_failures and not args.no_fail_on_fail:
         return 1
