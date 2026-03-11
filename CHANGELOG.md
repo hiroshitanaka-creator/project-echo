@@ -8,8 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- ECHO-20260311-003: `tests/test_prop_kpi_alert_check.py` と `tests/test_prop_alert_notify.py` を追加し、KPI記入チェックと通知エンベロープの property-based test 要件を充足。PROGRESS.md を P2 100% / v0.5.0 完了判定へ更新し、v1.0.0 向け候補タスクを整理。
+- ECHO-20260311-002: `src/po_echo/alert_notify.py` と `scripts/dispatch_alert_notification.py` を追加し、`has_reported_failures` / `has_malformed_artifact` を SEV-1/2/3/NONE 付き通知エンベロープへ変換する異常フラグ通知導線を実装。
+- ECHO-20260311-001: `src/po_echo/kpi_alert_check.py` と `scripts/check_kpi_alert.py` を追加し、`p2_kpi_alert.md` テンプレートの未記入プレースホルダーを機械検出する軽量CLIを実装。
 - ECHO-20260309-014: `src/po_echo/ops_summary.py` に統合サマリー差分出力を追加し、`reports/operations/p2_integrated_summary_diff.json` を生成。CLI/週次アーカイブ出力へ diff path を追加し、差分契約テストを拡張。
 - ECHO-20260309-013: `README.md` と `PROGRESS.md` を更新し、P2進捗を Sprint-4準備中（85%）へ更新。Sprint-4の次タスク（差分比較/アラート記入チェック/異常通知導線）を計画として明記。
+
+### Fixed
+- `tests/test_voice_cli.py`: hardcoded `/root/.pyenv/shims/python3.11` を `sys.executable` へ変更し、CI 環境差異によるサブプロセス起動失敗を修正。`responsibility_boundary` のアサーションを実際のスキーマ（`channel:"audio"` / `execution_allowed`）に合わせて修正。
+- `tests/test_prop_ops_summary.py` / `test_prop_audit_archive.py` / `test_prop_gift_rehearsal.py`: `tmp_path` fixture を `tempfile.TemporaryDirectory()` へ置き換え、Hypothesis の function_scoped_fixture HealthCheck エラーと例をまたいだ状態汚染を解消。
+- `tests/test_prop_voice_stack.py`: `st.integers(min_value=1, ...)` を `min_value=62` へ変更し、`now_s - 61` が負になることによる `to_bytes` OverflowError を修正。
 - ECHO-20260308-003: `tests/test_demo_c_example.py` を追加し、Demo C CLIの署名キー必須境界と HMAC 署名時の `verification.status == VERIFIED` を検証する回帰テストを追加。
 - ECHO-20260308-002: `tests/test_voice_cli.py` に `po-cosmic voice --show-schema` 契約テストと safe search 成功系テストを追加し、voice CLI の運用導線を回帰検知可能化。
 - ECHO-20260308-001: `tests/test_prop_voice_stack.py` に Ear Handshake 向け property-based test を2件追加（timestamp 60秒期限境界 / nonce変更時session key差分）し、Audio Channel 回帰検知を強化。
