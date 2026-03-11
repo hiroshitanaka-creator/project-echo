@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import tempfile
 from datetime import date
+from pathlib import Path
 
 from hypothesis import given
 from hypothesis import strategies as st
@@ -23,15 +25,16 @@ def test_iso_month_id_matches_pattern(d: date) -> None:
 
 
 @given(st.integers(min_value=2000, max_value=2100), st.integers(min_value=1, max_value=12))
-def test_ensure_monthly_rehearsal_uses_fixed_filename_contract(tmp_path, year: int, month: int) -> None:
-    month_id = f"{year:04d}-{month:02d}"
-    archive = ensure_monthly_gift_rehearsal(tmp_path, month_id)
+def test_ensure_monthly_rehearsal_uses_fixed_filename_contract(year: int, month: int) -> None:
+    with tempfile.TemporaryDirectory() as td:
+        month_id = f"{year:04d}-{month:02d}"
+        archive = ensure_monthly_gift_rehearsal(Path(td), month_id)
 
-    assert archive.base_dir.exists()
-    assert archive.command_log.name == "make_xai_gift_command.txt"
-    assert archive.summary_json.name == "summary.json"
-    assert archive.triage_note.name == "triage_note.md"
-    assert archive.manifest.name == "manifest.md"
+        assert archive.base_dir.exists()
+        assert archive.command_log.name == "make_xai_gift_command.txt"
+        assert archive.summary_json.name == "summary.json"
+        assert archive.triage_note.name == "triage_note.md"
+        assert archive.manifest.name == "manifest.md"
 
 
 @given(
