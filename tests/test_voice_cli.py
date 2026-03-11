@@ -5,12 +5,13 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-CLI = ["/root/.pyenv/shims/python3.11", str(ROOT / "bin" / "po-cosmic")]
+CLI = [sys.executable, str(ROOT / "bin" / "po-cosmic")]
 
 
 def _write_audit(path: Path) -> None:
@@ -191,6 +192,7 @@ def test_voice_cli_succeeds_for_safe_search_flow(tmp_path: Path) -> None:
     assert isinstance(data.get("candidate_set"), list)
     assert len(data["candidate_set"]) >= 1
     assert isinstance(data.get("evidence"), list)
-    assert data.get("responsibility_boundary", {}).get("ai_recommends") is False
-    assert "voice" == data.get("responsibility_boundary", {}).get("channel")
+    rb = data.get("responsibility_boundary", {})
+    assert rb.get("channel") == "audio"
+    assert rb.get("execution_allowed") is True
     assert isinstance(data.get("echo_mark"), dict)

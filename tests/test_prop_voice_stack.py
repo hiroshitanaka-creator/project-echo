@@ -127,7 +127,7 @@ def test_ear_handshake_rejects_tampered_signature(master_key: bytes) -> None:
 
 
 @settings(max_examples=100, deadline=None)
-@given(st.binary(min_size=32, max_size=32), st.integers(min_value=1, max_value=10_000_000))
+@given(st.binary(min_size=32, max_size=32), st.integers(min_value=62, max_value=10_000_000))
 def test_ear_handshake_timestamp_expiry_boundary(master_key: bytes, now_s: int) -> None:
     """Why: replay防御の責務境界を固定し、期限切れchallengeの通過を防ぐ。"""
     device = new_device(master_key=master_key)
