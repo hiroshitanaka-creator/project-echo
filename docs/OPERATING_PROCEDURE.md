@@ -185,3 +185,45 @@ cp docs/templates/p2_kpi_alert.md "reports/audit/${WEEK_ID}/kpi_alert.md"
 - `metric_name / observed_value / threshold / comparison` を必須記入し、逸脱判定根拠を機械可読で残す。
 - `Evidence` セクションは週次アーカイブ内の実ファイルパスを埋める。
 - 公開可否の最終判断はテンプレート内 `Responsibility Boundary` に従い人間責務で確定する。
+
+### 9.8 KPIアラート記入チェック（Sprint-4 自動検証）
+
+記入済みのアラートファイルにプレースホルダーが残っていないか機械的に検証する。
+
+```bash
+# 単ファイル検証
+python scripts/check_kpi_alert.py reports/audit/$(date +%G-W%V)/kpi_alert.md
+
+# JSON出力モード（CI組み込み用）
+python scripts/check_kpi_alert.py reports/audit/$(date +%G-W%V)/kpi_alert.md --json
+```
+
+判定:
+- `is_valid: true` → 記入完了（プレースホルダーなし）
+- `is_valid: false` → `unfilled_placeholders` に未記入項目の説明を列挙して終了コード 1 を返す
+
+責任境界:
+- **自動化責務**: プレースホルダートークンの機械検出まで。
+- **人間責務**: アラート内容の妥当性・公開可否の最終判断。
+
+### 9.9 異常フラグ通知ディスパッチ（Sprint-4 通知導線）
+
+統合サマリーの `overall.has_reported_failures` / `overall.has_malformed_artifact` を通知エンベロープへ変換する。
+
+```bash
+# 通知JSONを生成（デフォルト出力: reports/operations/p2_alert_notification.json）
+python scripts/dispatch_alert_notification.py
+
+# stdout にも出力
+python scripts/dispatch_alert_notification.py --json
+
+# アラートがある場合に終了コード 1 を返す（CIゲート組み込み用）
+python scripts/dispatch_alert_notification.py --fail-on-alert
+```
+
+出力フィールド:
+- `has_alert`: 異常フラグのいずれかが true のとき true
+- `severity`: `SEV-1`（両方）/ `SEV-2`（FAIL のみ）/ `SEV-3`（破損のみ）/ `NONE`
+- `flags`: `has_reported_failures` / `has_malformed_artifact` の生値
+- `evidence`: 週次/月次アーカイブへのパスリンク
+- `responsibility_boundary`: 自動化責務（検知・通知生成）と人間責務（公開停止・対策承認）を明示
