@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- ECHO-20260311-005: `src/po_echo/webhook_dispatch.py` を追加し、Slack Block Kit / PagerDuty Events API v2 への通知ディスパッチアダプタを実装（stdlib のみ、外部依存なし）。環境変数 `ECHO_SLACK_WEBHOOK_URL` / `ECHO_PAGERDUTY_ROUTING_KEY` でシークレット注入。`scripts/send_webhook_alert.py` CLI（`--dry-run` / `--fail-on-alert` / `--json`）を追加。`tests/test_webhook_dispatch.py`（34テスト）と `tests/test_prop_webhook_dispatch.py`（10テスト）を追加。
+- ECHO-20260311-004: `src/po_echo/public_audit.py` を追加し、統合サマリーを外部レビュー可能な公開監査マニフェスト（`public_audit_v1` スキーマ、SHA-256 整合性チェックサム付き）へ変換するロジックを実装。内部パス（`archive_dir` 等）を自動リダクション。`scripts/export_public_audit.py` で export / verify フローをCLI化。`tests/test_public_audit.py`（20テスト）と `tests/test_prop_public_audit.py`（8テスト）を追加。`docs/PUBLIC_AUDIT_FORMAT.md` でフィールド仕様・外部検証手順を文書化。
 - ECHO-20260311-003: `tests/test_prop_kpi_alert_check.py` と `tests/test_prop_alert_notify.py` を追加し、KPI記入チェックと通知エンベロープの property-based test 要件を充足。PROGRESS.md を P2 100% / v0.5.0 完了判定へ更新し、v1.0.0 向け候補タスクを整理。
 - ECHO-20260311-002: `src/po_echo/alert_notify.py` と `scripts/dispatch_alert_notification.py` を追加し、`has_reported_failures` / `has_malformed_artifact` を SEV-1/2/3/NONE 付き通知エンベロープへ変換する異常フラグ通知導線を実装。
 - ECHO-20260311-001: `src/po_echo/kpi_alert_check.py` と `scripts/check_kpi_alert.py` を追加し、`p2_kpi_alert.md` テンプレートの未記入プレースホルダーを機械検出する軽量CLIを実装。
