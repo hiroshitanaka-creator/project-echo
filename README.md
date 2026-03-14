@@ -97,7 +97,75 @@ po-cosmic verify runs/high_bias_affiliate.badge.json
 
 ---
 
+## 🐷 Flying Pig Mascot — Project Echo公式マスコット
 
+![Flying Pig](assets/pig_flying.gif)
+
+**Flying Pig (飛べない豚)** is the official mascot of Project Echo.
+
+> "豚も飛べるかも。でも飛んでいい豚かどうかは、Echo Markが決める。"
+> *("Even a pig might fly. But whether it *should* fly — that's for the Echo Mark to decide.")*
+
+### Mascot Behavior
+
+| Echo Mark Label | Pig State |
+|---|---|
+| `ECHO_VERIFIED` — low bias | 🐷🌈 Pig flies freely, ripples spread |
+| `ECHO_CHECK` — human confirm needed | 🐷⚠️ Pig hovers cautiously |
+| `ECHO_BLOCKED` — high bias | 🐷💥 "Buhi!" — pig is grounded |
+
+The ripple animation on the SVG badge represents Echo Mark signatures propagating
+as verifiable receipts — tamper-evident, auditable, traceable.
+
+**Creator:** 飛べない豚 [@Detours_is_Life](https://x.com/Detours_is_Life)
+
+---
+
+## 🌐 Web Demo Dashboard (`make demo-web`)
+
+```bash
+export ECHO_MARK_SECRET="demo-secret-key-16chars"
+export ECHO_MARK_PRIVATE_KEY="1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100"
+pip install -e ".[demo]"
+make demo-web
+# Open http://localhost:7860
+```
+
+Enter a **voice intent** and **transcript** in the browser UI. The demo:
+1. Calls `po_echo.voice_orchestration.run_voice_flow()` directly
+2. Displays the candidate set (diversified, bias-audited)
+3. Shows the dual-signed Echo Mark badge (Ed25519 + HMAC-SHA256)
+4. Animates the Flying Pig mascot based on the bias verdict
+
+---
+
+## 🏅 Echo Mark SVG Badge (`make generate-badge`)
+
+Generate a v1-certified flying pig badge from any badge JSON:
+
+```bash
+# After running demo-shopping:
+make generate-badge BADGE=runs/high_bias_affiliate.badge.json
+# → runs/high_bias_affiliate.badge.svg
+
+# Or directly:
+python tools/generate_badge.py runs/high_bias_affiliate.badge.json -o my_badge.svg
+```
+
+The SVG badge shows:
+- `ECHO VERIFIED` / `ECHO CHECK` / `ECHO BLOCKED` label in brand colour
+- "v1 certified flying pig" inscription
+- Animated ripple rings (VERIFIED state only)
+- Schema version (`echo_mark_v3`)
+
+To regenerate the animated GIF:
+
+```bash
+pip install Pillow
+python assets/flying_pig_anim.py
+```
+
+---
 
 ## 🎙️ Voice CLI（`po-cosmic voice`）
 
