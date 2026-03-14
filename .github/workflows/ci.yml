@@ -163,6 +163,9 @@ jobs:
           ALL_PASSED=$(python -c "import json; d=json.load(open('kpi_quick.json')); print(str(d['all_passed']).lower())")
           echo "all_passed=${ALL_PASSED}" >> "$GITHUB_OUTPUT"
 
+      - name: Device boundary quick check
+        run: pytest -q tests/test_device_cli.py
+
       - name: Publish KPI quick summary
         if: always()
         run: cat kpi_quick.md >> "$GITHUB_STEP_SUMMARY"
