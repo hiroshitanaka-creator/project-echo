@@ -8,14 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- ECHO-20260314-001: PR可視性向上のため `src/po_echo/ci_kpi.py` と `scripts/ci_kpi_quick_check.py` を追加し、voice 10k実行時間/RTH tracker boundedness の軽量KPIチェックをCIで自動実行・Markdown要約化。`tests/test_ci_kpi.py` と `tests/test_prop_ci_kpi.py` を追加し、閾値判定と責任境界文言の契約を回帰検知。`.github/workflows/ci.yml` に `kpi-quick` ジョブを追加。
+- ECHO-20260314-003: `po-cosmic device` CLIサブコマンドを追加し、`device_boundary.py` の4デバイス責任境界判定をCLIから実行可能化。`--list-devices` / `--show-schema` / `--out` / `--require-execution-allowed` オプション対応。`tests/test_device_cli.py`（11テスト）を追加。
+
+---
+
+## [v1.0.0] - 2026-03-14
+
+### Added
+- ECHO-20260314-002: `src/po_echo/device_boundary.py` を新設し、`voice_boundary.py` を継承する形で4デバイス（earworn / smart_speaker / smart_watch / ar_glasses）の責任境界アダプタを実装。デバイス固有の確認手段（`voice_passphrase` / `haptic_tap` / `gaze_confirm`）を `DeviceConfirm` Literal で定義。`tests/test_prop_device_boundary.py`（12テスト）を追加。
+- ECHO-20260314-001: `.github/workflows/ci.yml` の `kpi-quick` ジョブに PR コメント自動投稿ステップを追加（`actions/github-script@v7`、冪等コメント戦略）。`tests/test_prop_ci_kpi.py` に property-based test 3件追加。
 - ECHO-20260311-005: `src/po_echo/webhook_dispatch.py` を追加し、Slack Block Kit / PagerDuty Events API v2 への通知ディスパッチアダプタを実装（stdlib のみ、外部依存なし）。環境変数 `ECHO_SLACK_WEBHOOK_URL` / `ECHO_PAGERDUTY_ROUTING_KEY` でシークレット注入。`scripts/send_webhook_alert.py` CLI（`--dry-run` / `--fail-on-alert` / `--json`）を追加。`tests/test_webhook_dispatch.py`（34テスト）と `tests/test_prop_webhook_dispatch.py`（10テスト）を追加。
 - ECHO-20260311-004: `src/po_echo/public_audit.py` を追加し、統合サマリーを外部レビュー可能な公開監査マニフェスト（`public_audit_v1` スキーマ、SHA-256 整合性チェックサム付き）へ変換するロジックを実装。内部パス（`archive_dir` 等）を自動リダクション。`scripts/export_public_audit.py` で export / verify フローをCLI化。`tests/test_public_audit.py`（20テスト）と `tests/test_prop_public_audit.py`（8テスト）を追加。`docs/PUBLIC_AUDIT_FORMAT.md` でフィールド仕様・外部検証手順を文書化。
 - ECHO-20260311-003: `tests/test_prop_kpi_alert_check.py` と `tests/test_prop_alert_notify.py` を追加し、KPI記入チェックと通知エンベロープの property-based test 要件を充足。PROGRESS.md を P2 100% / v0.5.0 完了判定へ更新し、v1.0.0 向け候補タスクを整理。
 - ECHO-20260311-002: `src/po_echo/alert_notify.py` と `scripts/dispatch_alert_notification.py` を追加し、`has_reported_failures` / `has_malformed_artifact` を SEV-1/2/3/NONE 付き通知エンベロープへ変換する異常フラグ通知導線を実装。
 - ECHO-20260311-001: `src/po_echo/kpi_alert_check.py` と `scripts/check_kpi_alert.py` を追加し、`p2_kpi_alert.md` テンプレートの未記入プレースホルダーを機械検出する軽量CLIを実装。
 - ECHO-20260309-014: `src/po_echo/ops_summary.py` に統合サマリー差分出力を追加し、`reports/operations/p2_integrated_summary_diff.json` を生成。CLI/週次アーカイブ出力へ diff path を追加し、差分契約テストを拡張。
-- ECHO-20260309-013: `README.md` と `PROGRESS.md` を更新し、P2進捗を Sprint-4準備中（85%）へ更新。Sprint-4の次タスク（差分比較/アラート記入チェック/異常通知導線）を計画として明記。
 
 ### Fixed
 - `tests/test_voice_cli.py`: hardcoded `/root/.pyenv/shims/python3.11` を `sys.executable` へ変更し、CI 環境差異によるサブプロセス起動失敗を修正。`responsibility_boundary` のアサーションを実際のスキーマ（`channel:"audio"` / `execution_allowed`）に合わせて修正。

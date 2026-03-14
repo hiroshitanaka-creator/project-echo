@@ -30,6 +30,13 @@ from po_echo.echo_mark import (
     verify_echo_mark_dual,
     verify_mark,
 )
+from po_echo.device_boundary import (
+    DEVICE_CONFIGS,
+    DeviceType,
+    decide_for_device,
+    get_device_description,
+    list_devices,
+)
 from po_echo.execution_gate import gate_audio
 from po_echo.voice_orchestration import (
     VOICE_INPUT_SCHEMA,
@@ -720,6 +727,97 @@ def cmd_voice(args: argparse.Namespace) -> None:
     print(f"💾 Saved to: {out_path}")
 
 
+DEVICE_INPUT_SCHEMA: dict = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Project Echo Device Boundary CLI Input",
+    "type": "object",
+    "required": ["device", "intent"],
+    "properties": {
+        "device": {"type": "string", "enum": list_devices()},
+        "intent": {"type": "string", "minLength": 1},
+        "meta": {"type": "object"},
+        "bias_score": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+        "replay_detected": {"type": "boolean", "default": False},
+        "tamper_detected": {"type": "boolean", "default": False},
+    },
+}
+
+DEVICE_OUTPUT_SCHEMA: dict = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Project Echo Device Boundary CLI Output",
+    "type": "object",
+    "required": ["device", "responsibility_boundary"],
+    "properties": {
+        "device": {"type": "string"},
+        "device_description": {"type": "string"},
+        "responsibility_boundary": {
+            "type": "object",
+            "required": ["channel", "device", "risk", "required_action", "execution_allowed", "requires_human_confirm", "reasons"],
+        },
+    },
+}
+
+
+def cmd_device(args: argparse.Namespace) -> None:
+    """Execute device command — evaluate responsibility boundary for the given device."""
+    if args.list_devices:
+        print("Registered devices:")
+        for dev in list_devices():
+            cfg = DEVICE_CONFIGS[dev]
+            print(f"  {dev}: {cfg.description} (bias_threshold={cfg.high_bias_block_threshold})")
+        return
+
+    if args.show_schema:
+        print(json.dumps({"input_schema": DEVICE_INPUT_SCHEMA, "output_schema": DEVICE_OUTPUT_SCHEMA}, ensure_ascii=False, indent=2))
+        return
+
+    try:
+        meta = json.loads(args.meta)
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON in --meta: {e}", file=sys.stderr)
+        raise SystemExit(1) from None
+
+    device: DeviceType = args.device  # type: ignore[assignment]
+    decision = decide_for_device(
+        device,
+        args.intent,
+        meta=meta or None,
+        bias_score=args.bias_score,
+        replay_detected=args.replay_detected,
+        tamper_detected=args.tamper_detected,
+    )
+
+    result = {
+        "device": device,
+        "device_description": get_device_description(device),
+        "responsibility_boundary": decision.to_responsibility_boundary(),
+    }
+
+    if args.out:
+        out_path = Path(args.out)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    rb = result["responsibility_boundary"]
+    print("=" * 80)
+    print(f"[Device Boundary: {device}]")
+    print("=" * 80)
+    print(f"Device      : {device} — {result['device_description']}")
+    print(f"Intent      : {args.intent}")
+    print(f"Risk        : {rb['risk']}")
+    print(f"Action      : {rb['required_action']}")
+    exec_label = "YES" if rb["execution_allowed"] else "NO (BLOCKED)"
+    print(f"Execution   : {exec_label}")
+    print(f"Reasons     : {', '.join(rb['reasons'])}")
+    if args.out:
+        print(f"💾 Saved to : {args.out}")
+    print("=" * 80)
+    print("責任境界: デバイス種別に応じた確認手段の提示まで。最終承認は人間責任。")
+
+    if not rb["execution_allowed"] and args.require_execution_allowed:
+        raise SystemExit(3)
+
+
 def main() -> None:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -805,6 +903,62 @@ def main() -> None:
     verify = subparsers.add_parser("verify", help="Verify Echo Mark signature")
     verify.add_argument("input", help="Path to badge JSON file")
 
+    # device command - multi-device responsibility boundary
+    device_cmd = subparsers.add_parser(
+        "device",
+        help="Evaluate responsibility boundary for a registered device type",
+        description=(
+            "Returns responsibility_boundary for the given device + intent combination. "
+            "All devices enforce the same bias-block and high-risk-confirm invariants."
+        ),
+    )
+    device_cmd.add_argument(
+        "--device",
+        choices=list_devices(),
+        default="earworn",
+        help=f"Device type (default: earworn). Choices: {', '.join(list_devices())}",
+    )
+    device_cmd.add_argument("--intent", required=True, help="Intent: booking/payment/search/...")
+    device_cmd.add_argument("--meta", default="{}", help='Metadata JSON (e.g., {"amount": 10000})')
+    device_cmd.add_argument(
+        "--bias-score",
+        dest="bias_score",
+        type=float,
+        default=0.0,
+        help="Commercial bias score [0.0, 1.0] (default: 0.0)",
+    )
+    device_cmd.add_argument(
+        "--replay-detected",
+        dest="replay_detected",
+        action="store_true",
+        help="Signal that RTH detected a replay attack (forces block)",
+    )
+    device_cmd.add_argument(
+        "--tamper-detected",
+        dest="tamper_detected",
+        action="store_true",
+        help="Signal that Echo Mark tamper check failed (forces block)",
+    )
+    device_cmd.add_argument("--out", default=None, help="Optional output JSON file path")
+    device_cmd.add_argument(
+        "--require-execution-allowed",
+        dest="require_execution_allowed",
+        action="store_true",
+        help="Exit with code 3 when execution is blocked",
+    )
+    device_cmd.add_argument(
+        "--list-devices",
+        dest="list_devices",
+        action="store_true",
+        help="List all registered device types and exit",
+    )
+    device_cmd.add_argument(
+        "--show-schema",
+        dest="show_schema",
+        action="store_true",
+        help="Print device boundary input/output JSON schemas and exit",
+    )
+
     # audio-gate command - voice-initiated execution gate
     audio_gate = subparsers.add_parser(
         "audio-gate", help="Apply execution gate for voice-initiated actions"
@@ -868,6 +1022,8 @@ def main() -> None:
 
     if args.cmd == "cosmic-39":
         cmd_cosmic39(args)
+    elif args.cmd == "device":
+        cmd_device(args)
     elif args.cmd == "audit":
         cmd_audit(args)
     elif args.cmd == "badge":
