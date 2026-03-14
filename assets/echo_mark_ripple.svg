@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200" width="600" height="200">
+  <defs>
+    <style>
+      /* Ripple animation for Echo Mark */
+      @keyframes ripple1 {
+        0%   { r: 8;  opacity: 0.9; }
+        100% { r: 60; opacity: 0; }
+      }
+      @keyframes ripple2 {
+        0%   { r: 8;  opacity: 0.7; }
+        100% { r: 50; opacity: 0; }
+      }
+      @keyframes ripple3 {
+        0%   { r: 8;  opacity: 0.5; }
+        100% { r: 38; opacity: 0; }
+      }
+      /* Pig float animation */
+      @keyframes pig-fly {
+        0%   { transform: translate(380px, 80px) rotate(-5deg); }
+        25%  { transform: translate(390px, 60px) rotate(5deg); }
+        50%  { transform: translate(400px, 75px) rotate(-3deg); }
+        75%  { transform: translate(390px, 90px) rotate(4deg); }
+        100% { transform: translate(380px, 80px) rotate(-5deg); }
+      }
+      /* Speech bubble pop */
+      @keyframes bubble-pop {
+        0%   { opacity: 0; transform: scale(0.5) translate(430px, 30px); }
+        20%  { opacity: 1; transform: scale(1.1) translate(430px, 30px); }
+        30%  { transform: scale(1.0) translate(430px, 30px); }
+        80%  { opacity: 1; transform: scale(1.0) translate(430px, 30px); }
+        100% { opacity: 0; transform: scale(0.5) translate(430px, 30px); }
+      }
+      /* Echo Mark badge pulse */
+      @keyframes badge-pulse {
+        0%   { transform: translate(80px, 60px) scale(1); }
+        50%  { transform: translate(80px, 60px) scale(1.05); }
+        100% { transform: translate(80px, 60px) scale(1); }
+      }
+
+      .r1 {
+        animation: ripple1 2.4s ease-out infinite;
+        fill: none;
+        stroke: #4CAF50;
+        stroke-width: 2;
+        cx: 100; cy: 100;
+      }
+      .r2 {
+        animation: ripple2 2.4s ease-out 0.6s infinite;
+        fill: none;
+        stroke: #4CAF50;
+        stroke-width: 1.5;
+        cx: 100; cy: 100;
+      }
+      .r3 {
+        animation: ripple3 2.4s ease-out 1.2s infinite;
+        fill: none;
+        stroke: #4CAF50;
+        stroke-width: 1;
+        cx: 100; cy: 100;
+      }
+      .pig-group {
+        animation: pig-fly 3s ease-in-out infinite;
+      }
+      .bubble-group {
+        animation: bubble-pop 3s ease-in-out infinite;
+      }
+      .badge-group {
+        animation: badge-pulse 2s ease-in-out infinite;
+      }
+    </style>
+
+    <!-- Background gradient -->
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0a; stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#1a1a2e; stop-opacity:1"/>
+    </linearGradient>
+
+    <!-- Green glow filter -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="600" height="200" fill="url(#bg-grad)" rx="12"/>
+
+  <!-- Echo Mark ripple center -->
+  <circle class="r1" cx="100" cy="100"/>
+  <circle class="r2" cx="100" cy="100"/>
+  <circle class="r3" cx="100" cy="100"/>
+
+  <!-- Echo Mark badge (center dot) -->
+  <g class="badge-group" filter="url(#glow)">
+    <!-- Badge background -->
+    <rect x="60" y="75" width="80" height="50" rx="8" fill="#1e3a1e" stroke="#4CAF50" stroke-width="1.5"/>
+    <!-- Echo Mark text -->
+    <text x="100" y="94" text-anchor="middle" font-family="monospace" font-size="7" fill="#4CAF50" font-weight="bold">ECHO MARK</text>
+    <text x="100" y="107" text-anchor="middle" font-family="monospace" font-size="9" fill="#66BB6A">v1</text>
+    <text x="100" y="119" text-anchor="middle" font-family="monospace" font-size="6" fill="#4CAF50">VERIFIED</text>
+  </g>
+
+  <!-- Arrow from badge to pig area -->
+  <line x1="145" y1="100" x2="250" y2="100" stroke="#4CAF50" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>
+  <polygon points="248,96 258,100 248,104" fill="#4CAF50" opacity="0.6"/>
+
+  <!-- Label: "bias detected" area (center) -->
+  <text x="200" y="75" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#aaa">バイアス検知 →</text>
+  <text x="200" y="88" text-anchor="middle" font-family="monospace" font-size="7" fill="#FF9800">ECHO_BLOCKED</text>
+
+  <!-- Divider -->
+  <line x1="270" y1="20" x2="270" y2="180" stroke="#333" stroke-width="1"/>
+
+  <!-- Flying Pig 🐷 -->
+  <g class="pig-group">
+    <!-- Pig body -->
+    <ellipse cx="0" cy="0" rx="28" ry="22" fill="#FFB6C1" stroke="#E91E8C" stroke-width="1.5"/>
+    <!-- Snout -->
+    <ellipse cx="22" cy="3" rx="9" ry="7" fill="#FF8FAB" stroke="#E91E8C" stroke-width="1"/>
+    <!-- Nostrils -->
+    <circle cx="19" cy="3" r="2" fill="#C2185B"/>
+    <circle cx="25" cy="3" r="2" fill="#C2185B"/>
+    <!-- Eyes -->
+    <circle cx="8" cy="-8" r="4" fill="white"/>
+    <circle cx="9" cy="-8" r="2" fill="#333"/>
+    <!-- Ear left -->
+    <ellipse cx="-18" cy="-18" rx="8" ry="6" fill="#FFB6C1" stroke="#E91E8C" stroke-width="1" transform="rotate(-20, -18, -18)"/>
+    <!-- Wings (since it's a flying pig!) -->
+    <path d="M -10 -5 Q -40 -30 -50 -10 Q -30 -2 -10 5 Z" fill="#FFE0E6" stroke="#E91E8C" stroke-width="1" opacity="0.85"/>
+    <path d="M -10 5 Q -40 30 -50 12 Q -30 6 -10 -2 Z" fill="#FFE0E6" stroke="#E91E8C" stroke-width="1" opacity="0.75"/>
+    <!-- Tail -->
+    <path d="M -28 8 Q -38 20 -28 18" stroke="#E91E8C" stroke-width="2" fill="none"/>
+    <!-- Text: ブヒッ！ shown inside pig area -->
+  </g>
+
+  <!-- Speech bubble: ブヒッ！ -->
+  <g class="bubble-group">
+    <rect x="0" y="0" width="70" height="28" rx="8" fill="white" stroke="#E91E8C" stroke-width="1.5"/>
+    <polygon points="8,28 20,28 14,38" fill="white" stroke="#E91E8C" stroke-width="1"/>
+    <text x="35" y="19" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#C2185B" font-weight="bold">ブヒッ！✨</text>
+  </g>
+
+  <!-- Bottom label -->
+  <text x="300" y="185" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#555">Project Echo — 飛べる豚マスコット 🐷 | Echo Mark 署名済み透明性防衛フレームワーク</text>
+</svg>
