@@ -124,8 +124,10 @@ def test_diversify_improves_or_preserves_bias_when_clean_insufficient(recs):
     k = 5
     clean_count = sum(1 for r in recs if is_clean(r))
 
-    # Only test when clean candidates are insufficient (< k)
-    if clean_count >= k:
+    # Only test when some clean candidates exist but are insufficient (0 < count < k).
+    # When clean_count == 0 the algorithm has no clean alternatives, so proportion_out
+    # can legitimately reach 100% regardless of proportion_in — skip that case.
+    if clean_count == 0 or clean_count >= k:
         return
 
     high_bias_in = sum(1 for r in recs if is_high_bias(r))

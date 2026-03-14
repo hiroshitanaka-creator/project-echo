@@ -1,0 +1,124 @@
+"""Tests for po-cosmic device CLI subcommand.
+
+不変原則検証:
+    - device コマンドが responsibility_boundary を必ず含む出力を返す
+    - high-bias / replay / tamper で execution_allowed = False となる
+    - --list-devices / --show-schema が安全に動作する
+    - --require-execution-allowed で blocked 時に exit code 3 を返す
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+import pytest
+
+# repo src をパスに追加（CLI 直接 import 用）
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+_SRC = _REPO_ROOT / "src"
+if str(_SRC) not in sys.path:
+    sys.path.insert(0, str(_SRC))
+
+from po_cosmic.cli import main
+
+
+def _run(argv: list[str]) -> None:
+    sys.argv = ["po-cosmic"] + argv
+    main()
+
+
+def test_device_booking_smart_speaker(capsys) -> None:
+    """SmartSpeaker booking → medium risk, voice_passphrase。"""
+    _run(["device", "--device", "smart_speaker", "--intent", "booking"])
+    out = capsys.readouterr().out
+    assert "voice_passphrase" in out
+    assert "medium" in out
+    assert "責任境界" in out
+
+
+def test_device_payment_smart_watch(capsys) -> None:
+    """SmartWatch payment → high risk, app_confirm。"""
+    _run(["device", "--device", "smart_watch", "--intent", "payment"])
+    out = capsys.readouterr().out
+    assert "high" in out
+    assert "app_confirm" in out
+
+
+def test_device_ar_glasses_gaze_confirm(capsys) -> None:
+    """ARGlasses booking → medium risk, gaze_confirm。"""
+    _run(["device", "--device", "ar_glasses", "--intent", "booking"])
+    out = capsys.readouterr().out
+    assert "gaze_confirm" in out
+
+
+def test_device_high_bias_blocks(capsys) -> None:
+    """bias_score >= threshold → BLOCKED (execution_allowed=False)。"""
+    _run(["device", "--device", "smart_speaker", "--intent", "search", "--bias-score", "0.6"])
+    out = capsys.readouterr().out
+    assert "BLOCKED" in out
+
+
+def test_device_replay_blocks(capsys) -> None:
+    """--replay-detected → BLOCKED。"""
+    _run(["device", "--device", "earworn", "--intent", "search", "--replay-detected"])
+    out = capsys.readouterr().out
+    assert "BLOCKED" in out
+
+
+def test_device_tamper_blocks(capsys) -> None:
+    """--tamper-detected → BLOCKED。"""
+    _run(["device", "--device", "ar_glasses", "--intent", "summary", "--tamper-detected"])
+    out = capsys.readouterr().out
+    assert "BLOCKED" in out
+
+
+def test_device_list_devices(capsys) -> None:
+    """--list-devices が4デバイスを列挙して正常終了する。"""
+    _run(["device", "--list-devices", "--intent", "dummy"])
+    out = capsys.readouterr().out
+    for dev in ("earworn", "smart_speaker", "smart_watch", "ar_glasses"):
+        assert dev in out
+
+
+def test_device_show_schema(capsys) -> None:
+    """--show-schema が JSON を出力し input_schema / output_schema を含む。"""
+    _run(["device", "--show-schema", "--intent", "dummy"])
+    out = capsys.readouterr().out
+    parsed = json.loads(out)
+    assert "input_schema" in parsed
+    assert "output_schema" in parsed
+
+
+def test_device_out_writes_json(tmp_path: Path, capsys) -> None:
+    """--out でファイルに responsibility_boundary が保存される。"""
+    out_file = tmp_path / "device_result.json"
+    _run(["device", "--device", "smart_watch", "--intent", "booking", "--out", str(out_file)])
+    assert out_file.exists()
+    data = json.loads(out_file.read_text(encoding="utf-8"))
+    rb = data["responsibility_boundary"]
+    assert rb["device"] == "smart_watch"
+    assert rb["channel"] == "audio"
+    assert "requires_human_confirm" in rb
+    assert "execution_allowed" in rb
+
+
+def test_device_require_execution_allowed_exits_3(capsys) -> None:
+    """execution_allowed=False 時に --require-execution-allowed で exit code 3。"""
+    with pytest.raises(SystemExit) as exc_info:
+        _run([
+            "device",
+            "--device", "earworn",
+            "--intent", "search",
+            "--bias-score", "0.9",
+            "--require-execution-allowed",
+        ])
+    assert exc_info.value.code == 3
+
+
+def test_device_invalid_meta_exits_1(capsys) -> None:
+    """--meta に不正 JSON を渡すと exit code 1。"""
+    with pytest.raises(SystemExit) as exc_info:
+        _run(["device", "--intent", "booking", "--meta", "{invalid json"])
+    assert exc_info.value.code == 1

@@ -137,6 +137,8 @@ jobs:
   kpi-quick:
     name: KPI Quick Check (PR visibility)
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
 
     steps:
       - name: Checkout repository
@@ -155,12 +157,48 @@ jobs:
           pip install -e .[dev]
 
       - name: Run quick KPI probe
+        id: kpi_probe
         run: |
           python scripts/ci_kpi_quick_check.py --json-out kpi_quick.json --md-out kpi_quick.md
+          ALL_PASSED=$(python -c "import json; d=json.load(open('kpi_quick.json')); print(str(d['all_passed']).lower())")
+          echo "all_passed=${ALL_PASSED}" >> "$GITHUB_OUTPUT"
 
       - name: Publish KPI quick summary
         if: always()
         run: cat kpi_quick.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post KPI result as PR comment
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('kpi_quick.md', 'utf8');
+            const header = '<!-- echo-kpi-quick-check -->';
+            const fullBody = `${header}\n${body}`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(c => c.body.startsWith(header));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: fullBody,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: fullBody,
+              });
+            }
 
   ci-summary:
     name: CI Summary
