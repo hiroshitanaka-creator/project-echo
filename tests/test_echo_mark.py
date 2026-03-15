@@ -90,6 +90,27 @@ def test_replay_attack_is_rejected_on_second_use(nonce):
 
 @settings(max_examples=20, deadline=None)
 @given(st.booleans())
+def test_self_signed_badge_is_rejected_without_trusted_key_source(_flag):
+    """Badges must not verify using only their embedded public key."""
+    attacker_key = SigningKey.generate()
+    badge = make_echo_mark_dual(
+        audit=_audit(),
+        hmac_secret=SECRET,
+        ed25519_private_key=attacker_key.encode(HexEncoder).decode(),
+        key_id=KEY_A,
+    )
+
+    # No public key trust anchor and no HMAC secret: must fail verification.
+    badge_no_hmac = dict(badge)
+    badge_no_hmac.pop("signature_hmac", None)
+    result = verify_echo_mark(badge_no_hmac)
+
+    assert result["status"] == "INVALID"
+    assert result["reason"] == "signature_invalid"
+
+
+@settings(max_examples=20, deadline=None)
+@given(st.booleans())
 def test_key_rotation_invalidates_old_signature_without_old_public_key(_flag):
     """After rotation, verifier with new key map rejects old-key signatures."""
     old_key = SigningKey.generate()
