@@ -137,26 +137,20 @@ def _resolve_public_key_for_badge(
 
     Trust resolution order:
     1. Explicit ``public_keys`` map (caller-controlled trust anchor).
-       When provided, the inline badge key is intentionally skipped for
-       key_ids absent from the map — this prevents self-authenticating badges.
-    2. Inline badge public key (only when no explicit map is given).
-    3. Environment key store.
-    4. File-based key registry.
+    2. Environment key store.
+    3. File-based key registry.
+
+    The inline ``badge['public_key']`` is intentionally never trusted for
+    verification because it allows self-signed badges to authenticate
+    themselves without an external trust anchor.
     """
     payload = cast(dict[str, Any], badge.get("payload") or {})
     key_id = str(payload.get("key_id") or "default")
 
     if public_keys is not None:
         # Caller supplied an explicit trust store: honour it exclusively.
-        # Do NOT fall back to the inline key — that would allow self-signed badges
-        # to bypass key-rotation policies.
         if key_id in public_keys:
             return public_keys[key_id], "active"
-    else:
-        # No explicit trust store: accept the inline key as a convenience fallback.
-        inline_public = badge.get("public_key")
-        if isinstance(inline_public, str) and inline_public:
-            return inline_public, "active"
 
     env_store = get_ed25519_public_store()
     if key_id in env_store:
@@ -293,18 +287,27 @@ def verify_echo_mark(
         )
 
 
-def verify_echo_mark_ed25519(badge: dict[str, Any]) -> dict[str, Any]:
+def verify_echo_mark_ed25519(
+    badge: dict[str, Any],
+    public_keys: dict[str, str] | None = None,
+) -> dict[str, Any]:
     """Compatibility wrapper for Ed25519 verification path."""
-    return verify_echo_mark(badge)
+    return verify_echo_mark(badge, public_keys=public_keys)
 
 
 def verify_echo_mark_dual(
     badge: dict[str, Any],
     hmac_secret: str | None = None,
     key_store: dict[str, str] | None = None,
+    public_keys: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Compatibility wrapper for dual-signature verification path."""
-    return verify_echo_mark(badge, hmac_secret=hmac_secret, key_store=key_store)
+    return verify_echo_mark(
+        badge,
+        hmac_secret=hmac_secret,
+        key_store=key_store,
+        public_keys=public_keys,
+    )
 
 
 def verify_ed25519(payload_hash: str, signature_hex: str, public_key_hex: str) -> bool:
