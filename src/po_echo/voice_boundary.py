@@ -15,6 +15,7 @@ All executions generate Echo Mark receipts regardless of channel.
 from __future__ import annotations
 
 import logging
+import math
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -97,7 +98,7 @@ def _safe_float(value: Any, *, default: float, field_name: FieldName) -> float:
         This function does not raise exceptions by design.
     """
     try:
-        return float(value)
+        parsed = float(value)
     except (TypeError, ValueError):
         _LOGGER.warning(
             "voice_boundary_invalid_float field=%s value=%r default=%s",
@@ -106,6 +107,17 @@ def _safe_float(value: Any, *, default: float, field_name: FieldName) -> float:
             default,
         )
         return default
+
+    if not math.isfinite(parsed):
+        _LOGGER.warning(
+            "voice_boundary_non_finite_float field=%s value=%r default=%s",
+            field_name,
+            value,
+            default,
+        )
+        return default
+
+    return parsed
 
 
 def classify_risk(intent: str, meta: dict | None = None) -> Risk:
