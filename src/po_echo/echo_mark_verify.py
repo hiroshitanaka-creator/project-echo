@@ -152,18 +152,26 @@ def _resolve_public_key_for_badge(
         if key_id in public_keys:
             return public_keys[key_id], "active"
 
+    entry = find_registry_key_entry(key_id, registry_path=registry_path)
+    if entry:
+        status = str(entry.get("status", "active"))
+        public_key = entry.get("public_key")
+        if status == "revoked":
+            return cast(str | None, public_key if isinstance(public_key, str) else None), status
+        if isinstance(public_key, str) and public_key:
+            return public_key, status
+
+    if public_keys is None:
+        # No explicit trust store: accept the inline key as a convenience fallback.
+        inline_public = badge.get("public_key")
+        if isinstance(inline_public, str) and inline_public:
+            return inline_public, "active"
+
     env_store = get_ed25519_public_store()
     if key_id in env_store:
         return env_store[key_id], "active"
 
-    entry = find_registry_key_entry(key_id, registry_path=registry_path)
-    if not entry:
-        return None, None
-    status = str(entry.get("status", "active"))
-    public_key = entry.get("public_key")
-    if not isinstance(public_key, str) or not public_key:
-        return None, status
-    return public_key, status
+    return None, None
 
 
 def _replay_guard(
