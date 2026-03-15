@@ -168,3 +168,12 @@ def test_smart_speaker_stricter_bias_threshold() -> None:
     assert sp_thresh <= ew_thresh, (
         "SmartSpeaker (shared space) should have stricter or equal bias threshold"
     )
+
+
+def test_non_finite_bias_is_blocked_fail_closed() -> None:
+    """NaN 入力は fail-closed で execution を必ずブロックする。"""
+    for device in _ALL_DEVICES:
+        dec = decide_for_device(device, "booking", bias_score="nan")
+        assert dec.execution_allowed is False
+        assert dec.requires_human_confirm is True
+        assert dec.required_action == "app_confirm"

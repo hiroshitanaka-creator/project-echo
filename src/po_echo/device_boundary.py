@@ -177,7 +177,9 @@ def decide_for_device(
     """
     config = DEVICE_CONFIGS[device]
     risk = classify_risk(intent, meta)
-    safe_bias = _safe_float(bias_score, default=0.0, field_name="bias_score")
+    # Security: fail closed for invalid/non-finite bias input to avoid bypassing
+    # the bias block gate via NaN/Infinity coercion.
+    safe_bias = _safe_float(bias_score, default=float("inf"), field_name="bias_score")
     pol = config.policy[risk]
 
     reasons = [f"risk:{risk}", f"intent:{intent}", f"device:{device}"]

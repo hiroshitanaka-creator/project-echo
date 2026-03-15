@@ -55,6 +55,12 @@ def test_safe_float_field_name_literal_enum_is_complete() -> None:
     assert _safe_float("0.5", default=0.0, field_name="bias_score") == 0.5
 
 
+@pytest.mark.parametrize("value", ["nan", float("nan"), "inf", float("-inf")])
+def test_safe_float_non_finite_values_fallback_to_default(value) -> None:
+    """NaN/Infinity は比較回避バイパスを防ぐため default にフォールバックする。"""
+    assert _safe_float(value, default=0.0, field_name="bias_score") == 0.0
+
+
 @settings(max_examples=250)
 @given(
     amount=st.one_of(
