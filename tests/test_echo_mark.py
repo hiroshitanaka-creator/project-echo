@@ -107,3 +107,37 @@ def test_key_rotation_invalidates_old_signature_without_old_public_key(_flag):
 
     assert result["status"] == "INVALID"
     assert result["reason"] == "signature_invalid"
+
+
+@settings(max_examples=10, deadline=None)
+@given(st.booleans())
+def test_revoked_registry_key_rejects_inline_public_key(monkeypatch, tmp_path, _flag):
+    """Registry revocation must win over inline public key fallback."""
+    key = SigningKey.generate()
+    badge = make_echo_mark_dual(
+        audit=_audit(),
+        hmac_secret=SECRET,
+        ed25519_private_key=key.encode(HexEncoder).decode(),
+        key_id="default",
+    )
+
+    keys_dir = tmp_path / ".keys"
+    keys_dir.mkdir()
+    registry = {
+        "keys": [
+            {
+                "key_id": "default",
+                "public_key": key.verify_key.encode(HexEncoder).decode(),
+                "status": "revoked",
+            }
+        ]
+    }
+    import json
+
+    (keys_dir / "registry.json").write_text(json.dumps(registry), encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    result = verify_echo_mark(badge)
+
+    assert result["status"] == "INVALID"
+    assert result["reason"] == "key_revoked"
