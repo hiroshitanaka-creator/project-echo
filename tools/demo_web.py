@@ -25,6 +25,8 @@ DEMO_ED_PRIVATE = os.getenv(
     "1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100",
 )
 
+_ALLOW_REMOTE_DEMO = os.getenv("ECHO_DEMO_ALLOW_REMOTE", "0") == "1"
+
 _USING_DEMO_KEYS = (
     DEMO_HMAC_SECRET == "demo-secret-key-16chars"
     or DEMO_ED_PRIVATE == "1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100"
@@ -36,7 +38,7 @@ _USING_DEMO_KEYS = (
 # ---------------------------------------------------------------------------
 
 
-def run_echo_pipeline(intent: str, transcript: str) -> tuple[str, str, str]:
+def run_echo_pipeline(intent: str, transcript: str, simulate_ok: bool) -> tuple[str, str, str]:
     """Call run_voice_flow and return (voice_text, candidates_json, echo_mark_json)."""
     if not intent.strip() or not transcript.strip():
         return "Intent and transcript are required.", "[]", "{}"
@@ -45,7 +47,7 @@ def run_echo_pipeline(intent: str, transcript: str) -> tuple[str, str, str]:
         intent=intent.strip(),
         transcript=transcript.strip(),
         metadata={},
-        simulate_ok=True,
+        simulate_ok=simulate_ok,
         key_id="default",
     )
     audit: dict = {}
@@ -138,6 +140,10 @@ def build_ui() -> gr.Blocks:
                     lines=3,
                 )
                 run_btn = gr.Button("Run Echo Pipeline", variant="primary")
+                simulate_ok_input = gr.Checkbox(
+                    label="Simulate human confirmation (demo only)",
+                    value=False,
+                )
 
             with gr.Column(scale=1):
                 gr.Markdown("### Flying Pig Status")
@@ -153,8 +159,12 @@ def build_ui() -> gr.Blocks:
                 gr.Markdown("### Echo Mark Badge (signed JSON)")
                 echo_mark_out = gr.Code(language="json", label="echo_mark")
 
-        def on_run(intent: str, transcript: str):
-            voice_text, candidates, echo_mark_json = run_echo_pipeline(intent, transcript)
+        def on_run(intent: str, transcript: str, simulate_ok: bool):
+            voice_text, candidates, echo_mark_json = run_echo_pipeline(
+                intent,
+                transcript,
+                simulate_ok,
+            )
             try:
                 label = json.loads(echo_mark_json).get("label", "ECHO_VERIFIED")
             except Exception:
@@ -163,7 +173,7 @@ def build_ui() -> gr.Blocks:
 
         run_btn.click(
             fn=on_run,
-            inputs=[intent_input, transcript_input],
+            inputs=[intent_input, transcript_input, simulate_ok_input],
             outputs=[pig_display, voice_out, candidates_out, echo_mark_out],
         )
 
@@ -179,4 +189,5 @@ The Echo Mark is dual-signed (Ed25519 + HMAC-SHA256) — a tamper-evident receip
 
 if __name__ == "__main__":
     app = build_ui()
-    app.launch(server_name="0.0.0.0", server_port=7860, show_error=True)
+    server_name = "0.0.0.0" if _ALLOW_REMOTE_DEMO else "127.0.0.1"
+    app.launch(server_name=server_name, server_port=7860, show_error=True)
