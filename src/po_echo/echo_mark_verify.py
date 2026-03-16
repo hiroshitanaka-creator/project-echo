@@ -161,11 +161,9 @@ def _resolve_public_key_for_badge(
         if isinstance(public_key, str) and public_key:
             return public_key, status
 
-    if public_keys is None:
-        # No explicit trust store: accept the inline key as a convenience fallback.
-        inline_public = badge.get("public_key")
-        if isinstance(inline_public, str) and inline_public:
-            return inline_public, "active"
+    # Intentionally never fall back to badge["public_key"] – inline keys must
+    # not serve as a trust anchor because doing so allows self-signed badges to
+    # authenticate themselves without any external trust source.
 
     env_store = get_ed25519_public_store()
     if key_id in env_store:
