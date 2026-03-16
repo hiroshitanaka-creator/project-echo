@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import datetime as dt
 
-from hypothesis import given, settings
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
@@ -46,7 +46,8 @@ def _audit() -> dict:
 @settings(max_examples=30, deadline=None)
 @given(st.booleans())
 def test_dual_signature_verification_success(_flag):
-    """Dual signature badge verifies with Ed25519 as primary path."""
+    """Dual signature badge verifies with Ed25519 as primary path when an
+    explicit external trust anchor is provided."""
     key = SigningKey.generate()
     badge = make_echo_mark_dual(
         audit=_audit(),
@@ -54,7 +55,10 @@ def test_dual_signature_verification_success(_flag):
         ed25519_private_key=key.encode(HexEncoder).decode(),
         key_id=KEY_A,
     )
-    result = verify_echo_mark(badge)
+    # Ed25519 verification requires an explicit caller-controlled trust anchor;
+    # the inline badge['public_key'] must never serve as one.
+    explicit_public_keys = {KEY_A: key.verify_key.encode(HexEncoder).decode()}
+    result = verify_echo_mark(badge, public_keys=explicit_public_keys)
     assert result["status"] == "VERIFIED"
     assert result["verification_method"] == "Ed25519"
 
@@ -80,8 +84,9 @@ def test_replay_attack_is_rejected_on_second_use(nonce):
     badge["signature_hmac"] = hmac_sha256_hex(SECRET, badge["payload_hash"])
 
     seen: set[str] = set()
-    first = verify_echo_mark(badge, nonce_cache=seen)
-    second = verify_echo_mark(badge, nonce_cache=seen)
+    explicit_public_keys = {KEY_A: key.verify_key.encode(HexEncoder).decode()}
+    first = verify_echo_mark(badge, public_keys=explicit_public_keys, nonce_cache=seen)
+    second = verify_echo_mark(badge, public_keys=explicit_public_keys, nonce_cache=seen)
 
     assert first["status"] == "VERIFIED"
     assert second["status"] == "INVALID"
@@ -130,7 +135,7 @@ def test_key_rotation_invalidates_old_signature_without_old_public_key(_flag):
     assert result["reason"] == "signature_invalid"
 
 
-@settings(max_examples=10, deadline=None)
+@settings(max_examples=10, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture])
 @given(st.booleans())
 def test_revoked_registry_key_rejects_inline_public_key(monkeypatch, tmp_path, _flag):
     """Registry revocation must win over inline public key fallback."""
@@ -143,7 +148,7 @@ def test_revoked_registry_key_rejects_inline_public_key(monkeypatch, tmp_path, _
     )
 
     keys_dir = tmp_path / ".keys"
-    keys_dir.mkdir()
+    keys_dir.mkdir(exist_ok=True)
     registry = {
         "keys": [
             {

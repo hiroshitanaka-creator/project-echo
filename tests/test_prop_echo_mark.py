@@ -213,8 +213,8 @@ def test_ed25519_verify_true_then_false_on_tamper(allowed, confirm, bo, bf, imp)
         audit, private_key_hex=TEST_PRIVATE_KEY, key_id=KEY_ID, run_id="prop_ed25519"
     )
 
-    # Original badge should verify
-    result = verify_echo_mark_ed25519(badge)
+    # Original badge should verify — Ed25519 requires an explicit trust anchor.
+    result = verify_echo_mark_ed25519(badge, public_keys={KEY_ID: TEST_PUBLIC_KEY})
     assert result["status"] == "VERIFIED", f"Original badge must verify: {result}"
     assert result["checks"]["hash_integrity"], "Hash integrity must pass"
     assert result["checks"]["signature_valid"], "Signature must be valid"
@@ -311,8 +311,8 @@ def test_dual_signature_verify_with_ed25519(allowed, confirm, bo, bf, imp):
         run_id="prop_dual",
     )
 
-    # Verify with Ed25519 (preferred)
-    result = verify_echo_mark_dual(badge)
+    # Verify with Ed25519 (preferred) — explicit trust anchor required.
+    result = verify_echo_mark_dual(badge, public_keys={KEY_ID: TEST_PUBLIC_KEY})
     assert result["status"] == "VERIFIED", f"Dual badge must verify: {result}"
     assert result["verification_method"] == "Ed25519", "Should prefer Ed25519 verification"
 
