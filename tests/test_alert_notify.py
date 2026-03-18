@@ -8,10 +8,8 @@ evidence link generation, and file persistence.
 from __future__ import annotations
 
 import json
-import pytest
 
 from po_echo.alert_notify import build_alert_notification, write_alert_notification
-
 
 # ---------------------------------------------------------------------------
 # Helpers

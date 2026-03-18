@@ -10,10 +10,9 @@ envelope so tooling can route, log, or suppress alerts deterministically.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-
 
 # Severity mapping.
 # Why two levels: FAIL and malformed artifact warrant different initial
@@ -90,7 +89,7 @@ def build_alert_notification(
             "automation_scope": "異常フラグの検知・通知ペイロード生成まで。",
             "human_scope": "公開停止・リスク受容・対外説明・恒久対策承認は運用者責任。",
         },
-        "generated_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "generated_at_utc": datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
     }
 
 

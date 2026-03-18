@@ -7,8 +7,7 @@ import hashlib
 import hmac
 from unittest.mock import patch
 
-from hypothesis import assume
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from po_core.diversity import Rec, diversify_with_mmr

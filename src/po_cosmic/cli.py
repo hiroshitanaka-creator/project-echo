@@ -11,6 +11,7 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 # Add src to path if running directly
 src_path = Path(__file__).resolve().parents[2] / "src"
@@ -20,6 +21,13 @@ if str(src_path) not in sys.path:
 from po_core.cosmic_ethics_39.evaluator import CosmicEthics39Evaluator
 from po_core.cosmic_ethics_39.scenarios import get_scenario
 from po_core.diversity import Rec, diversify_with_mmr
+from po_echo.device_boundary import (
+    DEVICE_CONFIGS,
+    DeviceType,
+    decide_for_device,
+    get_device_description,
+    list_devices,
+)
 from po_echo.echo_mark import (
     get_secret_from_env,
     load_ed25519_keypair,
@@ -29,13 +37,6 @@ from po_echo.echo_mark import (
     make_echo_mark_ed25519,
     verify_echo_mark_dual,
     verify_mark,
-)
-from po_echo.device_boundary import (
-    DEVICE_CONFIGS,
-    DeviceType,
-    decide_for_device,
-    get_device_description,
-    list_devices,
 )
 from po_echo.execution_gate import gate_audio
 from po_echo.voice_orchestration import (
@@ -777,7 +778,7 @@ def cmd_device(args: argparse.Namespace) -> None:
         print(f"Error: Invalid JSON in --meta: {e}", file=sys.stderr)
         raise SystemExit(1) from None
 
-    device: DeviceType = args.device  # type: ignore[assignment]
+    device: DeviceType = args.device
     decision = decide_for_device(
         device,
         args.intent,
@@ -787,7 +788,7 @@ def cmd_device(args: argparse.Namespace) -> None:
         tamper_detected=args.tamper_detected,
     )
 
-    result = {
+    result: dict[str, Any] = {
         "device": device,
         "device_description": get_device_description(device),
         "responsibility_boundary": decision.to_responsibility_boundary(),

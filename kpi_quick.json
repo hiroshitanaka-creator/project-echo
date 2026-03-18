@@ -1,0 +1,21 @@
+{
+  "checks": [
+    {
+      "name": "voice_boundary_10k_runtime",
+      "passed": true,
+      "observed": 0.003118538999999032,
+      "target": 0.3,
+      "unit": "seconds",
+      "evidence": "min_seconds=0.003119"
+    },
+    {
+      "name": "rth_tracker_boundedness",
+      "passed": true,
+      "observed": 2000.0,
+      "target": 2000.0,
+      "unit": "entries",
+      "evidence": "tracker_entries=2000"
+    }
+  ],
+  "all_passed": true
+}

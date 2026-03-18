@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -150,7 +150,7 @@ def build_public_audit_manifest(
 
     manifest: dict[str, Any] = {
         **core_payload,
-        "generated_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "generated_at_utc": datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
         "responsibility_boundary": responsibility_boundary,
         "integrity": {"sha256": checksum},
     }
@@ -207,4 +207,4 @@ def verify_public_audit_manifest(manifest: dict[str, Any]) -> bool:
         if k not in {"generated_at_utc", "responsibility_boundary", "integrity"}
     }
     expected = _sha256_digest(core_payload)
-    return stored == expected
+    return bool(stored == expected)

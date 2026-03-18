@@ -6,10 +6,10 @@ verifiable over time, independent of individual operator habits.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import date, datetime, timezone
-from pathlib import Path
 import re
+from dataclasses import dataclass
+from datetime import UTC, date, datetime
+from pathlib import Path
 
 WEEK_ID_PATTERN = re.compile(r"^\d{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$")
 
@@ -42,7 +42,7 @@ def iso_week_id(value: date | datetime | None = None) -> str:
     """
 
     if value is None:
-        value = datetime.now(timezone.utc)
+        value = datetime.now(UTC)
     if isinstance(value, datetime):
         value = value.date()
     iso_year, iso_week, _ = value.isocalendar()
@@ -95,4 +95,4 @@ def has_failures(outcomes: list[CommandOutcome]) -> bool:
 
 
 def utc_now_iso() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")

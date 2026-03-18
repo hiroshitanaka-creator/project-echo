@@ -6,16 +6,15 @@ summary that merges latest weekly and monthly evidence status.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime, timezone
 import json
-from pathlib import Path
 import re
-from typing import Any
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any, cast
 
 from po_echo.audit_archive import WEEK_ID_PATTERN
 from po_echo.gift_rehearsal import MONTH_ID_PATTERN
-
 
 _WEEK_SORT_PATTERN = re.compile(r"^(\d{4})-W(\d{2})$")
 _MONTH_SORT_PATTERN = re.compile(r"^(\d{4})-(\d{2})$")
@@ -62,7 +61,7 @@ def _latest_labeled_subdir(base: Path, matcher: re.Pattern[str], parse: re.Patte
 def _load_monthly_summary(summary_path: Path) -> dict[str, Any] | None:
     if not summary_path.exists():
         return None
-    return json.loads(summary_path.read_text(encoding="utf-8"))
+    return cast(dict[str, Any], json.loads(summary_path.read_text(encoding="utf-8")))
 
 
 def _read_text_if_exists(path: Path) -> str | None:
@@ -202,7 +201,7 @@ def write_integrated_summary(
             previous_read_error = f"invalid_previous_summary_json:{exc.msg}"
 
     payload = build_integrated_summary(root)
-    payload["generated_at_utc"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    payload["generated_at_utc"] = datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     payload["responsibility_boundary"] = {
         "automation_scope": "最新週次/月次証跡の集約と存在確認まで",
         "human_scope": "公開可否・リスク受容・対外説明の最終判断",

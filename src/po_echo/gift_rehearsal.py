@@ -6,11 +6,11 @@ reproducible without relying on individual memory.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import date, datetime, timezone
 import json
-from pathlib import Path
 import re
+from dataclasses import dataclass
+from datetime import UTC, date, datetime
+from pathlib import Path
 from typing import Any
 
 MONTH_ID_PATTERN = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
@@ -34,7 +34,7 @@ def iso_month_id(value: date | datetime | None = None) -> str:
     """Return month id as YYYY-MM for monthly rehearsal directories."""
 
     if value is None:
-        value = datetime.now(timezone.utc)
+        value = datetime.now(UTC)
     if isinstance(value, datetime):
         value = value.date()
     return f"{value.year:04d}-{value.month:02d}"
@@ -145,7 +145,7 @@ def rebuild_gift_rehearsal_history_index(root_dir: Path) -> dict[str, Any]:
 
     latest = records[-1]["month_id"] if records else None
     payload = {
-        "generated_at_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "generated_at_utc": datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
         "latest_month_id": latest,
         "records": records,
     }

@@ -41,7 +41,12 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 
-from po_echo.webhook_dispatch import DispatchResult, WebhookConfig, configs_from_env, dispatch_webhooks
+from po_echo.webhook_dispatch import (
+    DispatchResult,
+    WebhookConfig,
+    configs_from_env,
+    dispatch_webhooks,
+)
 
 _DEFAULT_NOTIFICATION_PATH = _REPO_ROOT / "reports" / "operations" / "p2_alert_notification.json"
 

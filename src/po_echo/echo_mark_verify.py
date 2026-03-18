@@ -14,7 +14,7 @@ from po_echo.echo_mark_registry import (
     get_key_store,
 )
 
-UTC = getattr(dt, "UTC", dt.timezone.utc)
+UTC = getattr(dt, "UTC", dt.UTC)
 
 try:
     from nacl.encoding import HexEncoder
@@ -157,7 +157,7 @@ def _resolve_public_key_for_badge(
         status = str(entry.get("status", "active"))
         public_key = entry.get("public_key")
         if status == "revoked":
-            return cast(str | None, public_key if isinstance(public_key, str) else None), status
+            return (public_key if isinstance(public_key, str) else None), status
         if isinstance(public_key, str) and public_key:
             return public_key, status
 

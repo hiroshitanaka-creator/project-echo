@@ -10,10 +10,9 @@ lightweight pre-commit hook.
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Sequence
-
 
 # Placeholder patterns that must NOT appear in a filled-in alert file.
 # Each entry is a (token_description, regex_pattern) pair.

@@ -15,7 +15,7 @@ from po_echo.echo_mark_registry import (
     get_key_store,
 )
 
-UTC = getattr(dt, "UTC", dt.timezone.utc)
+UTC = getattr(dt, "UTC", dt.UTC)
 
 try:
     from nacl.encoding import HexEncoder
@@ -141,7 +141,7 @@ def _ed25519_sign(payload_hash: str, private_key_hex: str) -> str:
     if not NACL_AVAILABLE:
         raise RuntimeError("PyNaCl not installed")
     signer = SigningKey(private_key_hex.encode(), encoder=HexEncoder)
-    return signer.sign(payload_hash.encode("utf-8")).signature.hex()
+    return str(signer.sign(payload_hash.encode("utf-8")).signature.hex())
 
 
 def _derive_public_key(private_key_hex: str) -> str | None:
@@ -149,7 +149,7 @@ def _derive_public_key(private_key_hex: str) -> str | None:
         return None
     try:
         signing_key = SigningKey(private_key_hex.encode(), encoder=HexEncoder)
-        return signing_key.verify_key.encode(HexEncoder).decode()
+        return cast(str, signing_key.verify_key.encode(HexEncoder).decode())
     except Exception:
         return None
 

@@ -60,4 +60,4 @@ def test_render_monthly_manifest_rejects_missing_tokens(template: str) -> None:
     except ValueError:
         pass
     else:
-        assert False, "expected ValueError when template misses required tokens"
+        raise AssertionError("expected ValueError when template misses required tokens")
