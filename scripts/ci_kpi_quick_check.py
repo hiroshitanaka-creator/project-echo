@@ -23,7 +23,6 @@ from po_echo.ci_kpi import (
 from po_echo.rth import CollisionTrackerConfig, RollingTranscriptHash
 from po_echo.voice_boundary import classify_risk
 
-
 logging.getLogger("po_echo.rth").setLevel(logging.ERROR)
 
 

@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import json
 
-from po_echo.ops_summary import build_integrated_summary, build_integrated_summary_diff, write_integrated_summary
+from po_echo.ops_summary import (
+    build_integrated_summary,
+    build_integrated_summary_diff,
+    write_integrated_summary,
+)
 
 
 def test_build_integrated_summary_returns_latest_windows(tmp_path) -> None:

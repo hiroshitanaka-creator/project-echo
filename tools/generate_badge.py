@@ -101,7 +101,7 @@ def _darken_hex(hex_color: str, factor: float = 0.82) -> str:
     r, g, b = (int(h[i : i + 2], 16) / 255 for i in (0, 2, 4))
     hue, sat, val = colorsys.rgb_to_hsv(r, g, b)
     rd, gd, bd = colorsys.hsv_to_rgb(hue, sat, val * factor)
-    return "#{:02x}{:02x}{:02x}".format(int(rd * 255), int(gd * 255), int(bd * 255))
+    return f"#{int(rd * 255):02x}{int(gd * 255):02x}{int(bd * 255):02x}"
 
 
 def generate_svg(badge: dict) -> str:

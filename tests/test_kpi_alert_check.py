@@ -10,11 +10,9 @@ from __future__ import annotations
 import pytest
 
 from po_echo.kpi_alert_check import (
-    KpiAlertCheckResult,
-    check_kpi_alert_text,
     check_kpi_alert_file,
+    check_kpi_alert_text,
 )
-
 
 # ---------------------------------------------------------------------------
 # Baseline: the unfilled template must itself fail the check.

@@ -22,7 +22,7 @@ import json
 import os
 import urllib.error
 import urllib.request
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 # PagerDuty Events API v2 endpoint (public, not configurable).
@@ -183,7 +183,7 @@ def format_pagerduty_payload(
     summary = (
         f"Project Echo [{severity}]: KPI alert detected"
         if has_alert
-        else f"Project Echo [NONE]: All KPI flags nominal"
+        else "Project Echo [NONE]: All KPI flags nominal"
     )
 
     flags = notification.get("flags", {})

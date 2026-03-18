@@ -14,12 +14,10 @@ from __future__ import annotations
 
 from typing import Any
 
-import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from po_echo.webhook_dispatch import (
-    DispatchResult,
     WebhookConfig,
     dispatch_webhooks,
     format_pagerduty_payload,

@@ -24,14 +24,12 @@ Invariants (non-breakable across ALL devices — AGENT.md 不変原則より):
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Literal
 
 from po_echo.voice_boundary import (
     HIGH_BIAS_BLOCK_THRESHOLD,
     POLICY,
-    ScreenlessSafetyConfig,
-    VoiceBoundaryDecision,
     _safe_float,
     classify_risk,
 )

@@ -13,20 +13,15 @@ Tests cover:
 from __future__ import annotations
 
 import json
-import os
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import patch
 
 from po_echo.webhook_dispatch import (
-    DispatchResult,
     WebhookConfig,
     configs_from_env,
     dispatch_webhooks,
     format_pagerduty_payload,
     format_slack_payload,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
