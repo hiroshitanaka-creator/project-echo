@@ -1,19 +1,225 @@
 {
+  "schema_version": "1.1",
+  "last_updated": "2026-03-22",
+  "note": "Requirement traceability matrix. code_refs use dotted module.function notation. tests use file::function notation.",
   "traceability": [
     {
+      "requirement_id": "REQ-INV-001",
+      "title": "AI must never issue a direct recommendation. Output is always candidate_set + evidence + responsibility_boundary.",
+      "source": "docs/threat_model.md#invariant-1",
+      "code_refs": [
+        "po_core.diversity.diversify_with_mmr",
+        "po_echo.voice_orchestration.run_voice_flow"
+      ],
+      "tests": [
+        "tests/test_invariants.py::test_invariant_never_recommend",
+        "tests/test_prop_no_recommendation.py"
+      ],
+      "status": "implemented"
+    },
+    {
+      "requirement_id": "REQ-INV-002",
+      "title": "Execution gate must be conservative: bias_score >= threshold or high-risk intent must not auto-allow execution.",
+      "source": "docs/threat_model.md#invariant-2",
+      "code_refs": [
+        "po_echo.execution_gate.gate_audio",
+        "po_echo.voice_boundary.decide",
+        "po_echo.sentinel.run_audit"
+      ],
+      "tests": [
+        "tests/test_invariants.py::test_invariant_conservative_gate_high_bias",
+        "tests/test_invariants.py::test_invariant_conservative_gate_monopoly",
+        "tests/test_prop_execution_gate.py"
+      ],
+      "status": "implemented"
+    },
+    {
+      "requirement_id": "REQ-INV-003",
+      "title": "Overall bias_score must be fully reconstructible from the evidence receipt (affiliate_risk, merchant_concentration, price_concentration, source_diversity).",
+      "source": "docs/threat_model.md#invariant-3",
+      "code_refs": [
+        "po_core.diversity.commercial_bias_score"
+      ],
+      "tests": [
+        "tests/test_invariants.py::test_invariant_evidence_traceability",
+        "tests/test_invariants.py::test_invariant_evidence_receipt_completeness"
+      ],
+      "status": "implemented"
+    },
+    {
+      "requirement_id": "REQ-INV-004",
+      "title": "High-bias options must not be amplified after diversification (no hidden monetization inputs).",
+      "source": "docs/threat_model.md#invariant-4",
+      "code_refs": [
+        "po_core.diversity.diversify_with_mmr",
+        "po_echo.diversity.diversify_with_semantic"
+      ],
+      "tests": [
+        "tests/test_invariants.py::test_invariant_no_bias_amplification",
+        "tests/test_prop_diversity.py"
+      ],
+      "status": "implemented"
+    },
+    {
+      "requirement_id": "REQ-INV-005",
+      "title": "All outputs must carry a verifiable Echo Mark (Ed25519 + HMAC dual signature). Tampered badges must fail verification.",
+      "source": "docs/threat_model.md#invariant-5",
+      "code_refs": [
+        "po_echo.echo_mark.make_echo_mark",
+        "po_echo.echo_mark.verify_mark",
+        "po_echo.echo_mark_core.sign_ed25519",
+        "po_echo.echo_mark_verify.verify_echo_mark_ed25519"
+      ],
+      "tests": [
+        "tests/test_invariants.py::test_invariant_signature_verifies",
+        "tests/test_invariants.py::test_invariant_tamper_detection",
+        "tests/test_prop_echo_mark.py"
+      ],
+      "status": "implemented"
+    },
+    {
       "requirement_id": "REQ-POL-001",
-      "title": "Unknown information should trigger hold when threshold exceeded.",
-      "code_refs": ["RULE_UNKNOWN_BLOCK", "ARB_UNKNOWN_BLOCK"]
+      "title": "Unknown information must trigger hold (execution_allowed=False) when bias threshold exceeded.",
+      "source": "docs/threat_model.md",
+      "code_refs": [
+        "po_echo.execution_gate.gate_audio",
+        "po_echo.voice_boundary.decide"
+      ],
+      "tests": [
+        "tests/test_invariants.py::test_invariant_conservative_gate_high_bias"
+      ],
+      "status": "implemented"
     },
     {
       "requirement_id": "REQ-POL-002",
-      "title": "Time pressure should trigger escalation path.",
-      "code_refs": ["RULE_TIME_PRESSURE", "ARB_TIME_PRESSURE"]
+      "title": "Time pressure (high-risk intent with metadata amount >= threshold) must trigger escalation and require human confirmation.",
+      "source": "docs/threat_model.md",
+      "code_refs": [
+        "po_echo.voice_boundary.decide",
+        "po_echo.device_boundary.decide_for_device"
+      ],
+      "tests": [
+        "tests/test_voice_boundary.py",
+        "tests/test_prop_voice_stack.py"
+      ],
+      "status": "implemented"
     },
     {
       "requirement_id": "REQ-POL-003",
-      "title": "Standard path allows recommendations when no blocking rule applies.",
-      "code_refs": ["ARB_PASS"]
+      "title": "Standard path (no blocking rule triggered) must return candidate_set + evidence + responsibility_boundary. Direct recommendation is never emitted regardless of bias level.",
+      "source": "docs/threat_model.md",
+      "note": "CORRECTED from v1.0 which incorrectly stated 'allows recommendations'. AI never recommends per REQ-INV-001.",
+      "code_refs": [
+        "po_core.diversity.diversify_with_mmr",
+        "po_echo.voice_orchestration.run_voice_flow"
+      ],
+      "tests": [
+        "tests/test_invariants.py::test_invariant_never_recommend",
+        "tests/test_smoke.py"
+      ],
+      "status": "implemented"
+    },
+    {
+      "requirement_id": "REQ-SEC-001",
+      "title": "Revoked keys in registry must prevent verification even if a valid inline public key is present in the badge.",
+      "source": "git:PR#101 (ECHO-fix-revoked-key-bypass)",
+      "code_refs": [
+        "po_echo.echo_mark_registry.EchoMarkRegistry.get_active_key",
+        "po_echo.echo_mark_verify.verify_echo_mark_ed25519"
+      ],
+      "tests": [
+        "tests/test_echo_mark.py::test_revoked_registry_key_rejects_inline_public_key"
+      ],
+      "status": "implemented"
+    },
+    {
+      "requirement_id": "REQ-SEC-002",
+      "title": "Self-signed badges (inline public_key used as trust anchor) must be rejected. Ed25519 verification requires an explicit caller-controlled public key map.",
+      "source": "git:PR#102 git:PR#106 (ECHO-fix-ed25519-trust-anchor, ECHO-fix-self-signed-bypass)",
+      "code_refs": [
+        "po_echo.echo_mark_verify.verify_echo_mark_ed25519",
+        "po_echo.echo_mark.verify_echo_mark"
+      ],
+      "tests": [
+        "tests/test_echo_mark.py::test_self_signed_badge_is_rejected_without_trusted_key_source",
+        "tests/test_echo_mark.py::test_dual_signature_verification_success"
+      ],
+      "status": "implemented"
+    },
+    {
+      "requirement_id": "REQ-SEC-003",
+      "title": "Non-finite bias values (NaN, Infinity) must fail closed: execution_allowed=False, requires_human_confirm=True.",
+      "source": "git:PR#103 (ECHO-fix-nan-bias-bypass)",
+      "code_refs": [
+        "po_echo.device_boundary.decide_for_device"
+      ],
+      "tests": [
+        "tests/test_prop_device_boundary.py::test_non_finite_bias_is_blocked_fail_closed"
+      ],
+      "status": "implemented"
+    },
+    {
+      "requirement_id": "REQ-DEV-001",
+      "title": "On all device types, high-risk intent must set requires_human_confirm=True regardless of bias level.",
+      "source": "docs/DEVICE_BOUNDARY.md",
+      "code_refs": [
+        "po_echo.device_boundary.decide_for_device"
+      ],
+      "tests": [
+        "tests/test_prop_device_boundary.py::test_prop_high_risk_always_requires_confirm"
+      ],
+      "status": "implemented"
+    },
+    {
+      "requirement_id": "REQ-DEV-002",
+      "title": "On all device types, bias_score >= device threshold must set execution_allowed=False.",
+      "source": "docs/DEVICE_BOUNDARY.md",
+      "code_refs": [
+        "po_echo.device_boundary.DEVICE_CONFIGS",
+        "po_echo.device_boundary.decide_for_device"
+      ],
+      "tests": [
+        "tests/test_prop_device_boundary.py::test_prop_high_bias_blocks_execution"
+      ],
+      "status": "implemented"
+    },
+    {
+      "requirement_id": "REQ-DEV-003",
+      "title": "Risk classification (low/medium/high) must be determined solely by intent and metadata, not by device type.",
+      "source": "docs/DEVICE_BOUNDARY.md",
+      "code_refs": [
+        "po_echo.device_boundary.decide_for_device"
+      ],
+      "tests": [
+        "tests/test_prop_device_boundary.py::test_prop_risk_classification_device_independent"
+      ],
+      "status": "implemented"
+    },
+    {
+      "requirement_id": "REQ-VOICE-001",
+      "title": "Voice channel must never store raw audio. Only Rolling Transcript Hash snapshots are retained.",
+      "source": "docs/threat_model.md",
+      "code_refs": [
+        "po_echo.rth.RollingTranscriptHash",
+        "po_echo.voice_boundary.attach_boundary"
+      ],
+      "tests": [
+        "tests/test_rth.py",
+        "tests/test_prop_voice_stack.py"
+      ],
+      "status": "implemented"
+    },
+    {
+      "requirement_id": "REQ-VOICE-002",
+      "title": "Ear-worn device handshake must complete before execution is allowed on audio channel.",
+      "source": "docs/threat_model.md",
+      "code_refs": [
+        "po_echo.ear_handshake.EarHandshake"
+      ],
+      "tests": [
+        "tests/test_voice_boundary.py"
+      ],
+      "status": "implemented"
     }
   ]
 }

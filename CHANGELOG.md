@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - ECHO-20260314-003: `po-cosmic device` CLIサブコマンドを追加し、`device_boundary.py` の4デバイス責任境界判定をCLIから実行可能化。`--list-devices` / `--show-schema` / `--out` / `--require-execution-allowed` オプション対応。`tests/test_device_cli.py`（11テスト）を追加。
 
+### Fixed
+- ECHO-AUDIT-001: `docs/traceability/traceability_v1.yaml` を全面改訂。旧バージョンの問題点を修正:
+  (1) コード参照 `RULE_UNKNOWN_BLOCK` / `ARB_UNKNOWN_BLOCK` / `ARB_PASS` がソースコードに存在しない (実装と乖離)
+  (2) REQ-POL-003 が「recommendations を許可する」と記述しており REQ-INV-001「AI は推薦しない」と直接矛盾していた
+  新バージョン (schema_version 1.1): 5つの不変原則 (REQ-INV-001〜005)、ポリシー要件 (REQ-POL-001〜003)、
+  セキュリティ要件 (REQ-SEC-001〜003: PR #101/#102/#103/#106 修正対応)、デバイス境界要件 (REQ-DEV-001〜003)、
+  音声要件 (REQ-VOICE-001〜002) を実在するモジュール名・テスト関数名で記述。
+- ECHO-AUDIT-000: `pyproject.toml` のバージョンを `0.2.0` から `1.1.0` に修正 (CHANGELOG/PROGRESS.md の実態と乖離していた)。
+  `package.jso` → `package.json` にリネーム (拡張子 typo)。`.gitignore` に CI 生成物 `kpi_quick.json` / `kpi_quick.md` を追加。
+
 ---
 
 ## [v1.0.0] - 2026-03-14
