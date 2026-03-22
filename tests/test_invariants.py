@@ -212,14 +212,14 @@ def test_invariant_signature_verifies():
     key_id = "test_key_001"
     badge = make_echo_mark(audit, secret=secret, key_id=key_id)
 
-     # Verify with key_store (v3 HMAC compatibility)
+    # Verify with key_store (v3 HMAC compatibility)
     key_store = {key_id: secret}
     valid = verify_mark(
         badge["payload"], badge["payload_hash"], badge["signature_hmac"], key_store=key_store
     )
     assert valid, "Invariant 5 violated: Signature does not verify"
 
-        # Ensure v3 schema
+    # Ensure v3 schema
     assert badge["schema_version"] == "echo_mark_v3", "Expected v3 schema"
     assert badge["payload"]["key_id"] == key_id, "key_id mismatch"
 
