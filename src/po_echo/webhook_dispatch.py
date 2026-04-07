@@ -18,8 +18,10 @@ Design principles:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -30,6 +32,15 @@ _PAGERDUTY_EVENTS_URL = "https://events.pagerduty.com/v2/enqueue"
 
 # HTTP timeout for webhook calls (seconds).
 _HTTP_TIMEOUT = 10
+
+# Retry delays (seconds) applied between attempts on network-level failures.
+# Only network exceptions (OSError, URLError, timeout) trigger retries;
+# HTTP-level responses (4xx, 5xx) are returned immediately.
+# Why: network-level failures indicate the request never reached the server,
+# so retrying is safe. HTTP responses mean the server received the request
+# (PagerDuty dedup_key handles idempotency there); retrying would risk
+# duplicate delivery for channels without server-side dedup (e.g. Slack).
+_RETRY_DELAYS: tuple[float, ...] = (1.0, 2.0, 4.0)
 
 # Severity → PagerDuty severity mapping.
 # Why: PagerDuty uses its own severity taxonomy; we map from internal labels.
@@ -215,6 +226,17 @@ def format_pagerduty_payload(
     }
 
 
+def _request_id(body: bytes) -> str:
+    """Return first 16 hex chars of SHA-256(body) as a content-addressed request ID.
+
+    Why: sending a stable X-Request-Id derived from payload content lets
+    operators correlate log entries across retries without generating a new
+    random ID per attempt. This also aids Slack-side debugging even though
+    Slack does not natively deduplicate on this header.
+    """
+    return hashlib.sha256(body).hexdigest()[:16]
+
+
 def _http_post(url: str, body: bytes, timeout: int = _HTTP_TIMEOUT) -> tuple[int, str]:
     """Send an HTTP POST with JSON body; return (status_code, response_text).
 
@@ -225,7 +247,10 @@ def _http_post(url: str, body: bytes, timeout: int = _HTTP_TIMEOUT) -> tuple[int
         url,
         data=body,
         method="POST",
-        headers={"Content-Type": "application/json; charset=utf-8"},
+        headers={
+            "Content-Type": "application/json; charset=utf-8",
+            "X-Request-Id": _request_id(body),
+        },
     )
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return resp.status, resp.read().decode("utf-8", errors="replace")
@@ -237,8 +262,19 @@ def _dispatch_single(
     payload: dict[str, Any],
     *,
     dry_run: bool,
+    retry_delays: tuple[float, ...] = _RETRY_DELAYS,
 ) -> DispatchResult:
-    """Attempt a single webhook delivery; return DispatchResult."""
+    """Attempt a webhook delivery with retry on network-level failures.
+
+    Retry policy:
+    - Only network exceptions (OSError, urllib.error.URLError, timeout) are
+      retried. HTTP responses (including 5xx) are returned immediately.
+    - Why: HTTP responses mean the server received the request. PagerDuty
+      provides idempotency via dedup_key; Slack has no server-side dedup, so
+      retrying an acknowledged HTTP response risks duplicate delivery.
+    - retry_delays controls inter-attempt sleep durations (seconds). Pass
+      an empty tuple to disable retries (e.g. in unit tests).
+    """
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     preview = body.decode("utf-8")[:200]
 
@@ -252,35 +288,46 @@ def _dispatch_single(
             payload_preview=preview,
         )
 
-    try:
-        status_code, _ = _http_post(url, body)
-        success = 200 <= status_code < 300
-        return DispatchResult(
-            target=target,
-            success=success,
-            status_code=status_code,
-            error=None if success else f"HTTP {status_code}",
-            dry_run=False,
-            payload_preview=preview,
-        )
-    except urllib.error.HTTPError as exc:
-        return DispatchResult(
-            target=target,
-            success=False,
-            status_code=exc.code,
-            error=f"HTTPError {exc.code}: {exc.reason}",
-            dry_run=False,
-            payload_preview=preview,
-        )
-    except Exception as exc:  # noqa: BLE001
-        return DispatchResult(
-            target=target,
-            success=False,
-            status_code=None,
-            error=str(exc),
-            dry_run=False,
-            payload_preview=preview,
-        )
+    last_network_error: str | None = None
+
+    for attempt, delay in enumerate((0.0, *retry_delays)):
+        if delay > 0:
+            time.sleep(delay)
+
+        try:
+            status_code, _ = _http_post(url, body)
+            success = 200 <= status_code < 300
+            return DispatchResult(
+                target=target,
+                success=success,
+                status_code=status_code,
+                error=None if success else f"HTTP {status_code}",
+                dry_run=False,
+                payload_preview=preview,
+            )
+        except urllib.error.HTTPError as exc:
+            # HTTPError is an HTTP-level response — return immediately, no retry.
+            return DispatchResult(
+                target=target,
+                success=False,
+                status_code=exc.code,
+                error=f"HTTPError {exc.code}: {exc.reason}",
+                dry_run=False,
+                payload_preview=preview,
+            )
+        except Exception as exc:  # noqa: BLE001
+            # Network-level failure — retry if attempts remain.
+            last_network_error = str(exc)
+            _ = attempt  # suppress unused-variable warning
+
+    return DispatchResult(
+        target=target,
+        success=False,
+        status_code=None,
+        error=last_network_error,
+        dry_run=False,
+        payload_preview=preview,
+    )
 
 
 def dispatch_webhooks(
@@ -289,6 +336,7 @@ def dispatch_webhooks(
     *,
     dry_run: bool = False,
     pagerduty_dedup_key: str | None = None,
+    retry_delays: tuple[float, ...] = _RETRY_DELAYS,
 ) -> list[DispatchResult]:
     """Dispatch a notification envelope to all configured webhook targets.
 
@@ -297,6 +345,9 @@ def dispatch_webhooks(
         configs: List of ``WebhookConfig`` describing each target.
         dry_run: When True, skip HTTP calls and return simulated successes.
         pagerduty_dedup_key: Override dedup_key for PagerDuty events.
+        retry_delays: Sleep durations (seconds) between retry attempts on
+            network failures. Defaults to ``_RETRY_DELAYS``. Pass an empty
+            tuple to disable retries (e.g. in tests).
 
     Returns:
         List of ``DispatchResult``, one per config entry.
@@ -305,20 +356,34 @@ def dispatch_webhooks(
         This function formats and sends payloads only. Routing key management,
         escalation policies, and on-call roster decisions are operator
         responsibility.
+
+    Idempotency notes:
+        PagerDuty: idempotency is guaranteed via ``dedup_key`` in the payload.
+        Slack: no server-side dedup; ``X-Request-Id`` (SHA-256 of body) is sent
+        for log correlation only. Duplicate delivery is possible if a Slack
+        request was acknowledged (2xx) and a caller retries at a higher level.
     """
     results: list[DispatchResult] = []
 
     for cfg in configs:
         if cfg.kind == "slack":
             payload = format_slack_payload(notification)
-            result = _dispatch_single(cfg.target, cfg.url, payload, dry_run=dry_run)
+            result = _dispatch_single(
+                cfg.target, cfg.url, payload, dry_run=dry_run, retry_delays=retry_delays
+            )
         elif cfg.kind == "pagerduty":
             payload = format_pagerduty_payload(
                 notification,
                 routing_key=cfg.url,
                 dedup_key=pagerduty_dedup_key,
             )
-            result = _dispatch_single(cfg.target, _PAGERDUTY_EVENTS_URL, payload, dry_run=dry_run)
+            result = _dispatch_single(
+                cfg.target,
+                _PAGERDUTY_EVENTS_URL,
+                payload,
+                dry_run=dry_run,
+                retry_delays=retry_delays,
+            )
         else:
             result = DispatchResult(
                 target=cfg.target,

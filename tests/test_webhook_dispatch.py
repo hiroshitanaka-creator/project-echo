@@ -251,11 +251,48 @@ class TestDispatchWebhooksHttp:
         assert results[0].status_code == 503
 
     def test_network_exception(self):
+        # retry_delays=() disables retries to keep the test fast.
         with patch("po_echo.webhook_dispatch._http_post", side_effect=OSError("network down")):
-            results = dispatch_webhooks(_make_notification(), [self._slack_cfg()])
+            results = dispatch_webhooks(
+                _make_notification(), [self._slack_cfg()], retry_delays=()
+            )
         assert results[0].success is False
         assert "network down" in (results[0].error or "")
         assert results[0].status_code is None
+
+    def test_network_exception_retries_and_recovers(self):
+        """After a transient network failure, retry should succeed on the next attempt."""
+        call_results = [OSError("transient"), (200, "ok")]
+
+        def flaky_post(*_args: object, **_kwargs: object) -> tuple[int, str]:
+            r = call_results.pop(0)
+            if isinstance(r, Exception):
+                raise r
+            return r  # type: ignore[return-value]
+
+        with patch("po_echo.webhook_dispatch._http_post", side_effect=flaky_post):
+            with patch("po_echo.webhook_dispatch.time") as mock_time:
+                results = dispatch_webhooks(
+                    _make_notification(), [self._slack_cfg()], retry_delays=(0.0,)
+                )
+        assert results[0].success is True
+        assert results[0].status_code == 200
+        mock_time.sleep.assert_called_once_with(0.0)
+
+    def test_http_5xx_is_not_retried(self):
+        """HTTP 5xx is returned immediately without retry (server received the request)."""
+        with patch(
+            "po_echo.webhook_dispatch._http_post", return_value=(503, "Service Unavailable")
+        ) as mock_post:
+            results = dispatch_webhooks(
+                _make_notification(),
+                [self._slack_cfg()],
+                retry_delays=(0.0, 0.0, 0.0),
+            )
+        assert results[0].success is False
+        assert results[0].status_code == 503
+        # Must be called exactly once — no retry on HTTP-level responses.
+        mock_post.assert_called_once()
 
 
 # ---------------------------------------------------------------------------

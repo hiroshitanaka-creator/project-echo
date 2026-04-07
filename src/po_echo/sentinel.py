@@ -1,4 +1,20 @@
 # src/po_echo/sentinel.py
+"""Vendor dependency concentration scanner for requirements files.
+
+Responsibility: audit *dependency manifest files* (requirements.txt, etc.)
+for vendor lock-in risk by measuring how many packages map to the same vendor.
+
+Use this module when you want to answer:
+  "Does my requirements.txt over-rely on a single cloud vendor?"
+
+Typical caller: CI pipeline, pre-commit hook, or `po-cosmic audit` subcommand
+when auditing the project's own dependency files.
+
+Distinct from sentinel_v2.py:
+  - sentinel.py   → static analysis of *package dependency lists*
+  - sentinel_v2.py → AST-based scan of *Python source code* (import statements,
+                     hardcoded secrets) plus semantic diversity for candidate sets
+"""
 import sys
 from collections import Counter
 from pathlib import Path

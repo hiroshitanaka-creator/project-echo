@@ -43,7 +43,7 @@ jobs:
             --disallow-incomplete-defs
 
       - name: Smoke tests
-        run: pytest -q tests/test_smoke.py
+        run: pytest -q tests/test_smoke.py tests/test_examples_smoke.py
 
   invariants:
     name: Invariants Gate (core principles)
@@ -165,6 +165,9 @@ jobs:
 
       - name: Device boundary quick check
         run: pytest -q tests/test_device_cli.py
+
+      - name: Voice integration check
+        run: pytest -q tests/test_voice_integration.py tests/test_voice_cli.py
 
       - name: Publish KPI quick summary
         if: always()
