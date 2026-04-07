@@ -1,3 +1,25 @@
+"""AST-based vendor lock-in scanner and semantic diversity helper for source code.
+
+Responsibility: two distinct concerns bundled in this module:
+
+1. **Doberman (AST scanner)** — scan Python *source files* for:
+   - `import` statements that pull in monitored vendor packages
+   - Hardcoded API keys / credentials in string constants
+   Call `scan_directory(path)` or run as `python -m po_echo.sentinel_v2 <dir>`.
+
+2. **apply_semantic_diversity** — wraps `po_echo.diversity.apply_semantic_diversity`
+   with a fixed prompt_text ("sentinel_semantic_scan") for use in sentinel
+   audit pipelines that need semantic diversity enrichment alongside the
+   vendor scan.
+
+Use this module when you want to answer:
+  "Does my *source code* import vendor-locked packages or leak credentials?"
+  "What is the semantic diversity score for this candidate set in a sentinel context?"
+
+Distinct from sentinel.py:
+  - sentinel.py   → static analysis of *package dependency lists* (requirements.txt)
+  - sentinel_v2.py → AST-based scan of *Python source code* + semantic diversity
+"""
 import ast
 import os
 import re
