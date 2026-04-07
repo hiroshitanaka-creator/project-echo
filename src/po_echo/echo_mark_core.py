@@ -149,7 +149,7 @@ def _derive_public_key(private_key_hex: str) -> str | None:
         return None
     try:
         signing_key = SigningKey(private_key_hex.encode(), encoder=HexEncoder)
-        return cast(str, signing_key.verify_key.encode(HexEncoder).decode())
+        return signing_key.verify_key.encode(HexEncoder).decode()
     except Exception:
         return None
 

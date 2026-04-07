@@ -10,7 +10,6 @@ Simulates attacker strategies to evade bias detection:
 
 from __future__ import annotations
 
-import random
 import string
 import urllib.parse
 
@@ -129,9 +128,8 @@ def url_variants(draw):
 
     params = {**core, **tracking}
 
-    # Param order shuffle
-    items = list(params.items())
-    random.shuffle(items)
+    # Param order shuffle using Hypothesis-managed randomness (avoids random module deprecation)
+    items = draw(st.permutations(list(params.items())))
 
     query = urllib.parse.urlencode(items)
 
@@ -223,8 +221,6 @@ def affiliate_urls(draw):
     ref_value = draw(st.text(min_size=1, max_size=8, alphabet=string.ascii_letters + string.digits))
     nested_target += "&ref=" + ref_value
     return "https://tracker.example/redirect?url=" + urllib.parse.quote(nested_target, safe="")
-
-    return base
 
 
 @composite

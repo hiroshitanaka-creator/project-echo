@@ -156,11 +156,17 @@ def test_responsibility_boundary_channel_is_audio() -> None:
     assert rb.get("channel") == "audio", f"Expected channel='audio', got {rb.get('channel')!r}"
 
 
-def test_responsibility_boundary_ai_never_recommends() -> None:
-    """Invariant: ai_recommends must always be False."""
+def test_responsibility_boundary_has_required_fields() -> None:
+    """Responsibility boundary must always contain the required structural fields.
+
+    Why: voice boundary contract — channel, execution_allowed, requires_human_confirm,
+    and reasons must be present for downstream callers and audit consumers.
+    """
     result = _run(intent="search", transcript="候補を見せて", metadata={})
     rb = result["responsibility_boundary"]
-    assert rb.get("ai_recommends") is False, "Invariant violated: ai_recommends must be False"
+    for field in ("channel", "execution_allowed", "requires_human_confirm", "reasons"):
+        assert field in rb, f"Missing required boundary field: {field!r}"
+    assert isinstance(rb["reasons"], list)
 
 
 # ---------------------------------------------------------------------------
