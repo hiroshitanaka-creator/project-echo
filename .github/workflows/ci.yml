@@ -30,20 +30,34 @@ jobs:
       - name: Ruff lint
         run: ruff check . --output-format=github
 
-      - name: mypy type check (strictness ramp)
+      - name: mypy type check
         run: |
-          # TODO(Project Echo): 段階的 strict 化のため、将来的に --ignore-missing-imports を外して --strict を有効化する。
-          mypy src \
-            --ignore-missing-imports \
-            --warn-redundant-casts \
-            --warn-unused-ignores \
-            --warn-return-any \
-            --no-implicit-optional \
-            --check-untyped-defs \
-            --disallow-incomplete-defs
+          # Config is read from pyproject.toml [tool.mypy].
+          # TODO(Project Echo): 段階的 strict 化のため、将来的に --strict を有効化する。
+          mypy src
 
       - name: Smoke tests
         run: pytest -q tests/test_smoke.py tests/test_examples_smoke.py
+
+      - name: Unit tests
+        run: |
+          pytest -q \
+            tests/test_alert_notify.py \
+            tests/test_ci_kpi.py \
+            tests/test_demo_c_example.py \
+            tests/test_diversity.py \
+            tests/test_echo_mark.py \
+            tests/test_gift_rehearsal_history_index.py \
+            tests/test_gift_rehearsal_manifest.py \
+            tests/test_kpi_alert_check.py \
+            tests/test_monthly_gift_rehearsal_script.py \
+            tests/test_ops_summary.py \
+            tests/test_public_audit.py \
+            tests/test_rth.py \
+            tests/test_sentinel_v2.py \
+            tests/test_voice_boundary.py \
+            tests/test_webhook_dispatch.py \
+            tests/test_weekly_audit_archive_script.py
 
   invariants:
     name: Invariants Gate (core principles)

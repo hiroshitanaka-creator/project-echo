@@ -25,6 +25,8 @@ EXAMPLES_DIR = ROOT / "examples"
 EXAMPLE_SCRIPTS = [
     EXAMPLES_DIR / "ai_rights_basic" / "run.py",
     EXAMPLES_DIR / "cosmic_ethics_39" / "run.py",
+    EXAMPLES_DIR / "cosmic_ethics_39" / "test_evaluator.py",
+    EXAMPLES_DIR / "cosmic_ethics_39" / "philosopher_integration.py",
     EXAMPLES_DIR / "trolley_problem_basic" / "run.py",
 ]
 

@@ -18,7 +18,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from pocore.policy_v1 import POLICY, get_policy, override_policy
+from po_core.policy_v1 import POLICY, get_policy, override_policy
 
 
 @dataclass
