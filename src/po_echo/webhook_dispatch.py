@@ -291,7 +291,7 @@ def _dispatch_single(
     last_network_error: str | None = None
 
     for attempt, delay in enumerate((0.0, *retry_delays)):
-        if delay > 0:
+        if attempt > 0:
             time.sleep(delay)
 
         try:
