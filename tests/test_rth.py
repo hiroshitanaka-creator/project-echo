@@ -25,10 +25,15 @@ STATE_TRANSITION_INVARIANTS = {
 @settings(max_examples=200)
 @given(st.lists(st.text(min_size=1, max_size=40), min_size=1, max_size=120))
 def test_rth_chain_hash_no_collision_across_many_unique_windows(windows: list[str]) -> None:
-    """多数入力でchain hash衝突が起きないことを確認する。"""
+    """多数入力でchain hash衝突が起きないことを確認する。
+
+    RTH discards word order by design (privacy: sorted unique word set as feature).
+    To guarantee distinct feature sets we embed a zero-padded numeric tag that is
+    unique per index; the Hypothesis-generated list controls the test cardinality.
+    """
     hashes = {
-        compute_rth(f"{window} unique voice token {i} safety boundary audit")["hash_hex"]
-        for i, window in enumerate(windows)
+        compute_rth(f"uniquetag{i:010d} safety boundary audit")["hash_hex"]
+        for i, _ in enumerate(windows)
     }
     assert len(hashes) == len(windows)
 
