@@ -9,7 +9,7 @@
       "source": "docs/threat_model.md#invariant-1",
       "code_refs": [
         "po_core.diversity.diversify_with_mmr",
-        "po_echo.voice_orchestration.run_voice_flow"
+        "po_echo.execution_gate.gate_audio"
       ],
       "tests": [
         "tests/test_invariants.py::test_invariant_never_recommend",
@@ -52,7 +52,7 @@
       "source": "docs/threat_model.md#invariant-4",
       "code_refs": [
         "po_core.diversity.diversify_with_mmr",
-        "po_echo.diversity.diversify_with_semantic"
+        "po_echo.diversity.apply_semantic_diversity"
       ],
       "tests": [
         "tests/test_invariants.py::test_invariant_no_bias_amplification",
@@ -65,10 +65,10 @@
       "title": "All outputs must carry a verifiable Echo Mark (Ed25519 + HMAC dual signature). Tampered badges must fail verification.",
       "source": "docs/threat_model.md#invariant-5",
       "code_refs": [
-        "po_echo.echo_mark.make_echo_mark",
-        "po_echo.echo_mark.verify_mark",
-        "po_echo.echo_mark_core.sign_ed25519",
-        "po_echo.echo_mark_verify.verify_echo_mark_ed25519"
+        "po_echo.echo_mark_registry.get_key_store",
+        "po_echo.echo_mark_registry.verify_key_in_registry",
+        "po_echo.echo_mark_registry.load_ed25519_keypair",
+        "po_echo.echo_mark_registry.get_public_key_from_registry"
       ],
       "tests": [
         "tests/test_invariants.py::test_invariant_signature_verifies",
@@ -111,7 +111,7 @@
       "note": "CORRECTED from v1.0 which incorrectly stated 'allows recommendations'. AI never recommends per REQ-INV-001.",
       "code_refs": [
         "po_core.diversity.diversify_with_mmr",
-        "po_echo.voice_orchestration.run_voice_flow"
+        "po_echo.execution_gate.gate_audio"
       ],
       "tests": [
         "tests/test_invariants.py::test_invariant_never_recommend",
@@ -124,8 +124,8 @@
       "title": "Revoked keys in registry must prevent verification even if a valid inline public key is present in the badge.",
       "source": "git:PR#101 (ECHO-fix-revoked-key-bypass)",
       "code_refs": [
-        "po_echo.echo_mark_registry.EchoMarkRegistry.get_active_key",
-        "po_echo.echo_mark_verify.verify_echo_mark_ed25519"
+        "po_echo.echo_mark_registry.get_active_key_id",
+        "po_echo.echo_mark_registry.verify_key_in_registry"
       ],
       "tests": [
         "tests/test_echo_mark.py::test_revoked_registry_key_rejects_inline_public_key"
@@ -137,8 +137,8 @@
       "title": "Self-signed badges (inline public_key used as trust anchor) must be rejected. Ed25519 verification requires an explicit caller-controlled public key map.",
       "source": "git:PR#102 git:PR#106 (ECHO-fix-ed25519-trust-anchor, ECHO-fix-self-signed-bypass)",
       "code_refs": [
-        "po_echo.echo_mark_verify.verify_echo_mark_ed25519",
-        "po_echo.echo_mark.verify_echo_mark"
+        "po_echo.echo_mark_registry.get_public_key_from_registry",
+        "po_echo.echo_mark_registry.verify_key_in_registry"
       ],
       "tests": [
         "tests/test_echo_mark.py::test_self_signed_badge_is_rejected_without_trusted_key_source",
@@ -214,7 +214,7 @@
       "title": "Ear-worn device handshake must complete before execution is allowed on audio channel.",
       "source": "docs/threat_model.md",
       "code_refs": [
-        "po_echo.ear_handshake.EarHandshake"
+        "po_echo.ear_handshake.verify_response"
       ],
       "tests": [
         "tests/test_voice_boundary.py"
