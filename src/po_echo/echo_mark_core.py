@@ -15,7 +15,7 @@ from po_echo.echo_mark_registry import (
     get_key_store,
 )
 
-UTC = getattr(dt, "UTC", dt.UTC)
+UTC = getattr(dt, "UTC", dt.timezone.utc)
 
 try:
     from nacl.encoding import HexEncoder

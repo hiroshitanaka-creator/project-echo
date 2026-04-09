@@ -20,6 +20,8 @@ Coverage goals:
 
 from __future__ import annotations
 
+from copy import deepcopy
+
 import pytest
 
 _PYNACL_MISSING = False
@@ -34,6 +36,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 from po_echo.voice_orchestration import VoiceFlowError, VoiceFlowInput, run_voice_flow  # noqa: E402
+from po_echo.execution_gate import gate_audio  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Shared fixtures
@@ -223,6 +226,103 @@ def test_booking_with_simulate_ok_allows_execution() -> None:
     )
     rb = result["responsibility_boundary"]
     assert rb.get("execution_allowed") is True
+
+
+def test_blocked_upstream_boundary_stays_blocked_in_voice_flow() -> None:
+    """Upstream blocked audit must never be relaxed by low-risk voice intent."""
+    blocked_audit = deepcopy(_AUDIT_BASE)
+    blocked_audit["responsibility_boundary"] = {
+        "schema_version": "1.0",
+        "execution_allowed": False,
+        "requires_human_confirm": True,
+        "ai_recommends": False,
+        "liability_mode": "audit-only",
+        "reasons": ["high_bias_after_diversification"],
+        "signals": {
+            "bias_original": 0.91,
+            "bias_final": 0.72,
+            "bias_improvement": 0.19,
+            "merchants_final": 1,
+            "price_buckets_final": 1,
+        },
+    }
+    payload = _make_payload(intent="search", transcript="候補を探して", metadata={}, simulate_ok=True)
+
+    result = run_voice_flow(
+        audit=blocked_audit,
+        payload=payload,
+        hmac_secret=_HMAC_SECRET,
+        ed25519_private_key=_ED25519_KEY,
+    )
+    rb = result["responsibility_boundary"]
+    assert rb["execution_allowed"] is False
+    assert "high_bias_after_diversification" in rb["reasons"]
+
+
+def test_gate_audio_preserves_upstream_boundary_metadata_and_signals() -> None:
+    """Audio gate must merge with upstream boundary instead of replacing it."""
+    upstream = {
+        "schema_version": "1.0",
+        "execution_allowed": False,
+        "requires_human_confirm": True,
+        "ai_recommends": False,
+        "liability_mode": "audit-only",
+        "reasons": ["merchant_monopoly_detected"],
+        "signals": {
+            "bias_original": 0.8,
+            "bias_final": 0.65,
+            "bias_improvement": 0.15,
+            "merchants_final": 1,
+            "price_buckets_final": 1,
+        },
+    }
+    audit = {**_AUDIT_BASE, "responsibility_boundary": upstream}
+    result = gate_audio(
+        audit=audit,
+        intent="search",
+        meta={},
+        transcript_tail="候補を比較したい",
+        simulate_user_ok=True,
+    )
+    rb = result["responsibility_boundary"]
+
+    assert rb["execution_allowed"] is False
+    assert rb["schema_version"] == "1.0"
+    assert rb["ai_recommends"] is False
+    assert rb["liability_mode"] == "audit-only"
+    assert rb["signals"] == upstream["signals"]
+    assert "merchant_monopoly_detected" in rb["reasons"]
+
+
+def test_voice_path_echo_mark_payload_keeps_nonzero_upstream_signals() -> None:
+    """Echo Mark from voice flow must keep non-zero upstream boundary signals."""
+    audit = deepcopy(_AUDIT_BASE)
+    audit["responsibility_boundary"] = {
+        "schema_version": "1.0",
+        "execution_allowed": True,
+        "requires_human_confirm": False,
+        "ai_recommends": False,
+        "liability_mode": "audit-only",
+        "reasons": ["low_bias_originally"],
+        "signals": {
+            "bias_original": 0.44,
+            "bias_final": 0.12,
+            "bias_improvement": 0.32,
+            "merchants_final": 4,
+            "price_buckets_final": 3,
+        },
+    }
+    payload = _make_payload(intent="search", transcript="候補を見せて", metadata={}, simulate_ok=True)
+    result = run_voice_flow(
+        audit=audit,
+        payload=payload,
+        hmac_secret=_HMAC_SECRET,
+        ed25519_private_key=_ED25519_KEY,
+    )
+    signals = result["echo_mark"]["payload"]["signals"]
+    assert signals["bias_improvement"] == pytest.approx(0.32)
+    assert signals["merchants_final"] == 4
+    assert signals["price_buckets_final"] == 3
 
 
 # ---------------------------------------------------------------------------
