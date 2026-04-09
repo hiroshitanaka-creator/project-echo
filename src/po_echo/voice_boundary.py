@@ -186,13 +186,51 @@ def attach_boundary(
     Returns:
         Audit with responsibility_boundary attached
     """
+    existing = audit.get("responsibility_boundary")
+    upstream_rb = existing if isinstance(existing, dict) else {}
+
+    # Safety-critical merge semantics:
+    # - Upstream audit boundary is source-of-truth for allow/block.
+    # - Voice adapter may enrich metadata and tighten policy, but never relax.
+    execution_allowed = bool(upstream_rb.get("execution_allowed", True)) and bool(
+        decision.execution_allowed
+    )
+    requires_human_confirm = bool(upstream_rb.get("requires_human_confirm", False)) or bool(
+        decision.requires_human_confirm
+    )
+    if not execution_allowed:
+        requires_human_confirm = True
+
+    upstream_reasons = upstream_rb.get("reasons")
+    reasons_merged: list[str] = []
+    if isinstance(upstream_reasons, list):
+        reasons_merged.extend(str(reason) for reason in upstream_reasons)
+    reasons_merged.extend(decision.reasons)
+    reasons = list(dict.fromkeys(reasons_merged))
+
+    upstream_required_action = str(upstream_rb.get("required_action", "none"))
+    final_required_action = decision.required_action
+    if upstream_required_action != "none":
+        # Preserve stronger upstream action when it exists.
+        final_required_action = upstream_required_action
+    if (not execution_allowed or requires_human_confirm) and final_required_action == "none":
+        # Coherence rule: blocked/confirm-required boundaries must not expose "none".
+        final_required_action = "app_confirm"
+
     rb: dict[str, Any] = {
+        # Preserve boundary metadata from recommendation/audit layer.
+        "schema_version": str(upstream_rb.get("schema_version", "1.0")),
+        "ai_recommends": bool(upstream_rb.get("ai_recommends", False)),
+        "liability_mode": str(upstream_rb.get("liability_mode", "audit-only")),
+        "signals": dict(upstream_rb.get("signals") or {}),
+        # Voice enrichment.
         "channel": "audio",
         "risk": decision.risk,
-        "required_action": decision.required_action,
-        "execution_allowed": decision.execution_allowed,
-        "requires_human_confirm": decision.requires_human_confirm,
-        "reasons": decision.reasons,
+        "required_action": final_required_action,
+        # Monotonic fail-closed safety state.
+        "execution_allowed": execution_allowed,
+        "requires_human_confirm": requires_human_confirm,
+        "reasons": reasons,
     }
     if rth_snapshot:
         rb["rth_snapshot"] = rth_snapshot
