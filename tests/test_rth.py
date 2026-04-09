@@ -83,6 +83,15 @@ def test_rth_chain_hash_collision_dict_pruned_by_ttl(caplog) -> None:
     assert any("reason=ttl" in m for m in caplog.messages)
 
 
+def test_rth_robust_hash_differs_for_distinct_japanese_only_transcripts() -> None:
+    """Japanese-only transcripts must not collapse to the same trivial robust hash."""
+    a = compute_rth("予約したい土曜夜二名")
+    b = compute_rth("寿司ではなく焼肉を探す")
+    assert a["robust_hash_hex"] != "0000000000000000"
+    assert b["robust_hash_hex"] != "0000000000000000"
+    assert a["robust_hash_hex"] != b["robust_hash_hex"]
+
+
 def _assert_rth_session_invariants(session: list[str], mode: str) -> None:
     rth = RollingTranscriptHash()
     for utterance in session:

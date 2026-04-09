@@ -15,6 +15,7 @@ from po_echo.echo_mark_registry import (
 )
 
 UTC = getattr(dt, "UTC", dt.timezone.utc)
+_DEFAULT_REPLAY_NONCE_SEEN_AT: dict[str, dt.datetime] = {}
 
 try:
     from nacl.encoding import HexEncoder
@@ -186,11 +187,23 @@ def _replay_guard(
     if not nonce:
         return False, "missing_nonce", _verification_checks(True, False, True, False)
 
+    current = now or dt.datetime.now(UTC)
     if nonce_cache is not None:
         if nonce in nonce_cache:
             return False, "replay_detected", _verification_checks(True, False, True, False)
         nonce_cache.add(nonce)
+        return True, None, _verification_checks(True, False, True, True)
 
+    # Fail-closed default: maintain process-local nonce replay cache even when
+    # callers do not explicitly pass nonce_cache.
+    expires_before = current - dt.timedelta(seconds=max_age_seconds)
+    for cached_nonce, seen_at in list(_DEFAULT_REPLAY_NONCE_SEEN_AT.items()):
+        if seen_at < expires_before:
+            _DEFAULT_REPLAY_NONCE_SEEN_AT.pop(cached_nonce, None)
+
+    if nonce in _DEFAULT_REPLAY_NONCE_SEEN_AT:
+        return False, "replay_detected", _verification_checks(True, False, True, False)
+    _DEFAULT_REPLAY_NONCE_SEEN_AT[nonce] = current
     return True, None, _verification_checks(True, False, True, True)
 
 

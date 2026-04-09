@@ -58,8 +58,19 @@ _LOGGER = logging.getLogger(__name__)
 
 def normalize_words(text: str) -> list[str]:
     """Normalize transcript words for robust, low-information feature extraction."""
-    tokens = re.findall(r"[a-z0-9]+", text.lower())
-    return sorted({tok for tok in tokens if tok and tok not in _STOPWORDS})
+    lowered = text.lower()
+    tokens = re.findall(r"[a-z0-9]+", lowered)
+    normalized = sorted({tok for tok in tokens if tok and tok not in _STOPWORDS})
+    if normalized:
+        return normalized
+
+    # Fallback for non-ASCII-only transcripts (e.g., Japanese):
+    # use unique 2-gram codepoint shingles so robust hash does not collapse
+    # to a constant while still avoiding full-sentence reconstruction.
+    chars = [c for c in lowered if c.isalnum()]
+    if len(chars) < 2:
+        return chars
+    return sorted({f"{chars[i]}{chars[i + 1]}" for i in range(len(chars) - 1)})
 
 
 def _simhash64(tokens: list[str]) -> str:
