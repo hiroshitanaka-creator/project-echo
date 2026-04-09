@@ -85,11 +85,12 @@ def _make_payload(**kwargs: object) -> VoiceFlowInput:
 
 
 def _run(**kwargs: object) -> dict:
+    audit = kwargs.pop("audit", _AUDIT_BASE)
     payload_kwargs = {k: v for k, v in kwargs.items() if k in VoiceFlowInput.__dataclass_fields__}
     run_kwargs = {k: v for k, v in kwargs.items() if k not in VoiceFlowInput.__dataclass_fields__}
     payload = _make_payload(**payload_kwargs)
     return run_voice_flow(
-        audit=_AUDIT_BASE,
+        audit=audit,  # type: ignore[arg-type]
         payload=payload,
         hmac_secret=_HMAC_SECRET,
         ed25519_private_key=_ED25519_KEY,
@@ -256,6 +257,8 @@ def test_blocked_upstream_boundary_stays_blocked_in_voice_flow() -> None:
     )
     rb = result["responsibility_boundary"]
     assert rb["execution_allowed"] is False
+    assert rb["requires_human_confirm"] is True
+    assert rb["required_action"] != "none"
     assert "high_bias_after_diversification" in rb["reasons"]
 
 
@@ -292,6 +295,7 @@ def test_gate_audio_preserves_upstream_boundary_metadata_and_signals() -> None:
     assert rb["liability_mode"] == "audit-only"
     assert rb["signals"] == upstream["signals"]
     assert "merchant_monopoly_detected" in rb["reasons"]
+    assert rb["required_action"] != "none"
 
 
 def test_voice_path_echo_mark_payload_keeps_nonzero_upstream_signals() -> None:
@@ -323,6 +327,31 @@ def test_voice_path_echo_mark_payload_keeps_nonzero_upstream_signals() -> None:
     assert signals["bias_improvement"] == pytest.approx(0.32)
     assert signals["merchants_final"] == 4
     assert signals["price_buckets_final"] == 3
+
+
+def test_required_action_promoted_when_confirmation_required_upstream() -> None:
+    """If confirmation is required, required_action must not remain 'none'."""
+    audit = deepcopy(_AUDIT_BASE)
+    audit["responsibility_boundary"] = {
+        "schema_version": "1.0",
+        "execution_allowed": True,
+        "requires_human_confirm": True,
+        "required_action": "none",
+        "ai_recommends": False,
+        "liability_mode": "audit-only",
+        "reasons": ["medium_bias_requires_confirmation"],
+        "signals": {
+            "bias_original": 0.5,
+            "bias_final": 0.35,
+            "bias_improvement": 0.15,
+            "merchants_final": 2,
+            "price_buckets_final": 2,
+        },
+    }
+    result = _run(intent="search", transcript="候補を比較したい", metadata={}, simulate_ok=True, audit=audit)
+    rb = result["responsibility_boundary"]
+    assert rb["requires_human_confirm"] is True
+    assert rb["required_action"] != "none"
 
 
 # ---------------------------------------------------------------------------

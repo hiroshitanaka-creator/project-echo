@@ -208,6 +208,15 @@ def attach_boundary(
     reasons_merged.extend(decision.reasons)
     reasons = list(dict.fromkeys(reasons_merged))
 
+    upstream_required_action = str(upstream_rb.get("required_action", "none"))
+    final_required_action = decision.required_action
+    if upstream_required_action != "none":
+        # Preserve stronger upstream action when it exists.
+        final_required_action = upstream_required_action
+    if (not execution_allowed or requires_human_confirm) and final_required_action == "none":
+        # Coherence rule: blocked/confirm-required boundaries must not expose "none".
+        final_required_action = "app_confirm"
+
     rb: dict[str, Any] = {
         # Preserve boundary metadata from recommendation/audit layer.
         "schema_version": str(upstream_rb.get("schema_version", "1.0")),
@@ -217,7 +226,7 @@ def attach_boundary(
         # Voice enrichment.
         "channel": "audio",
         "risk": decision.risk,
-        "required_action": decision.required_action,
+        "required_action": final_required_action,
         # Monotonic fail-closed safety state.
         "execution_allowed": execution_allowed,
         "requires_human_confirm": requires_human_confirm,
