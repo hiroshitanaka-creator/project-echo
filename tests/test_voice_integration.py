@@ -217,6 +217,24 @@ def test_require_execution_allowed_raises_on_blocked() -> None:
         )
 
 
+def test_invalid_device_secret_hex_length_fails_cleanly() -> None:
+    """Ear-handshake must fail closed for invalid device secret length."""
+    payload = _make_payload(
+        intent="search",
+        transcript="候補を見せて",
+        metadata={},
+        simulate_ok=True,
+        device_secret_hex="ab" * 31,
+    )
+    with pytest.raises(VoiceFlowError, match="invalid device secret"):
+        run_voice_flow(
+            audit=_AUDIT_BASE,
+            payload=payload,
+            hmac_secret=_HMAC_SECRET,
+            ed25519_private_key=_ED25519_KEY,
+        )
+
+
 def test_booking_with_simulate_ok_allows_execution() -> None:
     """Booking intent with simulate_ok=True should pass the execution gate."""
     result = _run(
