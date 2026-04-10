@@ -603,12 +603,20 @@ def cmd_verify(args: argparse.Namespace) -> None:
                 nonce_cache_path,
                 max_age_seconds=_VERIFY_NONCE_MAX_AGE_SECONDS,
             )
-            nonce_cache = set(nonce_seen_at.keys())
-            result = verify_echo_mark_dual(badge, hmac_secret=secret, nonce_cache=nonce_cache)
-            now = datetime.now()
-            for nonce in nonce_cache:
-                nonce_seen_at[nonce] = now
-            _save_verify_nonce_cache(nonce_cache_path, nonce_seen_at)
+            persisted_nonces = set(nonce_seen_at.keys())
+            working_nonce_cache = set(persisted_nonces)
+            result = verify_echo_mark_dual(
+                badge,
+                hmac_secret=secret,
+                nonce_cache=working_nonce_cache,
+            )
+            if result.get("status") == "VERIFIED":
+                newly_committed = working_nonce_cache - persisted_nonces
+                if newly_committed:
+                    committed_at = datetime.now()
+                    for nonce in newly_committed:
+                        nonce_seen_at[nonce] = committed_at
+                    _save_verify_nonce_cache(nonce_cache_path, nonce_seen_at)
 
             # Print result
             print(f"Status: {result['status']}")

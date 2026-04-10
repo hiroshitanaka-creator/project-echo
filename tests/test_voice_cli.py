@@ -6,6 +6,7 @@ import json
 import os
 import subprocess
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -330,3 +331,101 @@ def test_verify_cli_rejects_replay_on_second_use_by_default_cache(tmp_path: Path
     assert first.returncode == 0, first.stderr
     assert second.returncode == 2
     assert "replay_detected" in second.stdout or "replay_detected" in second.stderr
+
+
+def test_verify_cli_invalid_badge_does_not_poison_persistent_nonce_cache(tmp_path: Path) -> None:
+    """Failed verification must not commit nonce into persistent replay cache."""
+    audit = tmp_path / "audit.json"
+    badge = tmp_path / "badge.json"
+    tampered_badge = tmp_path / "tampered-badge.json"
+    nonce_cache = tmp_path / "nonce-cache.json"
+    _write_audit(audit)
+    env = _env_with_signing_keys()
+
+    make_badge = subprocess.run(
+        [*CLI, "badge", str(audit), str(badge), "--sig-mode", "dual"],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        env=env,
+    )
+    if "cannot import name 'StrEnum'" in make_badge.stderr:
+        pytest.skip("CLI runtime interpreter is Python <3.11 in this environment")
+    assert make_badge.returncode == 0, make_badge.stderr
+
+    bad = json.loads(badge.read_text(encoding="utf-8"))
+    bad.pop("signature_hmac", None)
+    sig = bad.get("signature", "")
+    bad["signature"] = ("0" if not sig or sig[0] != "0" else "1") + sig[1:]
+    tampered_badge.write_text(json.dumps(bad), encoding="utf-8")
+
+    failed = subprocess.run(
+        [*CLI, "verify", str(tampered_badge), "--nonce-cache-path", str(nonce_cache)],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        env=env,
+    )
+    valid = subprocess.run(
+        [*CLI, "verify", str(badge), "--nonce-cache-path", str(nonce_cache)],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        env=env,
+    )
+
+    assert failed.returncode == 2
+    assert "signature_invalid" in failed.stdout or "signature_invalid" in failed.stderr
+    assert valid.returncode == 0, valid.stderr
+
+
+def test_verify_cli_preserves_existing_nonce_timestamps_when_adding_new_nonce(tmp_path: Path) -> None:
+    """Existing nonce timestamps must not be refreshed on unrelated verifications."""
+    audit_a = tmp_path / "audit-a.json"
+    audit_b = tmp_path / "audit-b.json"
+    badge_a = tmp_path / "badge-a.json"
+    badge_b = tmp_path / "badge-b.json"
+    nonce_cache = tmp_path / "nonce-cache.json"
+    _write_audit(audit_a)
+    _write_audit(audit_b)
+    env = _env_with_signing_keys()
+
+    first_badge = subprocess.run(
+        [*CLI, "badge", str(audit_a), str(badge_a), "--sig-mode", "dual"],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        env=env,
+    )
+    second_badge = subprocess.run(
+        [*CLI, "badge", str(audit_b), str(badge_b), "--sig-mode", "dual"],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        env=env,
+    )
+    if "cannot import name 'StrEnum'" in first_badge.stderr or "cannot import name 'StrEnum'" in second_badge.stderr:
+        pytest.skip("CLI runtime interpreter is Python <3.11 in this environment")
+    assert first_badge.returncode == 0, first_badge.stderr
+    assert second_badge.returncode == 0, second_badge.stderr
+
+    badge_a_payload = json.loads(badge_a.read_text(encoding="utf-8"))
+    existing_nonce = badge_a_payload["payload"]["nonce"]
+    old_seen_at = (datetime.now() - timedelta(seconds=120)).isoformat(timespec="seconds")
+    nonce_cache.write_text(json.dumps({existing_nonce: old_seen_at}), encoding="utf-8")
+
+    verify_new = subprocess.run(
+        [*CLI, "verify", str(badge_b), "--nonce-cache-path", str(nonce_cache)],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        env=env,
+    )
+    assert verify_new.returncode == 0, verify_new.stderr
+
+    persisted = json.loads(nonce_cache.read_text(encoding="utf-8"))
+    assert persisted[existing_nonce] == old_seen_at
+
+    new_nonce = json.loads(badge_b.read_text(encoding="utf-8"))["payload"]["nonce"]
+    assert new_nonce in persisted
+    assert persisted[new_nonce] != old_seen_at
