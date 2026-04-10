@@ -319,6 +319,7 @@ def verify_echo_mark_dual(
     hmac_secret: str | None = None,
     key_store: dict[str, str] | None = None,
     public_keys: dict[str, str] | None = None,
+    nonce_cache: set[str] | None = None,
 ) -> dict[str, Any]:
     """Compatibility wrapper for dual-signature verification path."""
     return verify_echo_mark(
@@ -326,6 +327,7 @@ def verify_echo_mark_dual(
         hmac_secret=hmac_secret,
         key_store=key_store,
         public_keys=public_keys,
+        nonce_cache=nonce_cache,
     )
 
 

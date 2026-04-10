@@ -56,6 +56,43 @@ try:
 except ImportError:
     ED25519_AVAILABLE = False
 
+_VERIFY_NONCE_CACHE_PATH = Path(".runs/echo_mark_nonce_cache.json")
+_VERIFY_NONCE_MAX_AGE_SECONDS = 300
+
+
+def _load_verify_nonce_cache(cache_path: Path, *, max_age_seconds: int) -> dict[str, datetime]:
+    """Load nonce replay cache from disk, pruning entries outside active window."""
+    if not cache_path.exists():
+        return {}
+
+    try:
+        raw = json.loads(cache_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+    if not isinstance(raw, dict):
+        return {}
+
+    cache: dict[str, datetime] = {}
+    for nonce, seen_at_raw in raw.items():
+        if not isinstance(nonce, str) or not isinstance(seen_at_raw, str):
+            continue
+        try:
+            seen_at = datetime.fromisoformat(seen_at_raw)
+        except ValueError:
+            continue
+        now = datetime.now(seen_at.tzinfo) if seen_at.tzinfo else datetime.now()
+        if (now - seen_at).total_seconds() <= max_age_seconds:
+            cache[nonce] = seen_at
+    return cache
+
+
+def _save_verify_nonce_cache(cache_path: Path, cache: dict[str, datetime]) -> None:
+    """Persist nonce replay cache for CLI default verification path."""
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    serializable = {nonce: seen_at.isoformat(timespec="seconds") for nonce, seen_at in cache.items()}
+    cache_path.write_text(json.dumps(serializable, ensure_ascii=False, indent=2), encoding="utf-8")
+
 
 def prompt_yes_no(msg: str) -> bool:
     """Prompt user for yes/no confirmation."""
@@ -559,7 +596,19 @@ def cmd_verify(args: argparse.Namespace) -> None:
             except RuntimeError:
                 secret = None  # No HMAC secret available
 
-            result = verify_echo_mark_dual(badge, hmac_secret=secret)
+            nonce_cache_path = Path(
+                getattr(args, "nonce_cache_path", str(_VERIFY_NONCE_CACHE_PATH))
+            )
+            nonce_seen_at = _load_verify_nonce_cache(
+                nonce_cache_path,
+                max_age_seconds=_VERIFY_NONCE_MAX_AGE_SECONDS,
+            )
+            nonce_cache = set(nonce_seen_at.keys())
+            result = verify_echo_mark_dual(badge, hmac_secret=secret, nonce_cache=nonce_cache)
+            now = datetime.now()
+            for nonce in nonce_cache:
+                nonce_seen_at[nonce] = now
+            _save_verify_nonce_cache(nonce_cache_path, nonce_seen_at)
 
             # Print result
             print(f"Status: {result['status']}")
@@ -934,6 +983,12 @@ def main() -> None:
     # verify command - verify Echo Mark
     verify = subparsers.add_parser("verify", help="Verify Echo Mark signature")
     verify.add_argument("input", help="Path to badge JSON file")
+    verify.add_argument(
+        "--nonce-cache-path",
+        dest="nonce_cache_path",
+        default=str(_VERIFY_NONCE_CACHE_PATH),
+        help="Path to nonce replay cache file (default: .runs/echo_mark_nonce_cache.json)",
+    )
 
     # device command - multi-device responsibility boundary
     device_cmd = subparsers.add_parser(

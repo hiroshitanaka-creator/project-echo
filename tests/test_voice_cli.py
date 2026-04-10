@@ -283,3 +283,50 @@ def test_audit_cli_fails_cleanly_for_non_object_top_level_payload(tmp_path: Path
 
     assert proc.returncode == 1
     assert "Recommendations payload must be a JSON object" in proc.stderr
+
+
+def test_verify_cli_rejects_replay_on_second_use_by_default_cache(tmp_path: Path) -> None:
+    """Default verify CLI path must block second verification in active window."""
+    audit = tmp_path / "audit.json"
+    badge = tmp_path / "badge.json"
+    nonce_cache = tmp_path / "nonce-cache.json"
+    _write_audit(audit)
+
+    env = _env_with_signing_keys()
+
+    make_badge = subprocess.run(
+        [
+            *CLI,
+            "badge",
+            str(audit),
+            str(badge),
+            "--sig-mode",
+            "dual",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        env=env,
+    )
+    if "cannot import name 'StrEnum'" in make_badge.stderr:
+        pytest.skip("CLI runtime interpreter is Python <3.11 in this environment")
+    assert make_badge.returncode == 0, make_badge.stderr
+
+    first = subprocess.run(
+        [*CLI, "verify", str(badge), "--nonce-cache-path", str(nonce_cache)],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        env=env,
+    )
+    second = subprocess.run(
+        [*CLI, "verify", str(badge), "--nonce-cache-path", str(nonce_cache)],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        env=env,
+    )
+
+    assert first.returncode == 0, first.stderr
+    assert second.returncode == 2
+    assert "replay_detected" in second.stdout or "replay_detected" in second.stderr

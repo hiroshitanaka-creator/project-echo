@@ -30,6 +30,25 @@ import hmac
 import os
 import time
 
+DEVICE_SECRET_LEN_BYTES = 32
+
+
+def _validate_device_secret(master_key: bytes) -> None:
+    """Validate ear-device master key shape.
+
+    Security rationale:
+    - A fixed-width secret prevents accidental weak key material (empty/short)
+      from entering the handshake path.
+    - Fail-closed validation keeps malformed caller input from silently
+      downgrading authentication integrity.
+    """
+    if not isinstance(master_key, bytes):
+        raise TypeError("device master_key must be bytes")
+    if len(master_key) != DEVICE_SECRET_LEN_BYTES:
+        raise ValueError(
+            f"device master_key must be {DEVICE_SECRET_LEN_BYTES} bytes, got {len(master_key)}"
+        )
+
 
 def new_device(master_key: bytes | None = None) -> dict:
     """
@@ -41,6 +60,9 @@ def new_device(master_key: bytes | None = None) -> dict:
     Returns:
         Device dict with key_id and device_secret
     """
+    if master_key is not None:
+        _validate_device_secret(master_key)
+
     return {
         "key_id": "v1",
         "device_secret": master_key or os.urandom(32),

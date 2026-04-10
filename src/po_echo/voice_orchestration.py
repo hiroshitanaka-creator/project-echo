@@ -112,7 +112,10 @@ def run_voice_flow(
     except ValueError as exc:  # pragma: no cover - caller also validates
         raise VoiceFlowError("device_secret_hex must be valid hex") from exc
 
-    device = new_device(master_key=master_key)
+    try:
+        device = new_device(master_key=master_key)
+    except (TypeError, ValueError) as exc:
+        raise VoiceFlowError(f"invalid device secret: {exc}") from exc
     challenge = issue_challenge(device)
     if not verify_response(device, challenge):
         raise VoiceFlowError("ear handshake verification failed")
