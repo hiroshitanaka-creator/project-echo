@@ -319,11 +319,42 @@ def cmd_audit(args: argparse.Namespace) -> None:
         print(f"Error: Recommendations file not found: {rec_path}", file=sys.stderr)
         raise SystemExit(1)
 
-    data = json.loads(rec_path.read_text(encoding="utf-8"))
+    try:
+        data = json.loads(rec_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON recommendations payload: {e}", file=sys.stderr)
+        raise SystemExit(1) from None
+    if not isinstance(data, dict):
+        print("Error: Recommendations payload must be a JSON object", file=sys.stderr)
+        raise SystemExit(1)
+
+    def _parse_rec_list(items: Any, *, field_name: str) -> list[Rec]:
+        if not isinstance(items, list):
+            print(f"Error: '{field_name}' must be a list", file=sys.stderr)
+            raise SystemExit(1)
+
+        parsed: list[Rec] = []
+        for i, raw in enumerate(items):
+            if not isinstance(raw, dict):
+                print(f"Error: {field_name}[{i}] must be an object", file=sys.stderr)
+                raise SystemExit(1)
+            try:
+                rec = Rec.from_dict(raw)
+            except (TypeError, ValueError) as e:
+                print(f"Error: invalid {field_name}[{i}] payload: {e}", file=sys.stderr)
+                raise SystemExit(1) from None
+            if rec.price < 0:
+                print(
+                    f"Error: invalid {field_name}[{i}] payload: price must be >= 0, got {rec.price}",
+                    file=sys.stderr,
+                )
+                raise SystemExit(1)
+            parsed.append(rec)
+        return parsed
 
     # Parse original and counterfactuals
-    original_recs = [Rec.from_dict(r) for r in data.get("recommendations", [])]
-    counterfactual_recs = [Rec.from_dict(r) for r in data.get("counterfactuals", [])]
+    original_recs = _parse_rec_list(data.get("recommendations", []), field_name="recommendations")
+    counterfactual_recs = _parse_rec_list(data.get("counterfactuals", []), field_name="counterfactuals")
 
     if not original_recs:
         print("Error: No recommendations found in input JSON", file=sys.stderr)

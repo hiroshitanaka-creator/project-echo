@@ -19,7 +19,7 @@ from dataclasses import replace
 from typing import Any
 
 from po_echo.rth import RollingTranscriptHash
-from po_echo.voice_boundary import attach_boundary, decide
+from po_echo.voice_boundary import attach_boundary, decide, evaluate_screenless_safety
 
 
 def gate_audio(
@@ -67,6 +67,24 @@ def gate_audio(
 
     # Determine voice-specific boundary
     decision = decide(intent=intent, meta=meta or {})
+    safe_meta = meta or {}
+
+    screenless_safety = evaluate_screenless_safety(
+        bias_score=(audit.get("commercial_bias_final") or {}).get("overall_bias_score", 0.0),
+        battery_level=safe_meta.get("battery_level", 1.0),
+        bluetooth_connected=bool(safe_meta.get("bluetooth_connected", True)),
+        replay_detected=bool(safe_meta.get("replay_detected", False)),
+        tamper_detected=bool(safe_meta.get("tamper_detected", False)),
+    )
+
+    if not screenless_safety.get("execution_allowed", True):
+        decision = replace(
+            decision,
+            execution_allowed=False,
+            requires_human_confirm=True,
+            required_action=screenless_safety.get("required_action", "app_confirm"),
+            reasons=[*decision.reasons, *screenless_safety.get("reasons", [])],
+        )
 
     # If requires human confirmation and not provided, block execution
     if decision.requires_human_confirm and not simulate_user_ok:

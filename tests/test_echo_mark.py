@@ -16,6 +16,7 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 
 from po_echo.echo_mark import build_payload, make_echo_mark_dual, verify_echo_mark
+from po_echo import echo_mark_verify
 
 SECRET = "test-secret-for-echo-v3-rotation-123456"
 KEY_A = "k2026_a"
@@ -87,6 +88,26 @@ def test_replay_attack_is_rejected_on_second_use(nonce):
     explicit_public_keys = {KEY_A: key.verify_key.encode(HexEncoder).decode()}
     first = verify_echo_mark(badge, public_keys=explicit_public_keys, nonce_cache=seen)
     second = verify_echo_mark(badge, public_keys=explicit_public_keys, nonce_cache=seen)
+
+    assert first["status"] == "VERIFIED"
+    assert second["status"] == "INVALID"
+    assert second["reason"] == "replay_detected"
+
+
+def test_default_verify_path_rejects_replay_without_explicit_nonce_cache():
+    """Default verifier path must reject second use of the same badge nonce."""
+    echo_mark_verify._DEFAULT_REPLAY_NONCE_SEEN_AT.clear()
+    key = SigningKey.generate()
+    badge = make_echo_mark_dual(
+        audit=_audit(),
+        hmac_secret=SECRET,
+        ed25519_private_key=key.encode(HexEncoder).decode(),
+        key_id=KEY_A,
+    )
+    explicit_public_keys = {KEY_A: key.verify_key.encode(HexEncoder).decode()}
+
+    first = verify_echo_mark(badge, public_keys=explicit_public_keys)
+    second = verify_echo_mark(badge, public_keys=explicit_public_keys)
 
     assert first["status"] == "VERIFIED"
     assert second["status"] == "INVALID"

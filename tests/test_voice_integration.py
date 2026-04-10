@@ -229,6 +229,34 @@ def test_booking_with_simulate_ok_allows_execution() -> None:
     assert rb.get("execution_allowed") is True
 
 
+@pytest.mark.parametrize(
+    ("bias_final", "meta"),
+    [
+        (0.72, {}),
+        (0.21, {"replay_detected": True}),
+        (0.21, {"tamper_detected": True}),
+    ],
+)
+def test_live_voice_path_enforces_screenless_block_conditions(
+    bias_final: float,
+    meta: dict[str, object],
+) -> None:
+    """Live voice flow must block high-bias/replay/tamper even with simulate_ok=True."""
+    audit = deepcopy(_AUDIT_BASE)
+    audit["commercial_bias_final"] = {"overall_bias_score": bias_final}
+    result = _run(
+        intent="search",
+        transcript="候補を比較したい",
+        metadata=meta,
+        simulate_ok=True,
+        audit=audit,
+    )
+    rb = result["responsibility_boundary"]
+    assert rb["execution_allowed"] is False
+    assert rb["requires_human_confirm"] is True
+    assert "screenless_guard" in rb["reasons"]
+
+
 def test_blocked_upstream_boundary_stays_blocked_in_voice_flow() -> None:
     """Upstream blocked audit must never be relaxed by low-risk voice intent."""
     blocked_audit = deepcopy(_AUDIT_BASE)
