@@ -19,6 +19,7 @@ from po_core.diversity import (
     diversify_with_mmr,
 )
 from po_echo.echo_mark import make_echo_mark, verify_mark
+from po_echo.rth import compute_rth
 
 
 # Invariant 1: AI Never Recommends
@@ -386,3 +387,16 @@ def test_regression_biased_input_92_percent():
     assert not auto_allowed, (
         f"Regression test failed: 92% biased input auto-allowed (bias_final={result['commercial_bias_final']['overall_bias_score']:.2%})"
     )
+
+
+def test_regression_japanese_only_transcript_hash_is_not_trivial_constant():
+    """Japanese-only transcripts must produce non-trivial and distinct RTH hashes."""
+    first = compute_rth("予約したい。土曜の夜に二名でお願いします")
+    second = compute_rth("別の候補を比較してから決めたいです")
+
+    assert first["hash_hex"] != ""
+    assert second["hash_hex"] != ""
+    assert first["hash_hex"] != second["hash_hex"]
+    assert first["robust_hash_hex"] != "0" * 16
+    assert second["robust_hash_hex"] != "0" * 16
+    assert first["robust_hash_hex"] != second["robust_hash_hex"]
