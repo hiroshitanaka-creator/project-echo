@@ -125,20 +125,12 @@ def test_voice_cli_fails_on_dangerous_or_unconfirmed_action(tmp_path: Path) -> N
     assert "dangerous_or_unconfirmed_action_blocked" in proc.stderr
 
 
-def test_voice_cli_show_schema_outputs_fixed_contract(tmp_path: Path) -> None:
-    """Why: CLI契約を固定し、運用チームがI/O仕様を機械検証できる状態を保つ。"""
+def test_regression_voice_show_schema_requires_no_dummy_runtime_args(tmp_path: Path) -> None:
+    """Regression: --show-schema must not require dummy runtime arguments."""
     proc = subprocess.run(
         [
             *CLI,
             "voice",
-            "--intent",
-            "search",
-            "--transcript",
-            "schema only",
-            "--in",
-            str(tmp_path / "unused-in.json"),
-            "--out",
-            str(tmp_path / "unused-out.json"),
             "--show-schema",
         ],
         cwd=ROOT,

@@ -750,6 +750,13 @@ def cmd_audio_gate(args: argparse.Namespace) -> None:
 
 def cmd_voice(args: argparse.Namespace) -> None:
     """Execute voice command - integrated audio flow with handshake + Echo Mark."""
+    if not args.intent or not args.transcript or not args.inp or not args.out:
+        print(
+            "Error: --intent, --transcript, --in, and --out are required unless --show-schema is used",
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
+
     audit_path = Path(args.inp)
     if not audit_path.exists():
         print(f"Error: Audit file not found: {audit_path}", file=sys.stderr)
@@ -859,6 +866,10 @@ def cmd_device(args: argparse.Namespace) -> None:
     if args.show_schema:
         print(json.dumps({"input_schema": DEVICE_INPUT_SCHEMA, "output_schema": DEVICE_OUTPUT_SCHEMA}, ensure_ascii=False, indent=2))
         return
+
+    if not args.intent:
+        print("Error: --intent is required unless --list-devices or --show-schema is used", file=sys.stderr)
+        raise SystemExit(2)
 
     try:
         meta = json.loads(args.meta)
@@ -1013,7 +1024,7 @@ def main() -> None:
         default="earworn",
         help=f"Device type (default: earworn). Choices: {', '.join(list_devices())}",
     )
-    device_cmd.add_argument("--intent", required=True, help="Intent: booking/payment/search/...")
+    device_cmd.add_argument("--intent", default=None, help="Intent: booking/payment/search/...")
     device_cmd.add_argument("--meta", default="{}", help='Metadata JSON (e.g., {"amount": 10000})')
     device_cmd.add_argument(
         "--bias-score",
@@ -1076,14 +1087,14 @@ def main() -> None:
             + VOICE_SCHEMA_HELP
         ),
     )
-    voice.add_argument("--intent", required=True, help="Intent: booking/payment/search/...")
-    voice.add_argument("--transcript", required=True, help="Last 5-second transcript text")
+    voice.add_argument("--intent", default=None, help="Intent: booking/payment/search/...")
+    voice.add_argument("--transcript", default=None, help="Last 5-second transcript text")
     voice.add_argument("--meta", default="{}", help='Metadata JSON (e.g., {"amount": 10000})')
     voice.add_argument(
         "--simulate-ok", action="store_true", help="Simulate user confirmation (for testing)"
     )
-    voice.add_argument("--in", dest="inp", required=True, help="Input audit JSON file")
-    voice.add_argument("--out", dest="out", required=True, help="Output voice JSON file")
+    voice.add_argument("--in", dest="inp", default=None, help="Input audit JSON file")
+    voice.add_argument("--out", dest="out", default=None, help="Output voice JSON file")
     voice.add_argument("--run-id", dest="run_id", default=None, help="Optional run identifier")
     voice.add_argument(
         "--key-id",

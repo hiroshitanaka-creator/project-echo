@@ -74,17 +74,17 @@ def test_device_tamper_blocks(capsys) -> None:
     assert "BLOCKED" in out
 
 
-def test_device_list_devices(capsys) -> None:
-    """--list-devices が4デバイスを列挙して正常終了する。"""
-    _run(["device", "--list-devices", "--intent", "dummy"])
+def test_regression_device_list_devices_requires_no_dummy_intent(capsys) -> None:
+    """Regression: --list-devices must work without unrelated --intent."""
+    _run(["device", "--list-devices"])
     out = capsys.readouterr().out
     for dev in ("earworn", "smart_speaker", "smart_watch", "ar_glasses"):
         assert dev in out
 
 
-def test_device_show_schema(capsys) -> None:
-    """--show-schema が JSON を出力し input_schema / output_schema を含む。"""
-    _run(["device", "--show-schema", "--intent", "dummy"])
+def test_regression_device_show_schema_requires_no_dummy_intent(capsys) -> None:
+    """Regression: --show-schema must work without unrelated --intent."""
+    _run(["device", "--show-schema"])
     out = capsys.readouterr().out
     parsed = json.loads(out)
     assert "input_schema" in parsed

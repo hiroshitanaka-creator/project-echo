@@ -19,6 +19,7 @@ from po_core.diversity import (
     diversify_with_mmr,
 )
 from po_echo.echo_mark import make_echo_mark, verify_mark
+from po_echo.rth import compute_rth
 
 
 # Invariant 1: AI Never Recommends
@@ -258,6 +259,16 @@ def test_invariant_tamper_detection():
         badge["payload"], badge["payload_hash"], badge["signature_hmac"], key_store=key_store
     )
     assert not valid, "Invariant 5 violated: Tampering not detected"
+
+
+def test_regression_japanese_only_transcript_hash_is_not_trivial_constant():
+    """Regression: Japanese-only transcripts must not collapse into one fixed hash."""
+    snapshot_a = compute_rth("予約したい 土曜の夜 2名")
+    snapshot_b = compute_rth("支払いを中断して 比較だけしたい")
+
+    assert snapshot_a["hash_hex"] != "0" * 64
+    assert snapshot_b["hash_hex"] != "0" * 64
+    assert snapshot_a["hash_hex"] != snapshot_b["hash_hex"]
 
 
 # Key rotation tests (v3/HMAC compatibility)
