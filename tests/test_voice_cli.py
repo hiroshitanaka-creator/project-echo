@@ -218,7 +218,7 @@ def test_audit_cli_fails_cleanly_for_non_numeric_price(tmp_path: Path) -> None:
     )
 
     proc = subprocess.run(
-        [*CLI, "audit", "--recommendations", str(recs)],
+        [*CLI, "audit", str(recs)],
         cwd=ROOT,
         text=True,
         capture_output=True,
@@ -252,7 +252,7 @@ def test_audit_cli_fails_cleanly_for_negative_price(tmp_path: Path) -> None:
     )
 
     proc = subprocess.run(
-        [*CLI, "audit", "--recommendations", str(recs)],
+        [*CLI, "audit", str(recs)],
         cwd=ROOT,
         text=True,
         capture_output=True,
@@ -264,3 +264,22 @@ def test_audit_cli_fails_cleanly_for_negative_price(tmp_path: Path) -> None:
 
     assert proc.returncode == 1
     assert "price must be >= 0" in proc.stderr
+
+
+def test_audit_cli_fails_cleanly_for_non_object_top_level_payload(tmp_path: Path) -> None:
+    recs = tmp_path / "recs.json"
+    recs.write_text(json.dumps(["not", "an", "object"]), encoding="utf-8")
+
+    proc = subprocess.run(
+        [*CLI, "audit", str(recs)],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        env=_base_env(),
+    )
+
+    if "cannot import name 'StrEnum'" in proc.stderr:
+        pytest.skip("CLI runtime interpreter is Python <3.11 in this environment")
+
+    assert proc.returncode == 1
+    assert "Recommendations payload must be a JSON object" in proc.stderr

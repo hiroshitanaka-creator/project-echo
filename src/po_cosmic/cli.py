@@ -324,6 +324,9 @@ def cmd_audit(args: argparse.Namespace) -> None:
     except json.JSONDecodeError as e:
         print(f"Error: Invalid JSON recommendations payload: {e}", file=sys.stderr)
         raise SystemExit(1) from None
+    if not isinstance(data, dict):
+        print("Error: Recommendations payload must be a JSON object", file=sys.stderr)
+        raise SystemExit(1)
 
     def _parse_rec_list(items: Any, *, field_name: str) -> list[Rec]:
         if not isinstance(items, list):
