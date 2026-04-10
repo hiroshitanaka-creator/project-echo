@@ -74,17 +74,17 @@ def test_device_tamper_blocks(capsys) -> None:
     assert "BLOCKED" in out
 
 
-def test_device_list_devices(capsys) -> None:
-    """--list-devices が4デバイスを列挙して正常終了する。"""
-    _run(["device", "--list-devices", "--intent", "dummy"])
+def test_regression_cli_utility_list_devices_works_without_dummy_intent(capsys) -> None:
+    """Regression: --list-devices must not require unrelated --intent arguments."""
+    _run(["device", "--list-devices"])
     out = capsys.readouterr().out
     for dev in ("earworn", "smart_speaker", "smart_watch", "ar_glasses"):
         assert dev in out
 
 
-def test_device_show_schema(capsys) -> None:
-    """--show-schema が JSON を出力し input_schema / output_schema を含む。"""
-    _run(["device", "--show-schema", "--intent", "dummy"])
+def test_regression_cli_utility_show_schema_works_without_dummy_intent(capsys) -> None:
+    """Regression: --show-schema must not require unrelated --intent arguments."""
+    _run(["device", "--show-schema"])
     out = capsys.readouterr().out
     parsed = json.loads(out)
     assert "input_schema" in parsed
@@ -121,4 +121,11 @@ def test_device_invalid_meta_exits_1(capsys) -> None:
     """--meta に不正 JSON を渡すと exit code 1。"""
     with pytest.raises(SystemExit) as exc_info:
         _run(["device", "--intent", "booking", "--meta", "{invalid json"])
+    assert exc_info.value.code == 1
+
+
+def test_device_requires_intent_for_runtime_path() -> None:
+    """Runtime path must still fail closed when --intent is missing."""
+    with pytest.raises(SystemExit) as exc_info:
+        _run(["device", "--device", "earworn"])
     assert exc_info.value.code == 1

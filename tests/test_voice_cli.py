@@ -125,22 +125,10 @@ def test_voice_cli_fails_on_dangerous_or_unconfirmed_action(tmp_path: Path) -> N
     assert "dangerous_or_unconfirmed_action_blocked" in proc.stderr
 
 
-def test_voice_cli_show_schema_outputs_fixed_contract(tmp_path: Path) -> None:
-    """Why: CLI契約を固定し、運用チームがI/O仕様を機械検証できる状態を保つ。"""
+def test_regression_voice_show_schema_works_without_dummy_runtime_args(tmp_path: Path) -> None:
+    """Regression: --show-schema must not require --intent/--transcript/--in/--out."""
     proc = subprocess.run(
-        [
-            *CLI,
-            "voice",
-            "--intent",
-            "search",
-            "--transcript",
-            "schema only",
-            "--in",
-            str(tmp_path / "unused-in.json"),
-            "--out",
-            str(tmp_path / "unused-out.json"),
-            "--show-schema",
-        ],
+        [*CLI, "voice", "--show-schema"],
         cwd=ROOT,
         text=True,
         capture_output=True,
@@ -153,6 +141,20 @@ def test_voice_cli_show_schema_outputs_fixed_contract(tmp_path: Path) -> None:
     assert "output_schema" in payload
     assert payload["input_schema"].get("type") == "object"
     assert payload["output_schema"].get("type") == "object"
+
+
+def test_voice_cli_runtime_path_still_requires_core_arguments(tmp_path: Path) -> None:
+    """Runtime voice flow must fail closed when required execution args are missing."""
+    proc = subprocess.run(
+        [*CLI, "voice", "--intent", "search", "--transcript", "候補"],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        env=_base_env(),
+    )
+
+    assert proc.returncode == 1
+    assert "required unless --show-schema" in proc.stderr
 
 
 def test_voice_cli_succeeds_for_safe_search_flow(tmp_path: Path) -> None:

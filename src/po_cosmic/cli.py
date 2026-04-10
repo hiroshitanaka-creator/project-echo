@@ -552,7 +552,9 @@ def cmd_badge(args: argparse.Namespace) -> None:
     print(f"  Improvement: {short['bias_improvement']:.2%}")
     if short["reasons"]:
         print(f"  Reasons: {', '.join(short['reasons'])}")
-    print(f"\nSignature: {badge['signature'][:32]}...")
+    signature_preview = str(badge.get("signature") or badge.get("signature_hmac") or "")
+    if signature_preview:
+        print(f"\nSignature: {signature_preview[:32]}...")
     if "public_key" in badge:
         print(f"Public key: {badge['public_key'][:32]}...")
     print("=" * 80)
@@ -587,95 +589,60 @@ def cmd_verify(args: argparse.Namespace) -> None:
     print()
 
     # Verify based on schema version
-    if schema_version == "echo_mark_v3" and "public_key" in badge:
-        # Ed25519 or dual signature
-        if ED25519_AVAILABLE:
-            # Try dual verification (Ed25519 preferred, HMAC fallback)
-            try:
-                secret = get_secret_from_env()
-            except RuntimeError:
-                secret = None  # No HMAC secret available
+    if schema_version == "echo_mark_v3":
+        # Unified v3 verification path (Ed25519 when available, HMAC fallback otherwise),
+        # always enforcing replay protection via nonce cache.
+        try:
+            secret = get_secret_from_env()
+        except RuntimeError:
+            secret = None
 
-            nonce_cache_path = Path(
-                getattr(args, "nonce_cache_path", str(_VERIFY_NONCE_CACHE_PATH))
-            )
-            nonce_seen_at = _load_verify_nonce_cache(
-                nonce_cache_path,
-                max_age_seconds=_VERIFY_NONCE_MAX_AGE_SECONDS,
-            )
-            persisted_nonces = set(nonce_seen_at.keys())
-            working_nonce_cache = set(persisted_nonces)
-            result = verify_echo_mark_dual(
-                badge,
-                hmac_secret=secret,
-                nonce_cache=working_nonce_cache,
-            )
-            if result.get("status") == "VERIFIED":
-                newly_committed = working_nonce_cache - persisted_nonces
-                if newly_committed:
-                    committed_at = datetime.now()
-                    for nonce in newly_committed:
-                        nonce_seen_at[nonce] = committed_at
-                    _save_verify_nonce_cache(nonce_cache_path, nonce_seen_at)
+        nonce_cache_path = Path(
+            getattr(args, "nonce_cache_path", str(_VERIFY_NONCE_CACHE_PATH))
+        )
+        nonce_seen_at = _load_verify_nonce_cache(
+            nonce_cache_path,
+            max_age_seconds=_VERIFY_NONCE_MAX_AGE_SECONDS,
+        )
+        persisted_nonces = set(nonce_seen_at.keys())
+        working_nonce_cache = set(persisted_nonces)
+        result = verify_echo_mark_dual(
+            badge,
+            hmac_secret=secret,
+            nonce_cache=working_nonce_cache,
+        )
+        if result.get("status") == "VERIFIED":
+            newly_committed = working_nonce_cache - persisted_nonces
+            if newly_committed:
+                committed_at = datetime.now()
+                for nonce in newly_committed:
+                    nonce_seen_at[nonce] = committed_at
+                _save_verify_nonce_cache(nonce_cache_path, nonce_seen_at)
 
-            # Print result
-            print(f"Status: {result['status']}")
-            if result.get("verification_method"):
-                print(f"Verified with: {result['verification_method']}")
-            print()
+        print(f"Status: {result['status']}")
+        if result.get("verification_method"):
+            print(f"Verified with: {result['verification_method']}")
+        print()
 
-            # Print checks
-            checks = result.get("checks", {})
-            print("Verification checks:")
-            print(f"  Hash integrity: {'✓' if checks.get('hash_integrity') else '✗'}")
-            print(f"  Signature valid: {'✓' if checks.get('signature_valid') else '✗'}")
-            print(f"  Schema valid: {'✓' if checks.get('schema_valid') else '✗'}")
-            print(f"  Timestamp valid: {'✓' if checks.get('timestamp_valid') else '⚠️'}")
+        checks = result.get("checks", {})
+        print("Verification checks:")
+        print(f"  Hash integrity: {'✓' if checks.get('hash_integrity') else '✗'}")
+        print(f"  Signature valid: {'✓' if checks.get('signature_valid') else '✗'}")
+        print(f"  Schema valid: {'✓' if checks.get('schema_valid') else '✗'}")
+        print(f"  Timestamp valid: {'✓' if checks.get('timestamp_valid') else '⚠️'}")
 
-            # Print warnings/notes
-            if result.get("timestamp_warning"):
-                print(f"\n⚠️  Timestamp warning: {result['timestamp_warning']}")
-            if result.get("note"):
-                print(f"\nNote: {result['note']}")
+        if result.get("timestamp_warning"):
+            print(f"\n⚠️  Timestamp warning: {result['timestamp_warning']}")
+        if result.get("note"):
+            print(f"\nNote: {result['note']}")
 
-            print("=" * 80)
+        print("=" * 80)
 
-            if result["status"] != "VERIFIED":
-                print(f"\n❌ Verification failed: {result.get('reason')}")
-                raise SystemExit(2)
+        if result["status"] != "VERIFIED":
+            print(f"\n❌ Verification failed: {result.get('reason')}")
+            raise SystemExit(2)
 
-            print("\n✅ VERIFIED")
-
-        else:
-            # PyNaCl not available, try HMAC fallback
-            print("⚠️  PyNaCl not installed, Ed25519 verification not available")
-            print("Falling back to HMAC verification...")
-            print()
-
-            if "signature_hmac" not in badge:
-                print("❌ No HMAC signature found in badge")
-                print("Install PyNaCl for Ed25519 verification: pip install pynacl")
-                raise SystemExit(2)
-
-            try:
-                secret = get_secret_from_env()
-            except RuntimeError as e:
-                print(f"Error: {e}")
-                print("Set ECHO_MARK_SECRET environment variable")
-                raise SystemExit(2) from None
-
-            valid = verify_mark(
-                payload=badge["payload"],
-                payload_hash=badge["payload_hash"],
-                signature=badge.get("signature_hmac", badge["signature"]),
-                secret=secret,
-            )
-
-            print(f"Signature: {'VALID' if valid else 'INVALID'}")
-            print("=" * 80)
-
-            if not valid:
-                raise SystemExit(2)
+        print("\n✅ VERIFIED")
 
     else:
         # Legacy HMAC verification (v1/v2)
@@ -750,6 +717,17 @@ def cmd_audio_gate(args: argparse.Namespace) -> None:
 
 def cmd_voice(args: argparse.Namespace) -> None:
     """Execute voice command - integrated audio flow with handshake + Echo Mark."""
+    if args.show_schema:
+        print(json.dumps({"input_schema": VOICE_INPUT_SCHEMA, "output_schema": VOICE_OUTPUT_SCHEMA}, ensure_ascii=False, indent=2))
+        return
+
+    if not args.intent or not args.transcript or not args.inp or not args.out:
+        print(
+            "Error: --intent, --transcript, --in, and --out are required unless --show-schema is used",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+
     audit_path = Path(args.inp)
     if not audit_path.exists():
         print(f"Error: Audit file not found: {audit_path}", file=sys.stderr)
@@ -859,6 +837,10 @@ def cmd_device(args: argparse.Namespace) -> None:
     if args.show_schema:
         print(json.dumps({"input_schema": DEVICE_INPUT_SCHEMA, "output_schema": DEVICE_OUTPUT_SCHEMA}, ensure_ascii=False, indent=2))
         return
+
+    if not args.intent:
+        print("Error: --intent is required unless --list-devices or --show-schema is used", file=sys.stderr)
+        raise SystemExit(1)
 
     try:
         meta = json.loads(args.meta)
@@ -1013,7 +995,7 @@ def main() -> None:
         default="earworn",
         help=f"Device type (default: earworn). Choices: {', '.join(list_devices())}",
     )
-    device_cmd.add_argument("--intent", required=True, help="Intent: booking/payment/search/...")
+    device_cmd.add_argument("--intent", help="Intent: booking/payment/search/...")
     device_cmd.add_argument("--meta", default="{}", help='Metadata JSON (e.g., {"amount": 10000})')
     device_cmd.add_argument(
         "--bias-score",
@@ -1076,14 +1058,14 @@ def main() -> None:
             + VOICE_SCHEMA_HELP
         ),
     )
-    voice.add_argument("--intent", required=True, help="Intent: booking/payment/search/...")
-    voice.add_argument("--transcript", required=True, help="Last 5-second transcript text")
+    voice.add_argument("--intent", help="Intent: booking/payment/search/...")
+    voice.add_argument("--transcript", help="Last 5-second transcript text")
     voice.add_argument("--meta", default="{}", help='Metadata JSON (e.g., {"amount": 10000})')
     voice.add_argument(
         "--simulate-ok", action="store_true", help="Simulate user confirmation (for testing)"
     )
-    voice.add_argument("--in", dest="inp", required=True, help="Input audit JSON file")
-    voice.add_argument("--out", dest="out", required=True, help="Output voice JSON file")
+    voice.add_argument("--in", dest="inp", help="Input audit JSON file")
+    voice.add_argument("--out", dest="out", help="Output voice JSON file")
     voice.add_argument("--run-id", dest="run_id", default=None, help="Optional run identifier")
     voice.add_argument(
         "--key-id",
@@ -1128,13 +1110,10 @@ def main() -> None:
     elif args.cmd == "audio-gate":
         cmd_audio_gate(args)
     elif args.cmd == "voice":
-        if args.show_schema:
-            print(json.dumps({"input_schema": VOICE_INPUT_SCHEMA, "output_schema": VOICE_OUTPUT_SCHEMA}, ensure_ascii=False, indent=2))
-            return
-
-        print("Voice stack inventory:")
-        for item in inventory_voice_stack():
-            print(f"- {item['component']}: {item['module']} ({item['role']})")
+        if not args.show_schema:
+            print("Voice stack inventory:")
+            for item in inventory_voice_stack():
+                print(f"- {item['component']}: {item['module']} ({item['role']})")
         cmd_voice(args)
 
 
