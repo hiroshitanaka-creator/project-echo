@@ -261,6 +261,16 @@ def test_invariant_tamper_detection():
     assert not valid, "Invariant 5 violated: Tampering not detected"
 
 
+def test_regression_japanese_only_transcript_hash_is_not_trivial_constant():
+    """Regression: Japanese-only transcripts must not collapse into one fixed hash."""
+    snapshot_a = compute_rth("予約したい 土曜の夜 2名")
+    snapshot_b = compute_rth("支払いを中断して 比較だけしたい")
+
+    assert snapshot_a["hash_hex"] != "0" * 64
+    assert snapshot_b["hash_hex"] != "0" * 64
+    assert snapshot_a["hash_hex"] != snapshot_b["hash_hex"]
+
+
 # Key rotation tests (v3/HMAC compatibility)
 def test_key_rotation_multi_key_verification():
     """Multiple keys can coexist, verification uses correct key_id."""
