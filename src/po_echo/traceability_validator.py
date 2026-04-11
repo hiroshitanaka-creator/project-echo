@@ -28,7 +28,7 @@ def load_traceability_file(path: Path) -> dict[str, Any]:
         raise ValueError(f"failed to read traceability file: {path}") from exc
 
     try:
-        import yaml  # type: ignore[import-not-found]
+        import yaml  # type: ignore[import-untyped]
 
         data = yaml.safe_load(raw_text)
     except ImportError:
@@ -54,6 +54,7 @@ def validate_code_ref(ref: str) -> tuple[bool, str | None]:
     if not module_name or not symbol_name:
         return False, _REASON_INVALID_FORMAT
 
+    module: types.ModuleType | None
     try:
         module = importlib.import_module(module_name)
     except Exception:
@@ -96,7 +97,7 @@ def _import_local_module_fallback(module_name: str) -> Any | None:
             if not package_dir.is_dir():
                 continue
             package = types.ModuleType(package_name)
-            package.__path__ = [str(package_dir)]  # type: ignore[attr-defined]
+            package.__path__ = [str(package_dir)]
             sys.modules[package_name] = package
     sys.modules[module_name] = module
     try:
