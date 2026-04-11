@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import json
 import importlib.util
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -159,7 +159,12 @@ def test_cli_json_output_and_exit_code_matches_ok(tmp_path: Path) -> None:
     assert proc.returncode == 0
     payload = json.loads(proc.stdout)
     assert payload["ok"] is True
-    assert set(payload.keys()) == {"ok", "entries_checked", "invalid_code_refs", "invalid_test_refs"}
+    assert set(payload.keys()) == {
+        "ok",
+        "entries_checked",
+        "invalid_code_refs",
+        "invalid_test_refs",
+    }
 
     invalid_file = tmp_path / "invalid.json"
     invalid_doc = _mk_doc(["po_echo.diversity.missing_symbol"], [])

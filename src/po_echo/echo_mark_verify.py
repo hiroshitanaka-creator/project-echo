@@ -14,7 +14,10 @@ from po_echo.echo_mark_registry import (
     get_key_store,
 )
 
-UTC = getattr(dt, "UTC", dt.timezone.utc)
+if hasattr(dt, "UTC"):
+    UTC = dt.UTC
+else:  # pragma: no cover - Python <3.11 fallback
+    UTC = dt.timezone(dt.timedelta(0))
 _DEFAULT_REPLAY_NONCE_SEEN_AT: dict[str, dt.datetime] = {}
 
 try:
@@ -179,7 +182,9 @@ def _replay_guard(
     now: dt.datetime | None,
     max_age_seconds: int,
 ) -> tuple[bool, str | None, VerificationChecks]:
-    timestamp_ok, timestamp_reason = validate_timestamp(payload.get("issued_at"), now=now, max_age_seconds=max_age_seconds)
+    timestamp_ok, timestamp_reason = validate_timestamp(
+        payload.get("issued_at"), now=now, max_age_seconds=max_age_seconds
+    )
     if not timestamp_ok:
         return False, timestamp_reason, _verification_checks(True, False, False, False)
 
@@ -283,7 +288,13 @@ def verify_echo_mark(
         signature_hmac = badge.get("signature_hmac")
         resolved_hmac, resolved_store = _resolve_hmac_secret(key_id, hmac_secret, key_store)
         if isinstance(signature_hmac, str) and resolved_hmac:
-            if verify_mark(payload, payload_hash, signature_hmac, secret=resolved_hmac, key_store=resolved_store):
+            if verify_mark(
+                payload,
+                payload_hash,
+                signature_hmac,
+                secret=resolved_hmac,
+                key_store=resolved_store,
+            ):
                 return _verification_result(
                     "VERIFIED",
                     "hmac_signature_verified",
