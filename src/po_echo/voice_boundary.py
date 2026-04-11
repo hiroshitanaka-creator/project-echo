@@ -17,11 +17,12 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 Risk = Literal["low", "medium", "high"]
 Confirm = Literal["none", "double_tap", "passphrase", "app_confirm"]
 FieldName = Literal["amount", "bias_score", "battery_level"]
+_VALID_CONFIRM_ACTIONS: tuple[Confirm, ...] = ("none", "double_tap", "passphrase", "app_confirm")
 
 
 @dataclass(frozen=True)
@@ -208,7 +209,13 @@ def attach_boundary(
     reasons_merged.extend(decision.reasons)
     reasons = list(dict.fromkeys(reasons_merged))
 
-    upstream_required_action = str(upstream_rb.get("required_action", "none"))
+    upstream_required_action_raw = upstream_rb.get("required_action", "none")
+    upstream_required_action_str = str(upstream_required_action_raw)
+    upstream_required_action: Confirm = (
+        cast(Confirm, upstream_required_action_str)
+        if upstream_required_action_str in _VALID_CONFIRM_ACTIONS
+        else "none"
+    )
     final_required_action = decision.required_action
     if upstream_required_action != "none":
         # Preserve stronger upstream action when it exists.

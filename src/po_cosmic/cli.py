@@ -269,6 +269,34 @@ def save_json(result: dict, out_path: Path) -> None:
     out_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def _resolve_cli_path_arg(
+    positional: str | None,
+    optional: str | None,
+    *,
+    positional_label: str,
+    option_label: str,
+) -> str:
+    """Resolve backward-compatible path args while rejecting ambiguous duplicates."""
+    if positional and optional and positional != optional:
+        print(
+            (
+                f"Error: ambiguous {positional_label}; positional '{positional}' "
+                f"conflicts with {option_label} '{optional}'"
+            ),
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+
+    value = optional or positional
+    if not value:
+        print(
+            f"Error: {positional_label} is required via positional arg or {option_label}",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+    return value
+
+
 def cmd_cosmic39(args: argparse.Namespace) -> None:
     """Execute cosmic-39 command."""
     # Get scenario
@@ -467,8 +495,35 @@ def cmd_audit(args: argparse.Namespace) -> None:
 
 def cmd_badge(args: argparse.Namespace) -> None:
     """Execute badge command - generate Echo Mark from audit result."""
+    positional_input = getattr(args, "input", None)
+    positional_output = getattr(args, "output", None)
+    optional_input = getattr(args, "inp", None)
+    optional_output = getattr(args, "out", None)
+
+    # Migration-friendly mixed form:
+    # `badge --in audit.json badge.json`
+    # argparse binds the lone positional token to `input`, but if --in is already
+    # present and no explicit output exists, that positional value is intended as
+    # output.
+    if optional_input and positional_input and not positional_output and not optional_output:
+        positional_output = positional_input
+        positional_input = None
+
+    input_path = _resolve_cli_path_arg(
+        positional_input,
+        optional_input,
+        positional_label="badge input path",
+        option_label="--in",
+    )
+    output_path = _resolve_cli_path_arg(
+        positional_output,
+        optional_output,
+        positional_label="badge output path",
+        option_label="--out",
+    )
+
     # Load audit result
-    audit_path = Path(args.input)
+    audit_path = Path(input_path)
     if not audit_path.exists():
         print(f"Error: Audit file not found: {audit_path}", file=sys.stderr)
         raise SystemExit(1)
@@ -560,7 +615,7 @@ def cmd_badge(args: argparse.Namespace) -> None:
     print("=" * 80)
 
     # Save badge
-    out_path = Path(args.output)
+    out_path = Path(output_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(badge, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"💾 Saved to: {out_path}")
@@ -947,8 +1002,20 @@ def main() -> None:
 
     # badge command - generate Echo Mark
     badge = subparsers.add_parser("badge", help="Generate Echo Mark from audit result")
-    badge.add_argument("input", help="Path to audit JSON file")
-    badge.add_argument("output", help="Path to output badge JSON file")
+    badge.add_argument("input", nargs="?", help="Path to audit JSON file")
+    badge.add_argument("output", nargs="?", help="Path to output badge JSON file")
+    badge.add_argument(
+        "--in",
+        dest="inp",
+        default=None,
+        help="Input audit JSON file (alias for positional input)",
+    )
+    badge.add_argument(
+        "--out",
+        dest="out",
+        default=None,
+        help="Output badge JSON file (alias for positional output)",
+    )
     badge.add_argument("--run-id", dest="run_id", default=None, help="Optional run identifier")
     badge.add_argument(
         "--sig-mode",

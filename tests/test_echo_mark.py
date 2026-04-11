@@ -15,13 +15,12 @@ from hypothesis import strategies as st
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 
-from po_echo.echo_mark import build_payload, make_echo_mark_dual, verify_echo_mark
 from po_echo import echo_mark_verify
+from po_echo.echo_mark import build_payload, make_echo_mark_dual, verify_echo_mark
 
 SECRET = "test-secret-for-echo-v3-rotation-123456"
 KEY_A = "k2026_a"
 KEY_B = "k2026_b"
-
 
 
 def _audit() -> dict:
@@ -156,7 +155,9 @@ def test_key_rotation_invalidates_old_signature_without_old_public_key(_flag):
     assert result["reason"] == "signature_invalid"
 
 
-@settings(max_examples=10, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture])
+@settings(
+    max_examples=10, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture]
+)
 @given(st.booleans())
 def test_revoked_registry_key_rejects_inline_public_key(monkeypatch, tmp_path, _flag):
     """Registry revocation must win over inline public key fallback."""

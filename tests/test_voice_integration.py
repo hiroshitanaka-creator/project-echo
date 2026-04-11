@@ -35,8 +35,8 @@ pytestmark = pytest.mark.skipif(
     reason="PyNaCl not installed; voice integration tests require Ed25519 support",
 )
 
-from po_echo.voice_orchestration import VoiceFlowError, VoiceFlowInput, run_voice_flow  # noqa: E402
 from po_echo.execution_gate import gate_audio  # noqa: E402
+from po_echo.voice_orchestration import VoiceFlowError, VoiceFlowInput, run_voice_flow  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Shared fixtures
@@ -70,7 +70,13 @@ _AUDIT_BASE: dict = {
     "commercial_bias_final": {"overall_bias_score": 0.22},
 }
 
-_OUTPUT_SCHEMA_KEYS = ("candidate_set", "evidence", "responsibility_boundary", "voice_text", "echo_mark")
+_OUTPUT_SCHEMA_KEYS = (
+    "candidate_set",
+    "evidence",
+    "responsibility_boundary",
+    "voice_text",
+    "echo_mark",
+)
 
 
 def _make_payload(**kwargs: object) -> VoiceFlowInput:
@@ -293,7 +299,9 @@ def test_blocked_upstream_boundary_stays_blocked_in_voice_flow() -> None:
             "price_buckets_final": 1,
         },
     }
-    payload = _make_payload(intent="search", transcript="候補を探して", metadata={}, simulate_ok=True)
+    payload = _make_payload(
+        intent="search", transcript="候補を探して", metadata={}, simulate_ok=True
+    )
 
     result = run_voice_flow(
         audit=blocked_audit,
@@ -362,7 +370,9 @@ def test_voice_path_echo_mark_payload_keeps_nonzero_upstream_signals() -> None:
             "price_buckets_final": 3,
         },
     }
-    payload = _make_payload(intent="search", transcript="候補を見せて", metadata={}, simulate_ok=True)
+    payload = _make_payload(
+        intent="search", transcript="候補を見せて", metadata={}, simulate_ok=True
+    )
     result = run_voice_flow(
         audit=audit,
         payload=payload,
@@ -394,7 +404,9 @@ def test_required_action_promoted_when_confirmation_required_upstream() -> None:
             "price_buckets_final": 2,
         },
     }
-    result = _run(intent="search", transcript="候補を比較したい", metadata={}, simulate_ok=True, audit=audit)
+    result = _run(
+        intent="search", transcript="候補を比較したい", metadata={}, simulate_ok=True, audit=audit
+    )
     rb = result["responsibility_boundary"]
     assert rb["requires_human_confirm"] is True
     assert rb["required_action"] != "none"
@@ -417,6 +429,4 @@ def test_evidence_contains_ear_handshake_entry() -> None:
 def test_evidence_contains_echo_mark_entry() -> None:
     result = _run(intent="search", transcript="候補を見せて", metadata={})
     evidence_types = [e.get("type") for e in result["evidence"]]
-    assert "echo_mark" in evidence_types, (
-        f"echo_mark evidence missing; got types: {evidence_types}"
-    )
+    assert "echo_mark" in evidence_types, f"echo_mark evidence missing; got types: {evidence_types}"

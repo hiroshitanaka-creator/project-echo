@@ -15,7 +15,10 @@ from po_echo.echo_mark_registry import (
     get_key_store,
 )
 
-UTC = getattr(dt, "UTC", dt.timezone.utc)
+if hasattr(dt, "UTC"):
+    UTC = dt.UTC
+else:  # pragma: no cover - Python <3.11 fallback
+    UTC = dt.timezone(dt.timedelta(0))
 
 try:
     from nacl.encoding import HexEncoder
@@ -154,7 +157,9 @@ def _derive_public_key(private_key_hex: str) -> str | None:
         return None
 
 
-def _resolve_ed_keys(key_id: str, private_key_override: str | None = None) -> tuple[str | None, str | None]:
+def _resolve_ed_keys(
+    key_id: str, private_key_override: str | None = None
+) -> tuple[str | None, str | None]:
     if not NACL_AVAILABLE:
         return None, None
 
@@ -169,7 +174,9 @@ def _resolve_ed_keys(key_id: str, private_key_override: str | None = None) -> tu
     return candidate_private, _derive_public_key(candidate_private)
 
 
-def _build_short_view(payload: dict[str, Any], key_id: str, method: str | None = None) -> dict[str, Any]:
+def _build_short_view(
+    payload: dict[str, Any], key_id: str, method: str | None = None
+) -> dict[str, Any]:
     short = {
         "bias_original": payload["signals"]["bias_original"],
         "bias_final": payload["signals"]["bias_final"],
@@ -289,7 +296,9 @@ def sign_ed25519(payload_hash: str, private_key_hex: str) -> str:
     return _ed25519_sign(payload_hash, private_key_hex)
 
 
-def generate_echo_mark(payload: dict[str, Any], device: str = "", extra_text: str = "") -> dict[str, Any]:
+def generate_echo_mark(
+    payload: dict[str, Any], device: str = "", extra_text: str = ""
+) -> dict[str, Any]:
     """Compatibility wrapper used by screenless no-secret paths."""
     _ = (device, extra_text)
     return make_echo_mark(audit=payload)
