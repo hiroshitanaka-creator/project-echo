@@ -495,15 +495,29 @@ def cmd_audit(args: argparse.Namespace) -> None:
 
 def cmd_badge(args: argparse.Namespace) -> None:
     """Execute badge command - generate Echo Mark from audit result."""
+    positional_input = getattr(args, "input", None)
+    positional_output = getattr(args, "output", None)
+    optional_input = getattr(args, "inp", None)
+    optional_output = getattr(args, "out", None)
+
+    # Migration-friendly mixed form:
+    # `badge --in audit.json badge.json`
+    # argparse binds the lone positional token to `input`, but if --in is already
+    # present and no explicit output exists, that positional value is intended as
+    # output.
+    if optional_input and positional_input and not positional_output and not optional_output:
+        positional_output = positional_input
+        positional_input = None
+
     input_path = _resolve_cli_path_arg(
-        getattr(args, "input", None),
-        getattr(args, "inp", None),
+        positional_input,
+        optional_input,
         positional_label="badge input path",
         option_label="--in",
     )
     output_path = _resolve_cli_path_arg(
-        getattr(args, "output", None),
-        getattr(args, "out", None),
+        positional_output,
+        optional_output,
         positional_label="badge output path",
         option_label="--out",
     )

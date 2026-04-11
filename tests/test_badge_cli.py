@@ -80,6 +80,27 @@ def test_badge_cli_positional_args_still_work(tmp_path: Path) -> None:
     assert badge.exists()
 
 
+def test_badge_cli_accepts_mixed_flag_input_and_positional_output(tmp_path: Path) -> None:
+    """Regression: `--in` plus one positional should treat positional as output."""
+    audit = tmp_path / "audit.json"
+    badge = tmp_path / "badge.json"
+    _write_audit(audit)
+
+    proc = subprocess.run(
+        [*CLI, "badge", "--in", str(audit), str(badge)],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        env=_env_with_hmac_key(),
+    )
+
+    if "cannot import name 'StrEnum'" in proc.stderr:
+        pytest.skip("CLI runtime interpreter is Python <3.11 in this environment")
+
+    assert proc.returncode == 0, proc.stderr
+    assert badge.exists()
+
+
 def test_badge_cli_rejects_conflicting_positional_and_flag_paths(tmp_path: Path) -> None:
     """Conflicting duplicate path inputs must fail closed instead of guessing."""
     audit = tmp_path / "audit.json"
