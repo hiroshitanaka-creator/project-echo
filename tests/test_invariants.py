@@ -19,6 +19,7 @@ from po_core.diversity import (
     diversify_with_mmr,
 )
 from po_echo.echo_mark import make_echo_mark, verify_mark
+from po_echo.rth import compute_rth  # noqa: F401
 
 
 # Invariant 1: AI Never Recommends
