@@ -126,6 +126,34 @@ def main() -> int:
         )
     )
 
+    # Generate a device boundary receipt for the weekly archive.
+    # Why: device decisions are now Echo Mark signable (Sprint-2); archiving a
+    # signed receipt closes the audit loop — evidence that the device gate ran
+    # and produced a verifiable boundary decision during this audit window.
+    device_cmd = [
+        sys.executable, "-m", "po_cosmic.cli",
+        "device",
+        "--device", "smart_speaker",
+        "--intent", "booking",
+        "--out", str(archive.device_receipt),
+    ]
+    if args.hmac_secret:
+        device_cmd += ["--sign", "--sig-mode", "hmac", "--hmac-secret", args.hmac_secret]
+    device_rc = subprocess.run(device_cmd, capture_output=True, text=True, env=env)
+    if device_rc.returncode not in {0, 3}:
+        # rc=3 means execution_allowed=False (blocked), which is a valid audit outcome.
+        archive.device_receipt.write_text(
+            json.dumps({"error": device_rc.stderr or "non-zero exit", "returncode": device_rc.returncode}),
+            encoding="utf-8",
+        )
+    outcomes.append(
+        CommandOutcome(
+            name="device_receipt",
+            return_code=device_rc.returncode,
+            status="PASS" if device_rc.returncode in {0, 3} else "FAIL",
+        )
+    )
+
     registry = root / ".keys" / "registry.json"
     if registry.exists():
         archive.registry_snapshot.write_text(registry.read_text(encoding="utf-8"), encoding="utf-8")
