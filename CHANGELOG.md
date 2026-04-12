@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- ECHO-20260412-002: `docs/traceability/traceability_v1.yaml` に `REQ-DEV-004` を追加し、`DeviceBoundaryDecision.to_audit_payload()` と `po-cosmic device --sign` CLI のデバイス署名要件を要件レベルで機械的に追跡可能化。`.github/workflows/ci.yml` の smoke gate Unit tests に `tests/test_device_cli.py` と `tests/test_traceability_validator.py` を追加し、デバイス CLI 回帰とトレーサビリティ整合性を PR 段階で自動検証。
 - ECHO-20260412-001: `DeviceBoundaryDecision.to_audit_payload()` を追加し、デバイス境界判定を Echo Mark v3 署名可能な `device_receipt_v1` スキーマの監査ペイロードへ変換。`po-cosmic device` に `--sign` / `--sig-mode` (hmac/dual) / `--key-id` / `--keys-dir` / `--run-id` オプションを追加し、HMAC または Ed25519+HMAC dual 署名付きレシートを出力 JSON の `echo_mark` フィールドに格納。`tests/test_device_cli.py`（+5テスト）と `tests/test_prop_device_boundary.py`（+5テスト）を追加し、計351テストパス。
 - ECHO-20260314-003: `po-cosmic device` CLIサブコマンドを追加し、`device_boundary.py` の4デバイス責任境界判定をCLIから実行可能化。`--list-devices` / `--show-schema` / `--out` / `--require-execution-allowed` オプション対応。`tests/test_device_cli.py`（11テスト）を追加。
 

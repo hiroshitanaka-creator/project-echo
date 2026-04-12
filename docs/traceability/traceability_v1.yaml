@@ -1,6 +1,6 @@
 {
   "schema_version": "1.1",
-  "last_updated": "2026-03-22",
+  "last_updated": "2026-04-12",
   "note": "Requirement traceability matrix. code_refs use dotted module.function notation. tests use file::function notation.",
   "traceability": [
     {
@@ -192,6 +192,21 @@
       ],
       "tests": [
         "tests/test_prop_device_boundary.py::test_prop_risk_classification_device_independent"
+      ],
+      "status": "implemented"
+    },
+    {
+      "requirement_id": "REQ-DEV-004",
+      "title": "Device boundary decisions must produce an Echo Mark signed audit receipt. to_audit_payload() must return a make_echo_mark-compatible payload with device_schema=device_receipt_v1.",
+      "source": "docs/DEVICE_BOUNDARY.md",
+      "code_refs": [
+        "po_echo.device_boundary.DeviceBoundaryDecision",
+        "po_cosmic.cli.cmd_device"
+      ],
+      "tests": [
+        "tests/test_prop_device_boundary.py::test_prop_audit_payload_has_required_fields",
+        "tests/test_prop_device_boundary.py::test_audit_payload_is_make_echo_mark_compatible",
+        "tests/test_device_cli.py::test_device_sign_hmac_produces_echo_mark"
       ],
       "status": "implemented"
     },
