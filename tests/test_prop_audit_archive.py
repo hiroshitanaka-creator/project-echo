@@ -33,6 +33,7 @@ def test_ensure_weekly_archive_uses_fixed_filename_contract(year: int, week: int
         assert archive.benchmark_voice_boundary_log.name == "benchmark_voice_boundary.txt"
         assert archive.benchmark_rth_log.name == "benchmark_rth.txt"
         assert archive.demo_c_receipt.name == "demo_c_receipt.json"
+        assert archive.device_receipt.name == "device_receipt.json"
         assert archive.registry_snapshot.name == "registry_snapshot.json"
         assert archive.triage_note.name == "triage_note.md"
 

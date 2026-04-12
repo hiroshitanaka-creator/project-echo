@@ -21,6 +21,7 @@ class WeeklyArchivePaths:
     benchmark_voice_boundary_log: Path
     benchmark_rth_log: Path
     demo_c_receipt: Path
+    device_receipt: Path
     registry_snapshot: Path
     triage_note: Path
     manifest: Path
@@ -64,6 +65,7 @@ def ensure_weekly_archive(root_dir: Path, week_id: str) -> WeeklyArchivePaths:
         benchmark_voice_boundary_log=base_dir / "benchmark_voice_boundary.txt",
         benchmark_rth_log=base_dir / "benchmark_rth.txt",
         demo_c_receipt=base_dir / "demo_c_receipt.json",
+        device_receipt=base_dir / "device_receipt.json",
         registry_snapshot=base_dir / "registry_snapshot.json",
         triage_note=base_dir / "triage_note.md",
         manifest=base_dir / "manifest.md",
