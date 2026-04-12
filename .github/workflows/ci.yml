@@ -45,6 +45,7 @@ jobs:
             tests/test_alert_notify.py \
             tests/test_ci_kpi.py \
             tests/test_demo_c_example.py \
+            tests/test_device_cli.py \
             tests/test_diversity.py \
             tests/test_echo_mark.py \
             tests/test_gift_rehearsal_history_index.py \
@@ -55,6 +56,7 @@ jobs:
             tests/test_public_audit.py \
             tests/test_rth.py \
             tests/test_sentinel_v2.py \
+            tests/test_traceability_validator.py \
             tests/test_voice_boundary.py \
             tests/test_webhook_dispatch.py \
             tests/test_weekly_audit_archive_script.py
