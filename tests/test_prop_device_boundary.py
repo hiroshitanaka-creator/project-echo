@@ -10,6 +10,9 @@
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 import pytest
 
 hypothesis = pytest.importorskip("hypothesis")
@@ -177,3 +180,79 @@ def test_non_finite_bias_is_blocked_fail_closed() -> None:
         assert dec.execution_allowed is False
         assert dec.requires_human_confirm is True
         assert dec.required_action == "app_confirm"
+
+
+# --- to_audit_payload() property-based tests ---
+
+@settings(max_examples=200)
+@given(device=_DEVICE_ST, intent=_INTENT_ST, bias=_BIAS_ST, amount=_AMOUNT_ST)
+def test_prop_audit_payload_has_required_fields(
+    device: DeviceType, intent: str, bias: float, amount
+) -> None:
+    """to_audit_payload() は make_echo_mark が必要とするフィールドを常に含む。"""
+    meta = {"amount": amount} if amount is not None else None
+    decision = decide_for_device(device, intent, meta=meta, bias_score=bias)
+    payload = decision.to_audit_payload(intent=intent, meta=meta or {})
+
+    # make_echo_mark / build_payload が要求するフィールド
+    assert "responsibility_boundary" in payload
+    assert payload["device_schema"] == "device_receipt_v1"
+    assert payload["device"] == device
+    assert payload["intent"] == intent
+
+    rb = payload["responsibility_boundary"]
+    required_rb_keys = {
+        "channel", "device", "risk", "required_action",
+        "execution_allowed", "requires_human_confirm", "reasons",
+    }
+    missing = required_rb_keys - set(rb.keys())
+    assert not missing, f"responsibility_boundary missing keys in audit payload: {missing}"
+
+
+@settings(max_examples=200)
+@given(device=_DEVICE_ST, intent=_INTENT_ST, bias=_BIAS_ST)
+def test_prop_audit_payload_execution_allowed_consistent(
+    device: DeviceType, intent: str, bias: float
+) -> None:
+    """to_audit_payload() の execution_allowed は decide_for_device の決定と一致する。"""
+    decision = decide_for_device(device, intent, bias_score=bias)
+    payload = decision.to_audit_payload(intent=intent)
+    rb = payload["responsibility_boundary"]
+    assert rb["execution_allowed"] == decision.execution_allowed
+    assert rb["requires_human_confirm"] == decision.requires_human_confirm
+
+
+@settings(max_examples=150)
+@given(device=_DEVICE_ST, intent=_INTENT_ST, bias=_BIAS_ST)
+def test_prop_audit_payload_reasons_non_empty(
+    device: DeviceType, intent: str, bias: float
+) -> None:
+    """to_audit_payload() の reasons フィールドは空でない（監査追跡性）。"""
+    decision = decide_for_device(device, intent, bias_score=bias)
+    payload = decision.to_audit_payload(intent=intent)
+    rb = payload["responsibility_boundary"]
+    assert len(rb["reasons"]) >= 1
+
+
+def test_audit_payload_meta_defaults_to_empty_dict() -> None:
+    """to_audit_payload() の meta 省略時は空 dict が設定される。"""
+    dec = decide_for_device("earworn", "search", bias_score=0.0)
+    payload = dec.to_audit_payload(intent="search")
+    assert payload["meta"] == {}
+
+
+def test_audit_payload_is_make_echo_mark_compatible() -> None:
+    """to_audit_payload() が返す dict を make_echo_mark に渡してもクラッシュしない。"""
+    import os
+    import sys
+    _SRC = Path(__file__).resolve().parents[1] / "src"
+    if str(_SRC) not in sys.path:
+        sys.path.insert(0, str(_SRC))
+    from po_echo.echo_mark_core import build_payload
+
+    dec = decide_for_device("smart_watch", "booking", bias_score=0.0)
+    audit_payload = dec.to_audit_payload(intent="booking")
+    # build_payload は responsibility_boundary を持つ dict を受け取れれば良い
+    result = build_payload(audit_payload)
+    assert result["schema_version"] == "echo_mark_v3"
+    assert result["label"] in {"ECHO_VERIFIED", "ECHO_CHECK", "ECHO_BLOCKED"}

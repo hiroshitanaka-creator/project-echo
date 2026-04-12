@@ -147,6 +147,31 @@ class DeviceBoundaryDecision:
             "reasons": self.reasons,
         }
 
+    def to_audit_payload(
+        self,
+        intent: str = "",
+        meta: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Build an Echo Mark-compatible audit payload from this device decision.
+
+        Why this exists:
+            make_echo_mark / make_echo_mark_dual expect an 'audit' dict that contains
+            'responsibility_boundary'. Device decisions have no commercial-bias signals
+            (they default to 0.0), but the same canonical Echo Mark v3 signing contract
+            still applies — so device boundary decisions become verifiable receipts.
+
+        The returned dict is a valid input to build_payload() / make_echo_mark().
+        """
+        return {
+            "device_schema": "device_receipt_v1",
+            "device": self.device,
+            "intent": intent,
+            "meta": meta or {},
+            "responsibility_boundary": self.to_responsibility_boundary(),
+            # Commercial-bias signals are not applicable to device decisions;
+            # leave absent so build_payload defaults them to 0.0 without confusion.
+        }
+
 
 def decide_for_device(
     device: DeviceType,

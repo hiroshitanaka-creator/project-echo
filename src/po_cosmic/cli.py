@@ -919,6 +919,48 @@ def cmd_device(args: argparse.Namespace) -> None:
         "responsibility_boundary": decision.to_responsibility_boundary(),
     }
 
+    # --- Echo Mark signing (--sign) ---
+    sign_mode = getattr(args, "sig_mode", None)
+    if getattr(args, "sign", False) and sign_mode:
+        audit_payload = decision.to_audit_payload(intent=args.intent, meta=meta or {})
+        key_id = getattr(args, "key_id", "default") or "default"
+
+        if sign_mode == "dual" and ED25519_AVAILABLE:
+            try:
+                secret = get_secret_from_env()
+                if getattr(args, "keys_dir", None):
+                    keypair = load_ed25519_keypair(key_id, args.keys_dir)
+                    private_key = keypair["private_key"]
+                else:
+                    _pk = load_ed25519_private_key_from_env()
+                    if not _pk:
+                        print("Error: ECHO_MARK_PRIVATE_KEY not set", file=sys.stderr)
+                        raise SystemExit(1)
+                    private_key = _pk
+                echo_mark = make_echo_mark_dual(
+                    audit_payload, secret, private_key, key_id,
+                    run_id=getattr(args, "run_id", None),
+                )
+                result["echo_mark"] = echo_mark
+                print("Dual signature (HMAC + Ed25519)")
+            except (FileNotFoundError, RuntimeError) as e:
+                print(f"Error: {e}", file=sys.stderr)
+                raise SystemExit(1) from None
+        else:
+            # HMAC-only (default signing mode)
+            try:
+                secret = get_secret_from_env()
+            except RuntimeError as e:
+                print(f"Error: {e}", file=sys.stderr)
+                print("Set ECHO_MARK_SECRET environment variable (min 16 chars)", file=sys.stderr)
+                raise SystemExit(1) from None
+            echo_mark = make_echo_mark(
+                audit_payload, secret=secret,
+                run_id=getattr(args, "run_id", None),
+            )
+            result["echo_mark"] = echo_mark
+            print("HMAC signature")
+
     if args.out:
         out_path = Path(args.out)
         out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -935,6 +977,9 @@ def cmd_device(args: argparse.Namespace) -> None:
     exec_label = "YES" if rb["execution_allowed"] else "NO (BLOCKED)"
     print(f"Execution   : {exec_label}")
     print(f"Reasons     : {', '.join(rb['reasons'])}")
+    if "echo_mark" in result:
+        em = result["echo_mark"]
+        print(f"Echo Mark   : {em.get('label', '?')} ({em.get('verification_method', 'HMAC-SHA256')})")
     if args.out:
         print(f"💾 Saved to : {args.out}")
     print("=" * 80)
@@ -1101,6 +1146,37 @@ def main() -> None:
         dest="show_schema",
         action="store_true",
         help="Print device boundary input/output JSON schemas and exit",
+    )
+    device_cmd.add_argument(
+        "--sign",
+        action="store_true",
+        default=False,
+        help="Generate an Echo Mark-signed receipt for this device boundary decision",
+    )
+    device_cmd.add_argument(
+        "--sig-mode",
+        dest="sig_mode",
+        choices=["hmac", "dual"],
+        default="hmac",
+        help="Signing mode for --sign: hmac (default) or dual (HMAC+Ed25519)",
+    )
+    device_cmd.add_argument(
+        "--key-id",
+        dest="key_id",
+        default="default",
+        help="Key identifier for Ed25519 signing (default: 'default')",
+    )
+    device_cmd.add_argument(
+        "--keys-dir",
+        dest="keys_dir",
+        default=None,
+        help="Directory containing Ed25519 keypair files (for --sig-mode dual)",
+    )
+    device_cmd.add_argument(
+        "--run-id",
+        dest="run_id",
+        default=None,
+        help="Optional run identifier embedded in the Echo Mark payload",
     )
 
     # audio-gate command - voice-initiated execution gate
