@@ -117,6 +117,7 @@ def scan_directory(target_dir: str) -> None:
     total_files = 0
     total_violations = 0
     file_violation_map = defaultdict(list)
+    unscannable_count = 0
 
     for root, _, files in os.walk(target_dir):
         for file in files:
@@ -137,8 +138,15 @@ def scan_directory(target_dir: str) -> None:
                         file_violation_map[str(full_path)] = dog.violations
                         total_violations += len(dog.violations)
 
+                except SyntaxError as e:
+                    unscannable_count += 1
+                    print(f"⚠️ SyntaxError in {file}: {e}")
+                except (OSError, UnicodeDecodeError, PermissionError) as e:
+                    unscannable_count += 1
+                    print(f"⚠️ IOError in {file}: {e}")
                 except Exception as e:
-                    print(f"⚠️ Could not parse {file}: {e}")
+                    unscannable_count += 1
+                    print(f"⚠️ UnknownError in {file}: {e}")
 
     # レポート出力
     if total_violations > 0:
@@ -150,10 +158,13 @@ def scan_directory(target_dir: str) -> None:
             print("")
 
         print(f"🔥 Total Violations: {total_violations}")
+        print(f"⚠️ Unscannable files: {unscannable_count}")
         print("❌ CI BLOCKED. Rewrite your code. Regain your will.")
         sys.exit(1)
     else:
         print(f"✅ Scanned {total_files} files. No vendor chains detected. You are free.")
+        if unscannable_count > 0:
+            print(f"⚠️ Unscannable files: {unscannable_count}")
         sys.exit(0)
 
 

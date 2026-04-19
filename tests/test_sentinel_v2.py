@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from po_echo.sentinel_v2 import apply_semantic_diversity
+from po_echo.sentinel_v2 import apply_semantic_diversity, scan_directory
 
 
 def test_apply_semantic_diversity_validates_k() -> None:
@@ -47,3 +47,19 @@ def test_apply_semantic_diversity_returns_audit_payload() -> None:
     assert "semantic_delta" in result
     assert "6d_values" in result
     assert "freedom_pressure_snapshot" in result
+
+
+def test_scan_directory_reports_unscannable_syntax_error(
+    tmp_path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Scanner must classify and report unscannable files count."""
+    bad = tmp_path / "broken.py"
+    bad.write_text("def broken(:\n", encoding="utf-8")
+
+    with pytest.raises(SystemExit) as exc_info:
+        scan_directory(str(tmp_path))
+
+    out = capsys.readouterr().out
+    assert exc_info.value.code == 0
+    assert "SyntaxError in broken.py" in out
+    assert "Unscannable files: 1" in out
