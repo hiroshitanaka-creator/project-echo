@@ -155,3 +155,51 @@ def get_secret_from_env() -> str:
     if len(secret) < 16:
         raise RuntimeError("ECHO_MARK_SECRET is too short (min 16 chars recommended)")
     return secret
+
+
+def summarize_public_key_registry(
+    registry_path: Path | str = ".keys/registry.json",
+    *,
+    active_key_id: str | None = None,
+) -> dict[str, Any]:
+    """Summarize registry key status for rotation/revocation operations.
+
+    Returns a machine-readable summary suitable for CLI output and CI checks.
+    """
+    registry = load_public_key_registry(registry_path)
+    entries = [entry for entry in registry.get("keys", []) if isinstance(entry, dict)]
+
+    counts = {"active": 0, "inactive": 0, "revoked": 0, "unknown": 0}
+    key_ids: list[str] = []
+    for entry in entries:
+        key_id = entry.get("key_id")
+        if isinstance(key_id, str) and key_id:
+            key_ids.append(key_id)
+
+        status = str(entry.get("status", "active"))
+        if status in counts:
+            counts[status] += 1
+        else:
+            counts["unknown"] += 1
+
+    effective_active = active_key_id or get_active_key_id()
+    active_entry = find_registry_key_entry(effective_active, registry_path=registry_path)
+    active_status = str(active_entry.get("status")) if active_entry else "missing"
+
+    warnings: list[str] = []
+    if active_status == "revoked":
+        warnings.append("active_key_is_revoked")
+    if active_status == "missing":
+        warnings.append("active_key_missing_from_registry")
+    if counts["active"] == 0:
+        warnings.append("no_active_keys_in_registry")
+
+    return {
+        "registry_path": str(Path(registry_path)),
+        "active_key_id": effective_active,
+        "active_key_status": active_status,
+        "counts": counts,
+        "total_keys": len(entries),
+        "key_ids": sorted(set(key_ids)),
+        "warnings": warnings,
+    }

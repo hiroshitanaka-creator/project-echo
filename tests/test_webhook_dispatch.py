@@ -16,11 +16,13 @@ import json
 from unittest.mock import patch
 
 from po_echo.webhook_dispatch import (
+    DispatchResult,
     WebhookConfig,
     configs_from_env,
     dispatch_webhooks,
     format_pagerduty_payload,
     format_slack_payload,
+    summarize_dispatch_results,
 )
 
 # ---------------------------------------------------------------------------
@@ -339,3 +341,19 @@ class TestConfigsFromEnv:
         monkeypatch.setenv("ECHO_SLACK_WEBHOOK_URL", "   ")
         monkeypatch.delenv("ECHO_PAGERDUTY_ROUTING_KEY", raising=False)
         assert configs_from_env() == []
+
+
+class TestSummarizeDispatchResults:
+    def test_summary_counts_and_rate(self):
+        results = [
+            DispatchResult(target="slack", success=True, dry_run=False),
+            DispatchResult(target="slack", success=False, dry_run=False),
+            DispatchResult(target="pagerduty", success=True, dry_run=True),
+        ]
+        summary = summarize_dispatch_results(results)
+        assert summary["total"] == 3
+        assert summary["success"] == 2
+        assert summary["failed"] == 1
+        assert summary["dry_run"] == 1
+        assert summary["success_rate"] == 0.6667
+        assert summary["by_target"]["slack"]["total"] == 2

@@ -189,3 +189,33 @@ def test_revoked_registry_key_rejects_inline_public_key(monkeypatch, tmp_path, _
 
     assert result["status"] == "INVALID"
     assert result["reason"] == "key_revoked"
+
+
+def test_verify_echo_mark_returns_input_error_for_non_serializable_payload():
+    """Non-JSON-serializable payload must be categorized as input error."""
+    badge = {
+        "payload": {"key_id": "default", "nonce": "abcd", "issued_at": "2026-01-01T00:00:00+00:00", "bad": {1, 2}},
+        "payload_hash": "x",
+    }
+    result = verify_echo_mark(badge)
+    assert result["status"] == "INVALID"
+    assert result["reason"] == "verification_input_error:TypeError"
+
+
+def test_verify_echo_mark_returns_internal_error_when_hasher_crashes(monkeypatch):
+    """Unexpected internal crash should be categorized separately from input errors."""
+    key = SigningKey.generate()
+    badge = make_echo_mark_dual(
+        audit=_audit(),
+        hmac_secret=SECRET,
+        ed25519_private_key=key.encode(HexEncoder).decode(),
+        key_id=KEY_A,
+    )
+
+    def _raise_runtime_error(_value: str) -> str:
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr("po_echo.echo_mark_verify.sha256_hex", _raise_runtime_error)
+    result = verify_echo_mark(badge, public_keys={KEY_A: key.verify_key.encode(HexEncoder).decode()})
+    assert result["status"] == "INVALID"
+    assert result["reason"] == "verification_internal_error:RuntimeError"

@@ -423,3 +423,30 @@ def configs_from_env(
         configs.append(WebhookConfig(target="pagerduty", url=pd_key, kind="pagerduty"))
 
     return configs
+
+
+def summarize_dispatch_results(results: list[DispatchResult]) -> dict[str, Any]:
+    """Build lightweight delivery metrics for operator observability."""
+    total = len(results)
+    success = sum(1 for r in results if r.success)
+    failed = total - success
+    dry_run = sum(1 for r in results if r.dry_run)
+
+    by_target: dict[str, dict[str, int]] = {}
+    for result in results:
+        stats = by_target.setdefault(result.target, {"total": 0, "success": 0, "failed": 0})
+        stats["total"] += 1
+        if result.success:
+            stats["success"] += 1
+        else:
+            stats["failed"] += 1
+
+    success_rate = (success / total) if total else 0.0
+    return {
+        "total": total,
+        "success": success,
+        "failed": failed,
+        "dry_run": dry_run,
+        "success_rate": round(success_rate, 4),
+        "by_target": by_target,
+    }
