@@ -423,3 +423,55 @@ def configs_from_env(
         configs.append(WebhookConfig(target="pagerduty", url=pd_key, kind="pagerduty"))
 
     return configs
+
+
+def summarize_dispatch_results(results: list[DispatchResult]) -> dict[str, Any]:
+    """Build operational metrics from webhook dispatch outcomes."""
+    total = len(results)
+    successes = sum(1 for result in results if result.success)
+    failures = total - successes
+    dry_run_count = sum(1 for result in results if result.dry_run)
+
+    by_target: dict[str, dict[str, int]] = {}
+    for result in results:
+        bucket = by_target.setdefault(result.target, {"total": 0, "success": 0, "failure": 0})
+        bucket["total"] += 1
+        if result.success:
+            bucket["success"] += 1
+        else:
+            bucket["failure"] += 1
+
+    success_rate = 1.0 if total == 0 else successes / total
+    return {
+        "total": total,
+        "success": successes,
+        "failure": failures,
+        "dry_run": dry_run_count,
+        "success_rate": round(success_rate, 4),
+        "by_target": by_target,
+    }
+
+
+def evaluate_dispatch_slo(
+    metrics: dict[str, Any],
+    *,
+    min_success_rate: float = 0.99,
+    max_failures: int = 0,
+) -> dict[str, Any]:
+    """Evaluate webhook dispatch metrics against operational SLO thresholds."""
+    success_rate = float(metrics.get("success_rate", 0.0) or 0.0)
+    failures = int(metrics.get("failure", 0) or 0)
+    breaches: list[str] = []
+    if success_rate < min_success_rate:
+        breaches.append("success_rate_below_target")
+    if failures > max_failures:
+        breaches.append("failure_count_exceeds_budget")
+
+    return {
+        "ok": len(breaches) == 0,
+        "thresholds": {
+            "min_success_rate": min_success_rate,
+            "max_failures": max_failures,
+        },
+        "breaches": breaches,
+    }
