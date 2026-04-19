@@ -46,6 +46,8 @@ from po_echo.webhook_dispatch import (
     WebhookConfig,
     configs_from_env,
     dispatch_webhooks,
+    evaluate_dispatch_slo,
+    summarize_dispatch_results,
 )
 
 _DEFAULT_NOTIFICATION_PATH = _REPO_ROOT / "reports" / "operations" / "p2_alert_notification.json"
@@ -67,11 +69,15 @@ def _load_notification(path: Path) -> dict:
 
 
 def _summarise(results: list[DispatchResult], as_json: bool, has_alert: bool) -> None:
+    metrics = summarize_dispatch_results(results)
+    slo = evaluate_dispatch_slo(metrics)
     if as_json:
         print(
             json.dumps(
                 {
                     "has_alert": has_alert,
+                    "metrics": metrics,
+                    "slo": slo,
                     "dispatched": [
                         {
                             "target": r.target,
@@ -93,6 +99,12 @@ def _summarise(results: list[DispatchResult], as_json: bool, has_alert: bool) ->
         print("[INFO] No webhook targets configured. Set ECHO_SLACK_WEBHOOK_URL or ECHO_PAGERDUTY_ROUTING_KEY.")
         return
 
+    print(
+        "[METRICS] total={total} success={success} failure={failure} dry_run={dry_run} success_rate={success_rate:.2%}".format(
+            **metrics
+        )
+    )
+    print(f"[SLO] ok={slo['ok']} breaches={','.join(slo['breaches']) if slo['breaches'] else 'none'}")
     for r in results:
         tag = "[DRY-RUN]" if r.dry_run else ("[OK]" if r.success else "[FAIL]")
         msg = f"{tag} {r.target}"

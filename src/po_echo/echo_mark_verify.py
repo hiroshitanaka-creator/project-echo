@@ -309,10 +309,16 @@ def verify_echo_mark(
             _verification_checks(True, False, True, True),
             key_id=key_id,
         )
+    except (TypeError, ValueError, KeyError, AttributeError) as exc:
+        return _verification_result(
+            "INVALID",
+            f"verification_input_error:{exc.__class__.__name__}",
+            _verification_checks(False, False, False, False),
+        )
     except Exception as exc:
         return _verification_result(
             "INVALID",
-            f"verification_error: {exc}",
+            f"verification_internal_error:{exc.__class__.__name__}",
             _verification_checks(False, False, False, False),
         )
 

@@ -19,8 +19,10 @@ from po_echo.webhook_dispatch import (
     WebhookConfig,
     configs_from_env,
     dispatch_webhooks,
+    evaluate_dispatch_slo,
     format_pagerduty_payload,
     format_slack_payload,
+    summarize_dispatch_results,
 )
 
 # ---------------------------------------------------------------------------
@@ -228,6 +230,46 @@ class TestDispatchWebhooksDryRun:
         results = dispatch_webhooks(_make_notification(), [cfg], dry_run=True)
         assert results[0].success is False
         assert "unknown webhook kind" in (results[0].error or "")
+
+    def test_summary_metrics_include_success_rate_and_target_breakdown(self):
+        results = dispatch_webhooks(
+            _make_notification(),
+            [self._make_slack_config(), self._make_pd_config()],
+            dry_run=True,
+        )
+        metrics = summarize_dispatch_results(results)
+        assert metrics["total"] == 2
+        assert metrics["success"] == 2
+        assert metrics["failure"] == 0
+        assert metrics["success_rate"] == 1.0
+        assert metrics["by_target"]["slack"]["success"] == 1
+
+    def test_slo_evaluation_passes_for_nominal_metrics(self):
+        metrics = {
+            "total": 10,
+            "success": 10,
+            "failure": 0,
+            "dry_run": 0,
+            "success_rate": 1.0,
+            "by_target": {"slack": {"total": 10, "success": 10, "failure": 0}},
+        }
+        slo = evaluate_dispatch_slo(metrics)
+        assert slo["ok"] is True
+        assert slo["breaches"] == []
+
+    def test_slo_evaluation_detects_breaches(self):
+        metrics = {
+            "total": 10,
+            "success": 7,
+            "failure": 3,
+            "dry_run": 0,
+            "success_rate": 0.7,
+            "by_target": {"slack": {"total": 10, "success": 7, "failure": 3}},
+        }
+        slo = evaluate_dispatch_slo(metrics, min_success_rate=0.9, max_failures=1)
+        assert slo["ok"] is False
+        assert "success_rate_below_target" in slo["breaches"]
+        assert "failure_count_exceeds_budget" in slo["breaches"]
 
 
 # ---------------------------------------------------------------------------

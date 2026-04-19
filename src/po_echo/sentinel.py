@@ -86,11 +86,17 @@ def run_audit(target_file: str) -> None:
     result = sentinel.audit_requirements(target_file)
 
     print(f"🔍 Audit Target: {target_file}")
-    print(f"📊 Vendor Concentration: {result['score'] * 100}% ({result['dominant_vendor']})")
+    if "error" in result:
+        print(f"❌ [ERROR] {result['error']}")
+        sys.exit(1)
+
+    score = float(result.get("score", 0.0))
+    dominant_vendor = str(result.get("dominant_vendor", "None"))
+    print(f"📊 Vendor Concentration: {score * 100}% ({dominant_vendor})")
 
     if result["status"] == "BLOCKED":
         print(f"🚫 [BLOCKED] Threshold ({DEFAULT_THRESHOLD * 100}%) exceeded!")
-        print(f"⚠️  WARNING: High dependency on {result['dominant_vendor']}.")
+        print(f"⚠️  WARNING: High dependency on {dominant_vendor}.")
         print("   Consider replacing proprietary libs with open alternatives.")
         sys.exit(1)  # CIを落とす
     else:

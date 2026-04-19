@@ -21,10 +21,12 @@ Distinct from sentinel.py:
   - sentinel_v2.py → AST-based scan of *Python source code* + semantic diversity
 """
 import ast
+import fnmatch
 import os
 import re
 import sys
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -112,33 +114,84 @@ class Doberman(ast.NodeVisitor):
 
 
 def scan_directory(target_dir: str) -> None:
-    print(f"🐕 Releasing the Doberman in: {target_dir}\n")
+    scan_directory_optimized(target_dir)
 
-    total_files = 0
-    total_violations = 0
-    file_violation_map = defaultdict(list)
 
+def _matches_any_glob(path: Path, patterns: tuple[str, ...]) -> bool:
+    return any(fnmatch.fnmatch(path.as_posix(), pat) for pat in patterns)
+
+
+def _iter_python_files(
+    target_dir: str,
+    *,
+    exclude_globs: tuple[str, ...] = (),
+    changed_files: set[str] | None = None,
+) -> list[Path]:
+    files_out: list[Path] = []
     for root, _, files in os.walk(target_dir):
         for file in files:
-            if file.endswith(".py") and "venv" not in root:
-                full_path = Path(root) / file
-                if "tests/fixtures" in full_path.as_posix():
-                    continue
-                total_files += 1
+            if not file.endswith(".py") or "venv" in root:
+                continue
+            full_path = Path(root) / file
+            rel = full_path.as_posix()
+            if "tests/fixtures" in rel:
+                continue
+            if exclude_globs and _matches_any_glob(full_path, exclude_globs):
+                continue
+            if changed_files is not None and rel not in changed_files:
+                continue
+            files_out.append(full_path)
+    return files_out
 
-                try:
-                    with open(full_path, encoding="utf-8") as f:
-                        tree = ast.parse(f.read(), filename=str(full_path))
 
-                    dog = Doberman(str(full_path))
-                    dog.visit(tree)
+def _scan_python_file(path: Path) -> tuple[str, list[str], str | None]:
+    try:
+        with open(path, encoding="utf-8") as f:
+            tree = ast.parse(f.read(), filename=str(path))
+        dog = Doberman(str(path))
+        dog.visit(tree)
+        return str(path), dog.violations, None
+    except SyntaxError as e:
+        return str(path), [], f"SyntaxError: {e}"
+    except (OSError, UnicodeDecodeError, PermissionError) as e:
+        return str(path), [], f"IOError: {e}"
+    except Exception as e:
+        return str(path), [], f"UnknownError: {e}"
 
-                    if dog.violations:
-                        file_violation_map[str(full_path)] = dog.violations
-                        total_violations += len(dog.violations)
 
-                except Exception as e:
-                    print(f"⚠️ Could not parse {file}: {e}")
+def scan_directory_optimized(
+    target_dir: str,
+    *,
+    exclude_globs: tuple[str, ...] = (),
+    changed_files: set[str] | None = None,
+    max_workers: int = 1,
+) -> None:
+    print(f"🐕 Releasing the Doberman in: {target_dir}\n")
+
+    candidates = _iter_python_files(
+        target_dir,
+        exclude_globs=exclude_globs,
+        changed_files=changed_files,
+    )
+    total_files = len(candidates)
+    total_violations = 0
+    unscannable_count = 0
+    file_violation_map = defaultdict(list)
+
+    if max_workers > 1 and len(candidates) > 1:
+        with ThreadPoolExecutor(max_workers=max_workers) as ex:
+            records = list(ex.map(_scan_python_file, candidates))
+    else:
+        records = [_scan_python_file(path) for path in candidates]
+
+    for path_str, violations, error in records:
+        if error:
+            unscannable_count += 1
+            print(f"⚠️ {error} in {Path(path_str).name}")
+            continue
+        if violations:
+            file_violation_map[path_str] = violations
+            total_violations += len(violations)
 
     # レポート出力
     if total_violations > 0:
@@ -150,10 +203,13 @@ def scan_directory(target_dir: str) -> None:
             print("")
 
         print(f"🔥 Total Violations: {total_violations}")
+        print(f"⚠️ Unscannable files: {unscannable_count}")
         print("❌ CI BLOCKED. Rewrite your code. Regain your will.")
         sys.exit(1)
     else:
         print(f"✅ Scanned {total_files} files. No vendor chains detected. You are free.")
+        if unscannable_count > 0:
+            print(f"⚠️ Unscannable files: {unscannable_count}")
         sys.exit(0)
 
 
@@ -194,5 +250,38 @@ def apply_semantic_diversity(
 
 
 if __name__ == "__main__":
-    target = sys.argv[1] if len(sys.argv) > 1 else "."
-    scan_directory(target)
+    import argparse
+
+    parser = argparse.ArgumentParser(description="AST vendor-lock scanner with optional optimized mode.")
+    parser.add_argument("target", nargs="?", default=".")
+    parser.add_argument(
+        "--exclude-glob",
+        action="append",
+        default=[],
+        help="Glob pattern(s) to exclude from scan. Can be repeated.",
+    )
+    parser.add_argument(
+        "--changed-files",
+        default=None,
+        help="Optional newline-separated file list. When set, only listed files are scanned.",
+    )
+    parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=1,
+        help="Parallel workers for file scan (default: 1).",
+    )
+    args = parser.parse_args()
+
+    changed_set: set[str] | None = None
+    if args.changed_files:
+        changed_path = Path(args.changed_files)
+        raw = changed_path.read_text(encoding="utf-8") if changed_path.exists() else ""
+        changed_set = {line.strip() for line in raw.splitlines() if line.strip()}
+
+    scan_directory_optimized(
+        args.target,
+        exclude_globs=tuple(args.exclude_glob),
+        changed_files=changed_set,
+        max_workers=max(1, args.max_workers),
+    )

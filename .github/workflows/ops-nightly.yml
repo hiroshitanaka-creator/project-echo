@@ -1,0 +1,63 @@
+name: Ops Nightly (Integrity + Property Heavy)
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  ops-nightly:
+    name: Nightly Ops Gates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          pip install -e .[dev]
+
+      - name: Nightly property profile
+        run: python scripts/run_property_profile.py --profile nightly
+
+      - name: Audit key registry (if present)
+        run: |
+          if [ -f ".keys/registry.json" ]; then
+            python scripts/audit_key_registry.py --registry .keys/registry.json --json
+          else
+            echo "⚠️ .keys/registry.json not found. Skipping registry audit."
+          fi
+
+      - name: Verify public audit integrity (if present)
+        run: |
+          if [ -f "reports/operations/public_audit_manifest.json" ]; then
+            python scripts/verify_public_audit_integrity.py --manifest reports/operations/public_audit_manifest.json --json
+          else
+            echo "⚠️ reports/operations/public_audit_manifest.json not found. Skipping integrity verification."
+          fi
+
+      - name: Nightly summary
+        if: always()
+        run: |
+          {
+            echo "## Ops Nightly Summary"
+            echo ""
+            if [ "${{ job.status }}" = "success" ]; then
+              echo "✅ Nightly ops gates passed."
+            else
+              echo "❌ Nightly ops gates failed."
+            fi
+            echo ""
+            echo "- Property profile: nightly"
+            echo "- Key registry audit: conditional"
+            echo "- Public audit integrity verification: conditional"
+          } >> "$GITHUB_STEP_SUMMARY"

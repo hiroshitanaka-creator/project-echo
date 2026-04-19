@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
+import datetime as dt
 import hmac
 import json
 import os
 from pathlib import Path
 from typing import Any, cast
+
+if hasattr(dt, "UTC"):
+    UTC = dt.UTC
+else:  # pragma: no cover - Python <3.11 fallback
+    UTC = dt.timezone(dt.timedelta(0))
 
 
 def parse_key_store(keys_str: str) -> dict[str, str]:
@@ -155,3 +161,83 @@ def get_secret_from_env() -> str:
     if len(secret) < 16:
         raise RuntimeError("ECHO_MARK_SECRET is too short (min 16 chars recommended)")
     return secret
+
+
+def audit_public_key_registry(
+    registry: dict[str, Any],
+    *,
+    now: dt.datetime | None = None,
+) -> dict[str, Any]:
+    """Audit registry entries for rotation/expiry/revocation operational hygiene.
+
+    This function does not change any key material. It only reports policy
+    findings so operators can run it in periodic jobs.
+    """
+    if not isinstance(registry, dict) or not isinstance(registry.get("keys"), list):
+        raise ValueError("Invalid public key registry format")
+
+    current = now or dt.datetime.now(UTC)
+    keys = [entry for entry in registry.get("keys", []) if isinstance(entry, dict)]
+
+    active_count = 0
+    revoked_count = 0
+    expired_key_ids: list[str] = []
+    duplicate_key_ids: list[str] = []
+    seen: set[str] = set()
+
+    for entry in keys:
+        key_id = str(entry.get("key_id") or "")
+        if key_id in seen:
+            duplicate_key_ids.append(key_id)
+        elif key_id:
+            seen.add(key_id)
+
+        status = str(entry.get("status", "active"))
+        if status == "active":
+            active_count += 1
+        if status == "revoked":
+            revoked_count += 1
+
+        expires_raw = entry.get("expires_at")
+        if not isinstance(expires_raw, str) or not expires_raw.strip():
+            continue
+        try:
+            expires_at = dt.datetime.fromisoformat(expires_raw.replace("Z", "+00:00"))
+        except ValueError:
+            expired_key_ids.append(key_id or "<unknown>")
+            continue
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=UTC)
+        if expires_at < current:
+            expired_key_ids.append(key_id or "<unknown>")
+
+    findings: list[str] = []
+    if active_count == 0:
+        findings.append("no_active_key")
+    if active_count > 1:
+        findings.append("multiple_active_keys")
+    if duplicate_key_ids:
+        findings.append("duplicate_key_id_entries")
+    if expired_key_ids:
+        findings.append("expired_or_invalid_expiry_entries")
+
+    return {
+        "ok": len(findings) == 0,
+        "checked_at_utc": current.isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "summary": {
+            "total_keys": len(keys),
+            "active_count": active_count,
+            "revoked_count": revoked_count,
+            "expired_count": len(expired_key_ids),
+            "duplicate_key_id_count": len(duplicate_key_ids),
+        },
+        "findings": findings,
+        "expired_key_ids": expired_key_ids,
+        "duplicate_key_ids": duplicate_key_ids,
+    }
+
+
+def audit_public_key_registry_file(registry_path: Path | str = ".keys/registry.json") -> dict[str, Any]:
+    """Load and audit a registry JSON file."""
+    registry = load_public_key_registry(registry_path=registry_path)
+    return audit_public_key_registry(registry)
