@@ -21,6 +21,11 @@ if str(src_path) not in sys.path:
 from po_core.cosmic_ethics_39.evaluator import CosmicEthics39Evaluator
 from po_core.cosmic_ethics_39.scenarios import get_scenario
 from po_core.diversity import Rec, diversify_with_mmr
+from po_cosmic.cli_support import (
+    load_verify_nonce_cache,
+    resolve_cli_path_arg,
+    save_verify_nonce_cache,
+)
 from po_echo.device_boundary import (
     DEVICE_CONFIGS,
     DeviceType,
@@ -58,40 +63,6 @@ except ImportError:
 
 _VERIFY_NONCE_CACHE_PATH = Path(".runs/echo_mark_nonce_cache.json")
 _VERIFY_NONCE_MAX_AGE_SECONDS = 300
-
-
-def _load_verify_nonce_cache(cache_path: Path, *, max_age_seconds: int) -> dict[str, datetime]:
-    """Load nonce replay cache from disk, pruning entries outside active window."""
-    if not cache_path.exists():
-        return {}
-
-    try:
-        raw = json.loads(cache_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return {}
-
-    if not isinstance(raw, dict):
-        return {}
-
-    cache: dict[str, datetime] = {}
-    for nonce, seen_at_raw in raw.items():
-        if not isinstance(nonce, str) or not isinstance(seen_at_raw, str):
-            continue
-        try:
-            seen_at = datetime.fromisoformat(seen_at_raw)
-        except ValueError:
-            continue
-        now = datetime.now(seen_at.tzinfo) if seen_at.tzinfo else datetime.now()
-        if (now - seen_at).total_seconds() <= max_age_seconds:
-            cache[nonce] = seen_at
-    return cache
-
-
-def _save_verify_nonce_cache(cache_path: Path, cache: dict[str, datetime]) -> None:
-    """Persist nonce replay cache for CLI default verification path."""
-    cache_path.parent.mkdir(parents=True, exist_ok=True)
-    serializable = {nonce: seen_at.isoformat(timespec="seconds") for nonce, seen_at in cache.items()}
-    cache_path.write_text(json.dumps(serializable, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def prompt_yes_no(msg: str) -> bool:
@@ -267,34 +238,6 @@ def save_json(result: dict, out_path: Path) -> None:
     """Save evaluation result to JSON file."""
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
-
-
-def _resolve_cli_path_arg(
-    positional: str | None,
-    optional: str | None,
-    *,
-    positional_label: str,
-    option_label: str,
-) -> str:
-    """Resolve backward-compatible path args while rejecting ambiguous duplicates."""
-    if positional and optional and positional != optional:
-        print(
-            (
-                f"Error: ambiguous {positional_label}; positional '{positional}' "
-                f"conflicts with {option_label} '{optional}'"
-            ),
-            file=sys.stderr,
-        )
-        raise SystemExit(1)
-
-    value = optional or positional
-    if not value:
-        print(
-            f"Error: {positional_label} is required via positional arg or {option_label}",
-            file=sys.stderr,
-        )
-        raise SystemExit(1)
-    return value
 
 
 def cmd_cosmic39(args: argparse.Namespace) -> None:
@@ -509,13 +452,13 @@ def cmd_badge(args: argparse.Namespace) -> None:
         positional_output = positional_input
         positional_input = None
 
-    input_path = _resolve_cli_path_arg(
+    input_path = resolve_cli_path_arg(
         positional_input,
         optional_input,
         positional_label="badge input path",
         option_label="--in",
     )
-    output_path = _resolve_cli_path_arg(
+    output_path = resolve_cli_path_arg(
         positional_output,
         optional_output,
         positional_label="badge output path",
@@ -655,7 +598,7 @@ def cmd_verify(args: argparse.Namespace) -> None:
         nonce_cache_path = Path(
             getattr(args, "nonce_cache_path", str(_VERIFY_NONCE_CACHE_PATH))
         )
-        nonce_seen_at = _load_verify_nonce_cache(
+        nonce_seen_at = load_verify_nonce_cache(
             nonce_cache_path,
             max_age_seconds=_VERIFY_NONCE_MAX_AGE_SECONDS,
         )
@@ -672,7 +615,7 @@ def cmd_verify(args: argparse.Namespace) -> None:
                 committed_at = datetime.now()
                 for nonce in newly_committed:
                     nonce_seen_at[nonce] = committed_at
-                _save_verify_nonce_cache(nonce_cache_path, nonce_seen_at)
+                save_verify_nonce_cache(nonce_cache_path, nonce_seen_at)
 
         print(f"Status: {result['status']}")
         if result.get("verification_method"):
