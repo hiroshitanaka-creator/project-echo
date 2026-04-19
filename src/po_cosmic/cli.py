@@ -44,6 +44,7 @@ from po_echo.echo_mark import (
     verify_mark,
 )
 from po_echo.execution_gate import gate_audio
+from po_echo.echo_mark_registry import summarize_public_key_registry
 from po_echo.voice_orchestration import (
     VOICE_INPUT_SCHEMA,
     VOICE_OUTPUT_SCHEMA,
@@ -932,6 +933,35 @@ def cmd_device(args: argparse.Namespace) -> None:
         raise SystemExit(3)
 
 
+def cmd_key_audit(args: argparse.Namespace) -> None:
+    """Audit key registry rotation/revocation status."""
+    try:
+        summary = summarize_public_key_registry(
+            registry_path=args.registry_path,
+            active_key_id=args.active_key_id,
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        raise SystemExit(1) from None
+
+    print("=" * 80)
+    print("[Echo Mark Key Audit]")
+    print("=" * 80)
+    print(f"Registry path     : {summary['registry_path']}")
+    print(f"Active key id     : {summary['active_key_id']}")
+    print(f"Active key status : {summary['active_key_status']}")
+    print(f"Total keys        : {summary['total_keys']}")
+    print(f"Counts            : {summary['counts']}")
+    if summary["warnings"]:
+        print(f"Warnings          : {', '.join(summary['warnings'])}")
+    else:
+        print("Warnings          : none")
+    print("=" * 80)
+
+    if summary["warnings"] and args.fail_on_warning:
+        raise SystemExit(2)
+
+
 def main() -> None:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -1033,6 +1063,28 @@ def main() -> None:
         dest="nonce_cache_path",
         default=str(_VERIFY_NONCE_CACHE_PATH),
         help="Path to nonce replay cache file (default: .runs/echo_mark_nonce_cache.json)",
+    )
+
+    key_audit = subparsers.add_parser(
+        "key-audit",
+        help="Audit Echo Mark key registry status for rotation/revocation readiness",
+    )
+    key_audit.add_argument(
+        "--registry-path",
+        dest="registry_path",
+        default=".keys/registry.json",
+        help="Path to public key registry JSON (default: .keys/registry.json)",
+    )
+    key_audit.add_argument(
+        "--active-key-id",
+        dest="active_key_id",
+        default=None,
+        help="Override active key id for audit (default: env ECHO_MARK_ACTIVE_KEY_ID)",
+    )
+    key_audit.add_argument(
+        "--fail-on-warning",
+        action="store_true",
+        help="Exit with code 2 when warnings are present",
     )
 
     # device command - multi-device responsibility boundary
@@ -1193,6 +1245,8 @@ def main() -> None:
         cmd_badge(args)
     elif args.cmd == "verify":
         cmd_verify(args)
+    elif args.cmd == "key-audit":
+        cmd_key_audit(args)
     elif args.cmd == "audio-gate":
         cmd_audio_gate(args)
     elif args.cmd == "voice":
