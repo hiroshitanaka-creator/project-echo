@@ -113,6 +113,7 @@ make demo-shopping
 Echo Markを検証する例（`ECHO_MARK_SECRET` が16文字以上である必要があります）:
 
 現在のデモバッジは `key_id="v1"` で署名されるため、`ECHO_MARK_KEYS` の `v1` マッピングが必要です（例: `export ECHO_MARK_KEYS="v1=$ECHO_MARK_SECRET"`）。
+**Security invariant**: Echo Markは署名可能な鍵素材（HMACまたはEd25519）が解決できない場合、未署名オブジェクトを返さず生成失敗になります。
 
 ```bash
 po-cosmic verify runs/high_bias_affiliate.badge.json

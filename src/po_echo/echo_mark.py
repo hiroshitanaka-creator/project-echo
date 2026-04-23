@@ -8,6 +8,7 @@ implementation is split across:
 """
 
 from po_echo.echo_mark_core import (
+    EchoMarkSigningError,
     NACL_AVAILABLE,
     badge_text,
     build_payload,
@@ -46,6 +47,7 @@ from po_echo.echo_mark_verify import (
 
 __all__ = [
     "NACL_AVAILABLE",
+    "EchoMarkSigningError",
     "VerificationChecks",
     "badge_text",
     "build_payload",

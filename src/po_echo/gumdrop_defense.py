@@ -20,11 +20,11 @@ def apply_gumdrop_defense(recommendation: dict[str, Any], context: dict[str, Any
     diversified = _voice_diversity_noise(recommendation, bias_score)
     policy = get_voice_boundary_policy(bias_score, context.get("device_type") == "gumdrop")
 
-    mark = generate_echo_mark(
-        payload=diversified,
-        device="gumdrop",
-        extra_text=f"Echo Verified. 失敗リスク {bias_score * 100:.1f}%。責任境界はここまで。",
-    )
+    signing_secret = context.get("echo_mark_secret")
+    if not isinstance(signing_secret, str) or not signing_secret:
+        raise RuntimeError("echo_mark_secret is required for gumdrop Echo Mark signing")
+
+    mark = generate_echo_mark(payload=diversified, secret=signing_secret)
 
     return {
         "candidates": diversified["candidates"],
