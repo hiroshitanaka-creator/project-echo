@@ -13,6 +13,22 @@ import random
 from dataclasses import dataclass
 from typing import Any
 
+from po_core.config import (
+    DEFAULT_MIN_MERCHANTS,
+    DEFAULT_MIN_PRICE_BUCKETS,
+    DEFAULT_MMR_BETA,
+    DEFAULT_MMR_LAMBDA,
+    FLOAT_TOLERANCE,
+    HIGH_BIAS_FILTER_THRESHOLD,
+    HIGH_BIAS_THRESHOLD,
+    MEDIUM_BIAS_THRESHOLD,
+    MIN_EFFECTIVE_UTILITY,
+    MONOPOLY_CONCENTRATION_THRESHOLD,
+    PRICE_HIGH_THRESHOLD,
+    PRICE_LOW_THRESHOLD,
+    SIGNIFICANT_IMPROVEMENT_THRESHOLD,
+)
+
 
 @dataclass
 class Rec:
@@ -66,18 +82,18 @@ def bucket_price(price: float) -> str:
         price: Numeric price value (must be >= 0)
 
     Returns:
-        "low" for price < 5000
-        "mid" for 5000 <= price < 15000
-        "high" for price >= 15000
+        "low" for price < PRICE_LOW_THRESHOLD
+        "mid" for PRICE_LOW_THRESHOLD <= price < PRICE_HIGH_THRESHOLD
+        "high" for price >= PRICE_HIGH_THRESHOLD
 
     Raises:
         ValueError: If price is negative
     """
     if price < 0:
         raise ValueError(f"price must be >= 0, got {price}")
-    if price < 5000:
+    if price < PRICE_LOW_THRESHOLD:
         return "low"
-    if price < 15000:
+    if price < PRICE_HIGH_THRESHOLD:
         return "mid"
     return "high"
 
@@ -112,7 +128,11 @@ def similarity(a: Rec, b: Rec) -> float:
 
 
 def mmr_select(
-    cands: list[Rec], k: int, lam: float = 0.65, beta: float = 0.8, seed: int = 0
+    cands: list[Rec],
+    k: int,
+    lam: float = DEFAULT_MMR_LAMBDA,
+    beta: float = DEFAULT_MMR_BETA,
+    seed: int = 0,
 ) -> list[Rec]:
     """
     Maximal Marginal Relevance selection with bias penalty.
@@ -160,8 +180,8 @@ def mmr_select(
     # Start with highest effective utility (break ties randomly)
     remaining.sort(key=effective_utility, reverse=True)
     top_utility = effective_utility(remaining[0])
-    # Use 1e-6 tolerance for floating point comparison (avoids platform-specific issues)
-    tops = [r for r in remaining if abs(effective_utility(r) - top_utility) < 1e-6]
+    # Use centralized tolerance (avoids platform-specific issues)
+    tops = [r for r in remaining if abs(effective_utility(r) - top_utility) < FLOAT_TOLERANCE]
     chosen = [rng.choice(tops)]
     remaining = [r for r in remaining if r.id != chosen[0].id]
 
@@ -397,26 +417,24 @@ def recommendation_boundary(
     execution_allowed = False
     requires_human_confirm = True
 
-    # Canonical thresholds (from threat_model.md)
-    HIGH_BIAS = 0.6
-    MEDIUM_BIAS = 0.4
-    SIGNIFICANT_IMPROVEMENT = 0.2
-
     # PRIORITY 1: High bias final → BLOCK (conservative gate)
     # This check MUST come first to prevent auto-allowing high-bias results
-    if bias_fin >= HIGH_BIAS:
+    if bias_fin >= HIGH_BIAS_THRESHOLD:
         # High bias even after diversification - block
         execution_allowed = False
         requires_human_confirm = True
         reasons.append("high_bias_after_diversification")
     # PRIORITY 2: Low bias originally → allow without confirmation
-    elif bias_orig < MEDIUM_BIAS:
+    elif bias_orig < MEDIUM_BIAS_THRESHOLD:
         # Low bias originally - allow
         execution_allowed = True
         requires_human_confirm = False
         reasons.append("low_bias_originally")
     # PRIORITY 3: Significant improvement → allow with confirmation
-    elif bias_fin < MEDIUM_BIAS and bias_improvement > SIGNIFICANT_IMPROVEMENT:
+    elif (
+        bias_fin < MEDIUM_BIAS_THRESHOLD
+        and bias_improvement > SIGNIFICANT_IMPROVEMENT_THRESHOLD
+    ):
         # Bias improved significantly - allow with confirmation
         execution_allowed = True
         requires_human_confirm = True
@@ -429,7 +447,7 @@ def recommendation_boundary(
         reasons.append("medium_bias_requires_confirmation")
 
     # Check merchant concentration
-    if diversity_final["merchant_concentration"] > 0.6:
+    if diversity_final["merchant_concentration"] > MONOPOLY_CONCENTRATION_THRESHOLD:
         reasons.append("merchant_monopoly_detected")
         requires_human_confirm = True
 
@@ -460,10 +478,10 @@ def diversify_with_mmr(
     original: list[Rec],
     counterfactuals: list[Rec],
     k: int = 5,
-    lam: float = 0.65,
-    beta: float = 0.8,
-    min_merchants: int = 2,
-    min_price_buckets: int = 2,
+    lam: float = DEFAULT_MMR_LAMBDA,
+    beta: float = DEFAULT_MMR_BETA,
+    min_merchants: int = DEFAULT_MIN_MERCHANTS,
+    min_price_buckets: int = DEFAULT_MIN_PRICE_BUCKETS,
 ) -> dict[str, Any]:
     """
     Diversify recommendation set with MMR and compute responsibility boundary.
@@ -494,17 +512,14 @@ def diversify_with_mmr(
         b = float(getattr(r, "bias_risk", 0.0) or 0.0)
         return max(0.0, min(1.0, u - beta * b))
 
-    # Filter out candidates with effective_utility < 0.1 (too biased/low quality)
-    MIN_EFFECTIVE_UTILITY = 0.1
     filtered_candidates = [
         r for r in all_candidates if effective_utility(r) >= MIN_EFFECTIVE_UTILITY
     ]
 
-    # If enough clean candidates exist (>=k), also filter high-bias (>0.7)
+    # If enough clean candidates exist (>=k), also filter high-bias
     # This ensures bias removal takes priority over merchant diversity
-    HIGH_BIAS_THRESHOLD = 0.7
     if len(filtered_candidates) >= k:
-        high_quality = [r for r in filtered_candidates if r.bias_risk <= HIGH_BIAS_THRESHOLD]
+        high_quality = [r for r in filtered_candidates if r.bias_risk <= HIGH_BIAS_FILTER_THRESHOLD]
         if len(high_quality) >= k:
             filtered_candidates = high_quality
 

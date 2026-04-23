@@ -102,22 +102,19 @@ po-cosmic voice \
 ---
 
 
-## 3.5 Development environment setup policy (canonical path)
+## 3.5 Development environment setup policy (single source of truth)
 
-Use the following two paths depending on purpose:
+Development dependency versions are defined in exactly one place:
+`pyproject.toml` (`[project.optional-dependencies].dev`).
 
-1. **Canonical (CI / reproducible local checks):**
-   ```bash
-   pip install -r requirements-dev.txt
-   ```
-2. **Alternative (editable install for local app/package work):**
-   ```bash
-   pip install -e .[dev]
-   ```
+Install command (CI and local):
 
-When the same tool dependency is defined in multiple places, **`requirements-dev.txt` takes precedence** for CI and release-gate checks.
+```bash
+pip install -e .[dev]
+```
 
-Current pytest policy is **minimum-version alignment** (`>=9.0.3`) in both `[dependency-groups].dev` and `requirements-dev.txt`.
+`requirements-dev.txt` is retained only as a compatibility shim and delegates to
+`-e .[dev]`; it must not carry independent version constraints.
 
 ## 4. Webhook Setup
 
