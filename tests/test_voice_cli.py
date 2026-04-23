@@ -40,6 +40,7 @@ def _env_with_signing_keys() -> dict[str, str]:
         "1f1e1d1c1b1a19181716151413121110"
         "0f0e0d0c0b0a09080706050403020100"
     )
+    env["PO_ECHO_ALLOW_TEST_DEVICE_SECRET"] = "1"
     return env
 
 
@@ -83,6 +84,10 @@ def test_voice_cli_fails_when_signing_key_missing(tmp_path: Path) -> None:
             str(audit),
             "--out",
             str(out),
+            "--device-id",
+            "device-1",
+            "--device-secret",
+            "11" * 32,
         ],
         cwd=ROOT,
         text=True,
@@ -114,6 +119,10 @@ def test_voice_cli_fails_on_dangerous_or_unconfirmed_action(tmp_path: Path) -> N
             "--out",
             str(out),
             "--require-execution-allowed",
+            "--device-id",
+            "device-1",
+            "--device-secret",
+            "11" * 32,
         ],
         cwd=ROOT,
         text=True,
@@ -178,6 +187,10 @@ def test_voice_cli_succeeds_for_safe_search_flow(tmp_path: Path) -> None:
             "--out",
             str(out),
             "--simulate-ok",
+            "--device-id",
+            "device-1",
+            "--device-secret",
+            "11" * 32,
         ],
         cwd=ROOT,
         text=True,

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -39,6 +40,12 @@ from po_echo.echo_mark import (
     verify_mark,
 )
 from po_echo.execution_gate import gate_audio
+from po_echo.ear_handshake import (
+    EarHandshakeService,
+    InMemoryChallengeStore,
+    InMemoryDeviceRegistry,
+    build_device_response,
+)
 from po_echo.voice_orchestration import (
     VOICE_INPUT_SCHEMA,
     VOICE_OUTPUT_SCHEMA,
@@ -810,20 +817,55 @@ def cmd_voice(args: argparse.Namespace) -> None:
         print(f"Error: {e}", file=sys.stderr)
         raise SystemExit(1) from None
 
+    if not args.device_id:
+        print("Error: --device-id is required", file=sys.stderr)
+        raise SystemExit(1)
+    if not args.device_secret:
+        print("Error: --device-secret is required", file=sys.stderr)
+        raise SystemExit(1)
+    if os.getenv("PO_ECHO_ALLOW_TEST_DEVICE_SECRET") != "1":
+        print(
+            "Error: test device secret path disabled (set PO_ECHO_ALLOW_TEST_DEVICE_SECRET=1)",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+
+    try:
+        device_secret = bytes.fromhex(args.device_secret)
+    except ValueError:
+        print("Error: --device-secret must be valid hex", file=sys.stderr)
+        raise SystemExit(1) from None
+
+    registry = InMemoryDeviceRegistry()
+    try:
+        registry.register_device(device_id=args.device_id, key_id="v1", device_secret=device_secret)
+    except (TypeError, ValueError) as e:
+        print(f"Error: invalid test device secret: {e}", file=sys.stderr)
+        raise SystemExit(1) from None
+    handshake = EarHandshakeService(
+        device_registry=registry,
+        challenge_store=InMemoryChallengeStore(),
+    )
+    challenge = handshake.issue_challenge(device_id=args.device_id)
+    response_hex = build_device_response(device_secret=device_secret, challenge=challenge)
+
     payload = VoiceFlowInput(
         intent=args.intent,
         transcript=args.transcript,
         metadata=meta,
+        device_id=args.device_id,
+        challenge_id=str(challenge["challenge_id"]),
+        response_hex=response_hex,
         simulate_ok=args.simulate_ok,
         run_id=args.run_id,
         key_id=args.key_id,
-        device_secret_hex=args.device_secret,
     )
 
     try:
         result = run_voice_flow(
             audit=audit,
             payload=payload,
+            handshake=handshake,
             hmac_secret=secret,
             ed25519_private_key=private_key,
             require_execution_allowed=args.require_execution_allowed,
@@ -1225,7 +1267,12 @@ def main() -> None:
     voice.add_argument(
         "--device-secret",
         default=None,
-        help="Optional deterministic 64-hex device secret for test replayability",
+        help="TEST-ONLY: paired 64-hex device secret (requires PO_ECHO_ALLOW_TEST_DEVICE_SECRET=1)",
+    )
+    voice.add_argument(
+        "--device-id",
+        default=None,
+        help="Trusted paired device_id",
     )
     voice.add_argument(
         "--require-execution-allowed",

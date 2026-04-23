@@ -195,14 +195,17 @@ python assets/flying_pig_anim.py
 `src/po_echo` の Voice Boundary / Ear Handshake / RTH を薄いオーケストレーション層で束ね、CLIから**候補セット＋証拠＋責任境界**を返します。
 
 固定JSON schema:
-- Input: `{"intent": string, "transcript": string, "metadata": object}`
+- Input: `{"intent": string, "transcript": string, "metadata": object, "device_id": string, "challenge_id": string, "response_hex": string}`
 - Output: `{"candidate_set": array, "evidence": array, "responsibility_boundary": object, "voice_text": string, "echo_mark": object}`
 
 ```bash
 export ECHO_MARK_SECRET="demo-secret-1234567890"
 export ECHO_MARK_PRIVATE_KEY="1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100"
+export PO_ECHO_ALLOW_TEST_DEVICE_SECRET=1
 
 po-cosmic voice   --intent booking   --transcript "土曜夜、2名、予算1万円で予約候補"   --meta '{"amount": 10000}'   --simulate-ok   --in runs/high_bias_affiliate.audit.json   --out runs/voice_demo.json
+  --device-id device-1
+  --device-secret 1111111111111111111111111111111111111111111111111111111111111111
 
 # 固定schemaの確認
 po-cosmic voice --show-schema --intent search --transcript "候補" --in runs/high_bias_affiliate.audit.json --out /tmp/unused.json

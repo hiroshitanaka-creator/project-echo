@@ -35,6 +35,12 @@ pytestmark = pytest.mark.skipif(
     reason="PyNaCl not installed; voice integration tests require Ed25519 support",
 )
 
+from po_echo.ear_handshake import (  # noqa: E402
+    EarHandshakeService,
+    InMemoryChallengeStore,
+    InMemoryDeviceRegistry,
+    build_device_response,
+)
 from po_echo.execution_gate import gate_audio  # noqa: E402
 from po_echo.voice_orchestration import VoiceFlowError, VoiceFlowInput, run_voice_flow  # noqa: E402
 
@@ -84,6 +90,9 @@ def _make_payload(**kwargs: object) -> VoiceFlowInput:
         "intent": "search",
         "transcript": "候補を比較したい",
         "metadata": {},
+        "device_id": "device-1",
+        "challenge_id": "placeholder",
+        "response_hex": "placeholder",
         "simulate_ok": True,
     }
     defaults.update(kwargs)
@@ -95,13 +104,40 @@ def _run(**kwargs: object) -> dict:
     payload_kwargs = {k: v for k, v in kwargs.items() if k in VoiceFlowInput.__dataclass_fields__}
     run_kwargs = {k: v for k, v in kwargs.items() if k not in VoiceFlowInput.__dataclass_fields__}
     payload = _make_payload(**payload_kwargs)
+    device_secret = bytes.fromhex("11" * 32)
+    registry = InMemoryDeviceRegistry()
+    registry.register_device(device_id="device-1", key_id="v1", device_secret=device_secret)
+    handshake = EarHandshakeService(device_registry=registry, challenge_store=InMemoryChallengeStore())
+    challenge = handshake.issue_challenge(device_id="device-1")
+    payload = VoiceFlowInput(
+        **{**payload.__dict__, "device_id": "device-1", "challenge_id": str(challenge["challenge_id"]), "response_hex": build_device_response(device_secret=device_secret, challenge=challenge)}
+    )
     return run_voice_flow(
         audit=audit,  # type: ignore[arg-type]
         payload=payload,
+        handshake=handshake,
         hmac_secret=_HMAC_SECRET,
         ed25519_private_key=_ED25519_KEY,
         **run_kwargs,  # type: ignore[arg-type]
     )
+
+
+def _auth_context(**payload_kwargs: object) -> tuple[VoiceFlowInput, EarHandshakeService]:
+    payload = _make_payload(**payload_kwargs)
+    device_secret = bytes.fromhex("11" * 32)
+    registry = InMemoryDeviceRegistry()
+    registry.register_device(device_id="device-1", key_id="v1", device_secret=device_secret)
+    handshake = EarHandshakeService(device_registry=registry, challenge_store=InMemoryChallengeStore())
+    challenge = handshake.issue_challenge(device_id="device-1")
+    authed_payload = VoiceFlowInput(
+        **{
+            **payload.__dict__,
+            "device_id": "device-1",
+            "challenge_id": str(challenge["challenge_id"]),
+            "response_hex": build_device_response(device_secret=device_secret, challenge=challenge),
+        }
+    )
+    return authed_payload, handshake
 
 
 # ---------------------------------------------------------------------------
@@ -207,7 +243,7 @@ def test_high_risk_payment_blocks_execution_without_simulate_ok() -> None:
 
 def test_require_execution_allowed_raises_on_blocked() -> None:
     """require_execution_allowed=True must raise VoiceFlowError on high-risk intent."""
-    payload = _make_payload(
+    payload, handshake = _auth_context(
         intent="payment",
         transcript="5万円で支払って",
         metadata={"amount": 50000},
@@ -217,25 +253,22 @@ def test_require_execution_allowed_raises_on_blocked() -> None:
         run_voice_flow(
             audit=_AUDIT_BASE,
             payload=payload,
+            handshake=handshake,
             hmac_secret=_HMAC_SECRET,
             ed25519_private_key=_ED25519_KEY,
             require_execution_allowed=True,
         )
 
 
-def test_invalid_device_secret_hex_length_fails_cleanly() -> None:
-    """Ear-handshake must fail closed for invalid device secret length."""
-    payload = _make_payload(
-        intent="search",
-        transcript="候補を見せて",
-        metadata={},
-        simulate_ok=True,
-        device_secret_hex="ab" * 31,
-    )
-    with pytest.raises(VoiceFlowError, match="invalid device secret"):
+def test_malformed_handshake_response_fails_closed() -> None:
+    """Ear-handshake must fail closed for malformed response payload."""
+    payload, handshake = _auth_context(intent="search", transcript="候補を見せて", metadata={}, simulate_ok=True)
+    payload = VoiceFlowInput(**{**payload.__dict__, "response_hex": "not-hex"})
+    with pytest.raises(VoiceFlowError, match="ear handshake verification failed"):
         run_voice_flow(
             audit=_AUDIT_BASE,
             payload=payload,
+            handshake=handshake,
             hmac_secret=_HMAC_SECRET,
             ed25519_private_key=_ED25519_KEY,
         )
@@ -299,13 +332,12 @@ def test_blocked_upstream_boundary_stays_blocked_in_voice_flow() -> None:
             "price_buckets_final": 1,
         },
     }
-    payload = _make_payload(
-        intent="search", transcript="候補を探して", metadata={}, simulate_ok=True
-    )
+    payload, handshake = _auth_context(intent="search", transcript="候補を探して", metadata={}, simulate_ok=True)
 
     result = run_voice_flow(
         audit=blocked_audit,
         payload=payload,
+        handshake=handshake,
         hmac_secret=_HMAC_SECRET,
         ed25519_private_key=_ED25519_KEY,
     )
@@ -370,12 +402,11 @@ def test_voice_path_echo_mark_payload_keeps_nonzero_upstream_signals() -> None:
             "price_buckets_final": 3,
         },
     }
-    payload = _make_payload(
-        intent="search", transcript="候補を見せて", metadata={}, simulate_ok=True
-    )
+    payload, handshake = _auth_context(intent="search", transcript="候補を見せて", metadata={}, simulate_ok=True)
     result = run_voice_flow(
         audit=audit,
         payload=payload,
+        handshake=handshake,
         hmac_secret=_HMAC_SECRET,
         ed25519_private_key=_ED25519_KEY,
     )
