@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from po_echo.security_fingerprints import fingerprint_session_key
+
 from po_echo.ear_handshake import (
     EarHandshakeAuthenticator,
     InMemoryChallengeStore,
@@ -203,7 +205,7 @@ def run_voice_flow(
             "device_id": payload.device_id,
             "key_id": challenge.get("key_id"),
             "challenge_ts": challenge.get("ts"),
-            "session_key_prefix": session_key[:16],
+            "session_key_fingerprint": fingerprint_session_key(session_key),
             "session_id": effective_session_id,
         },
         {
