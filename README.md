@@ -160,6 +160,16 @@ Enter a **voice intent** and **transcript** in the browser UI. The demo:
 3. Shows the dual-signed Echo Mark badge (Ed25519 + HMAC-SHA256)
 4. Animates the Flying Pig mascot based on the bias verdict
 
+## 🌐 Node Gateway (`server.js`)
+
+`server.js` は固定成功レスポンスではなく、実装済み能力を明示する薄いゲートウェイです。
+
+- `GET /health`: ヘルスチェック
+- `GET /api/voice/schema`: canonical Python (`po_echo.voice_orchestration`) の schema/inventory を返却
+- `POST /api/voice/run`: 永続 trust/session 基盤未接続のため、構造化 `501 not_implemented` を返却
+
+Node 側で責任境界判定・署名検証ロジックは重複実装せず、Python を唯一の判定源として保持します。
+
 ---
 
 ## 🏅 Echo Mark SVG Badge (`make generate-badge`)
@@ -201,12 +211,15 @@ python assets/flying_pig_anim.py
 ```bash
 export ECHO_MARK_SECRET="demo-secret-1234567890"
 export ECHO_MARK_PRIVATE_KEY="1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100"
+export ECHO_TRUSTED_DEVICE_SECRETS="default=abababababababababababababababababababababababababababababababab"
 
-po-cosmic voice   --intent booking   --transcript "土曜夜、2名、予算1万円で予約候補"   --meta '{"amount": 10000}'   --simulate-ok   --in runs/high_bias_affiliate.audit.json   --out runs/voice_demo.json
+po-cosmic voice   --intent booking   --transcript "土曜夜、2名、予算1万円で予約候補"   --meta '{"amount": 10000}'   --simulate-ok   --device-secret "abababababababababababababababababababababababababababababababab"   --in runs/high_bias_affiliate.audit.json   --out runs/voice_demo.json
 
 # 固定schemaの確認
 po-cosmic voice --show-schema --intent search --transcript "候補" --in runs/high_bias_affiliate.audit.json --out /tmp/unused.json
 ```
+
+> Ear Handshake は登録済み device_id との照合を必須化しています。`--device-secret` 単体では認証に使えず、`ECHO_TRUSTED_DEVICE_SECRETS` 側の登録と一致した場合のみ通過します。
 
 ## 📱 マルチデバイス対応（`device_boundary.py`）
 
