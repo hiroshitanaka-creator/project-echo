@@ -37,8 +37,11 @@ pytestmark = pytest.mark.skipif(
 
 from po_echo.ear_handshake import (  # noqa: E402
     EarHandshakeAuthenticator,
+    EarHandshakeService,
     InMemoryChallengeStore,
+    InMemoryDeviceRegistry,
     InMemoryDeviceTrustStore,
+    build_device_response,
     sign_challenge_response,
 )
 from po_echo.execution_gate import (  # noqa: E402
@@ -94,7 +97,6 @@ def _make_payload(**kwargs: object) -> VoiceFlowInput:
         "intent": "search",
         "transcript": "候補を比較したい",
         "metadata": {},
-        "device_id": "device-1",
         "challenge_id": "placeholder",
         "response_hex": "placeholder",
         "simulate_ok": True,
@@ -113,9 +115,7 @@ def _run(**kwargs: object) -> dict:
     run_kwargs = {k: v for k, v in kwargs.items() if k not in VoiceFlowInput.__dataclass_fields__}
     payload = _make_payload(**payload_kwargs)
 
-    device_secret = bytes.fromhex(
-        payload.device_secret_hex or "11" * 32
-    )
+    device_secret = bytes.fromhex("11" * 32)
     trust_store.register_device(device_id=payload.device_id, device_secret=device_secret, key_id="v1")
     auth = EarHandshakeAuthenticator(trust_store=trust_store, challenge_store=challenge_store)
     challenge = auth.issue_challenge(device_id=payload.device_id)
@@ -124,15 +124,15 @@ def _run(**kwargs: object) -> dict:
         intent=payload.intent,
         transcript=payload.transcript,
         metadata=payload.metadata,
+        device_id=payload.device_id,
+        challenge_id=str(challenge["challenge_id"]),
+        response_hex=response_sig,
         simulate_ok=payload.simulate_ok,
         run_id=payload.run_id,
         key_id=payload.key_id,
-        device_id=payload.device_id,
-        challenge=challenge,
-        challenge_response_sig_hex=response_sig,
         session_id=payload.session_id,
-        device_secret_hex=payload.device_secret_hex,
     )
+    handshake = EarHandshakeService(device_registry=trust_store, challenge_store=challenge_store)
     return run_voice_flow(
         audit=audit,  # type: ignore[arg-type]
         payload=payload,
@@ -287,19 +287,8 @@ def test_require_execution_allowed_raises_on_blocked() -> None:
 def test_unknown_device_is_rejected() -> None:
     trust_store = InMemoryDeviceTrustStore()
     challenge_store = InMemoryChallengeStore()
-    fake_challenge = {
-        "challenge_id": "deadbeef",
-        "device_id": "unknown",
-        "nonce": "00" * 16,
-        "ts": 1,
-        "expires_at": 2,
-        "key_id": "v1",
-    }
-    payload = _make_payload(
-        device_id="unknown",
-        challenge=fake_challenge,
-        challenge_response_sig_hex="00" * 32,
-    )
+    payload = _make_payload(device_id="unknown", challenge_id="deadbeef", response_hex="00" * 32)
+    handshake = EarHandshakeService(device_registry=trust_store, challenge_store=challenge_store)
     with pytest.raises(VoiceFlowError, match="ear handshake verification failed"):
         run_voice_flow(
             audit=_AUDIT_BASE,

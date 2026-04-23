@@ -46,6 +46,13 @@ python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
 pythonpath = ["src", "."]
+markers = [
+  "smoke: CI smoke gate tests",
+  "invariants: CI invariants gate tests",
+  "prop_core: CI property-based core gate tests",
+  "kpi_quick: CI quick KPI/voice/device gate tests",
+  "heavy: benchmark/heavy tests excluded from PR required gates",
+]
 
 [tool.mypy]
 python_version = "3.11"

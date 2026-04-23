@@ -22,6 +22,8 @@ SIGNIFICANT_IMPROVEMENT_THRESHOLD: float = 0.2
 
 # Bias risk above which recommendations are filtered out
 HIGH_BIAS_FILTER_THRESHOLD: float = 0.7
+# Fallback lower bound for bias-risk pre-filter when candidate pool is too small
+MIN_BIAS_FILTER_THRESHOLD: float = 0.0
 
 
 # =============================================================================
