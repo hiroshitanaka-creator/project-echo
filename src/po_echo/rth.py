@@ -122,6 +122,7 @@ class RTHState:
     t_ms: int = 0  # Current window timestamp
     last_text: str = ""  # Last window text (for debugging, not persisted)
     robust_hash_hex: str = "0" * 16  # 64-bit LSH for noise-tolerant comparisons
+    update_count: int = 0  # Monotonic per-session window update counter
     seen_chain_hash_to_feat_fp: dict[str, dict[str, int | str]] | None = None
 
     def __repr__(self) -> str:
@@ -134,9 +135,21 @@ class RTHState:
             f"t_ms={self.t_ms}, "
             f"hash_prefix='{self.h_prev.hex()[:12]}', "
             f"robust_hash_hex='{self.robust_hash_hex}', "
+            f"update_count={self.update_count}, "
             f"seen_chain_hash_count={seen_count}"
             ")"
         )
+
+
+@dataclass(frozen=True)
+class RTHUpdateAssessment:
+    """Result of applying a new transcript window to a maintained RTH state."""
+
+    replay_detected: bool
+    tamper_detected: bool
+    discontinuity_detected: bool
+    state_continuity: str
+    update_count: int
 
 
 @dataclass(frozen=True)
@@ -313,8 +326,49 @@ class RollingTranscriptHash:
         f = _feat(text_window)
         self.state.h_prev = hashlib.sha256(self.state.h_prev + f).digest()
         self.state.robust_hash_hex = _simhash64(normalize_words(text_window))
+        self.state.update_count += 1
         feat_fp = hashlib.sha256(f).hexdigest()
         self._track_chain_hash_collision(chain_hash_hex=self.state.h_prev.hex(), feat_fp=feat_fp)
+
+    def apply_window(
+        self,
+        text_window: str,
+        *,
+        discontinuity_gap_ms: int = 60_000,
+    ) -> RTHUpdateAssessment:
+        """
+        Apply a transcript window and evaluate replay/tamper/discontinuity.
+
+        Detection is derived from maintained RTH state, not caller metadata:
+        - replay_detected: consecutive duplicate robust fingerprint
+        - discontinuity_detected: window gap exceeds configured threshold
+        - tamper_detected: non-monotonic time transition (clock/state regression)
+        """
+        prev_t_ms = self.state.t_ms
+        prev_robust = self.state.robust_hash_hex
+        previous_updates = self.state.update_count
+
+        self.update_text(text_window)
+
+        current_robust = self.state.robust_hash_hex
+        replay_detected = (
+            previous_updates > 0
+            and prev_robust == current_robust
+            and current_robust != "0" * 16
+        )
+
+        gap_ms = self.state.t_ms - prev_t_ms
+        discontinuity_detected = previous_updates > 0 and gap_ms > discontinuity_gap_ms
+        tamper_detected = previous_updates > 0 and gap_ms < 0
+
+        state_continuity = "new_session" if previous_updates == 0 else "continued_session"
+        return RTHUpdateAssessment(
+            replay_detected=replay_detected,
+            tamper_detected=tamper_detected,
+            discontinuity_detected=discontinuity_detected,
+            state_continuity=state_continuity,
+            update_count=self.state.update_count,
+        )
 
     def snapshot(self) -> dict:
         """
@@ -337,6 +391,7 @@ class RollingTranscriptHash:
             "t_ms": self.state.t_ms,
             "hash_hex": self.state.h_prev.hex(),
             "robust_hash_hex": self.state.robust_hash_hex,
+            "update_count": self.state.update_count,
         }
 
     def to_dict(self) -> dict:
@@ -362,6 +417,7 @@ class RollingTranscriptHash:
         rth.state.t_ms = int(state_dict.get("t_ms", rth.state.t_ms))
         rth.state.last_text = str(state_dict.get("last_text", ""))
         rth.state.robust_hash_hex = str(state_dict.get("robust_hash_hex", "0" * 16))
+        rth.state.update_count = int(state_dict.get("update_count", 0))
         seen = state_dict.get("seen_chain_hash_to_feat_fp")
         if isinstance(seen, dict):
             rth.state.seen_chain_hash_to_feat_fp = seen

@@ -35,12 +35,16 @@ pytestmark = pytest.mark.skipif(
     reason="PyNaCl not installed; voice integration tests require Ed25519 support",
 )
 
-from po_echo.execution_gate import InMemorySessionStore, gate_audio  # noqa: E402
 from po_echo.ear_handshake import (  # noqa: E402
     EarHandshakeAuthenticator,
     InMemoryChallengeStore,
     InMemoryDeviceTrustStore,
     sign_challenge_response,
+)
+from po_echo.execution_gate import (  # noqa: E402
+    InMemorySessionStore,
+    VoiceSessionContext,
+    gate_audio,
 )
 from po_echo.voice_orchestration import VoiceFlowError, VoiceFlowInput, run_voice_flow  # noqa: E402
 
@@ -297,25 +301,14 @@ def test_booking_with_simulate_ok_allows_execution() -> None:
     assert rb.get("execution_allowed") is True
 
 
-@pytest.mark.parametrize(
-    ("bias_final", "meta"),
-    [
-        (0.72, {}),
-        (0.21, {"replay_detected": True}),
-        (0.21, {"tamper_detected": True}),
-    ],
-)
-def test_live_voice_path_enforces_screenless_block_conditions(
-    bias_final: float,
-    meta: dict[str, object],
-) -> None:
-    """Live voice flow must block high-bias/replay/tamper even with simulate_ok=True."""
+def test_live_voice_path_enforces_high_bias_block_condition() -> None:
+    """Live voice flow must block high-bias even with simulate_ok=True."""
     audit = deepcopy(_AUDIT_BASE)
-    audit["commercial_bias_final"] = {"overall_bias_score": bias_final}
+    audit["commercial_bias_final"] = {"overall_bias_score": 0.72}
     result = _run(
         intent="search",
         transcript="候補を比較したい",
-        metadata=meta,
+        metadata={},
         simulate_ok=True,
         audit=audit,
     )
@@ -550,8 +543,87 @@ def test_duplicate_transcript_in_same_session_is_detected() -> None:
     assert "session_transcript_replay_detected" in rb["reasons"]
 
 
+def test_duplicate_transcript_across_sessions_not_detected() -> None:
+    session_store = InMemorySessionStore()
+    _run(transcript="同じ入力", metadata={}, session_id="dup-a", session_store=session_store)
+    second = _run(transcript="同じ入力", metadata={}, session_id="dup-b", session_store=session_store)
+    rb = second["responsibility_boundary"]
+    assert "session_transcript_replay_detected" not in rb["reasons"]
+
+
+def test_caller_meta_cannot_force_replay_or_tamper_main_decision() -> None:
+    """Main replay/tamper decision must come from maintained RTH state."""
+    session_store = InMemorySessionStore()
+    result = _run(
+        transcript="初回入力",
+        metadata={"replay_detected": True, "tamper_detected": True},
+        session_id="meta-spoof",
+        session_store=session_store,
+        simulate_ok=True,
+    )
+    rb = result["responsibility_boundary"]
+    assert rb["execution_allowed"] is True
+    assert "screenless_guard" not in rb["reasons"]
+
+
+def test_discontinuity_is_reflected_in_boundary_and_snapshot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session_store = InMemorySessionStore()
+    with monkeypatch.context() as m:
+        m.setattr("po_echo.rth.time.time", lambda: 1000.0)
+        _run(
+            transcript="最初の入力",
+            metadata={},
+            session_id="gap-session",
+            session_store=session_store,
+            simulate_ok=True,
+        )
+    with monkeypatch.context() as m:
+        m.setattr("po_echo.rth.time.time", lambda: 1200.0)
+        second = _run(
+            transcript="次の入力",
+            metadata={},
+            session_id="gap-session",
+            session_store=session_store,
+            simulate_ok=True,
+        )
+    rb = second["responsibility_boundary"]
+    snap = rb["rth_snapshot"]
+    assert rb["execution_allowed"] is False
+    assert "session_state_discontinuity_detected" in rb["reasons"]
+    assert snap["discontinuity_detected"] is True
+
+
 def test_rth_evidence_exposes_snapshot_only_not_raw_text() -> None:
     result = _run(transcript="機密の文言", metadata={}, session_id="safe-ev")
     snapshot = result["responsibility_boundary"]["rth_snapshot"]
     assert "hash_hex" in snapshot
     assert "last_text" not in snapshot
+    assert "seen_chain_hash_to_feat_fp" not in snapshot
+
+
+def test_explicit_new_session_context_resets_rth_state() -> None:
+    session_store = InMemorySessionStore()
+    first = gate_audio(
+        audit=deepcopy(_AUDIT_BASE),
+        intent="search",
+        meta={},
+        transcript_tail="同じ入力",
+        simulate_user_ok=True,
+        session_context=VoiceSessionContext(session_id="ctx-1"),
+        session_store=session_store,
+    )
+    reset = gate_audio(
+        audit=deepcopy(_AUDIT_BASE),
+        intent="search",
+        meta={},
+        transcript_tail="同じ入力",
+        simulate_user_ok=True,
+        session_context=VoiceSessionContext(session_id="ctx-1", start_new_session=True),
+        session_store=session_store,
+    )
+    assert (
+        first["responsibility_boundary"]["rth_snapshot"]["hash_hex"]
+        == reset["responsibility_boundary"]["rth_snapshot"]["hash_hex"]
+    )

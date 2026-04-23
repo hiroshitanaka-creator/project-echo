@@ -204,6 +204,10 @@ python assets/flying_pig_anim.py
 
 `src/po_echo` の Voice Boundary / Ear Handshake / RTH を薄いオーケストレーション層で束ね、CLIから**候補セット＋証拠＋責任境界**を返します。
 
+- RTH は `session_id` に紐づく **session-scoped state** として維持されます（requestごとに再初期化しません）。
+- replay / tamper / discontinuity は caller の `metadata` ではなく、maintained RTH state から判定されます。
+- 外部に返すのは `rth_snapshot` の安全要約（hash / counter / continuity）で、生の transcript や内部 tracker は露出しません。
+
 固定JSON schema:
 - Input: `{"intent": string, "transcript": string, "metadata": object}`
 - Output: `{"candidate_set": array, "evidence": array, "responsibility_boundary": object, "voice_text": string, "echo_mark": object}`

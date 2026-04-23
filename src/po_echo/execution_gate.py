@@ -15,7 +15,7 @@ Integrates with:
 
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from typing import Any
 
 from po_echo.rth import RollingTranscriptHash
@@ -44,6 +44,17 @@ class InMemorySessionStore(SessionStore):
     def set(self, *, session_id: str, state: dict[str, Any]) -> None:
         self._sessions[session_id] = state
 
+    def delete(self, *, session_id: str) -> None:
+        self._sessions.pop(session_id, None)
+
+
+@dataclass(frozen=True)
+class VoiceSessionContext:
+    """Trusted session context for audio-gate state continuity."""
+
+    session_id: str
+    start_new_session: bool = False
+
 
 def gate_audio(
     audit: dict,
@@ -53,6 +64,7 @@ def gate_audio(
     simulate_user_ok: bool = False,
     session_id: str | None = None,
     session_store: SessionStore | None = None,
+    session_context: VoiceSessionContext | None = None,
 ) -> dict:
     """
     Apply execution gate for audio channel (voice-initiated actions).
@@ -86,23 +98,21 @@ def gate_audio(
         )
         badge = make_echo_mark(audit_with_gate, secret=..., key_id="v1")
     """
-    # Update Rolling Transcript Hash with continuity when a trusted session is provided.
+    # Trusted continuity is session-scoped: explicit context takes precedence.
+    effective_session_id = session_context.session_id if session_context else session_id
+    reset_session = bool(session_context and session_context.start_new_session)
+
     persisted_state = None
-    seen_transcript_fps: set[str] = set()
-    if session_id and session_store:
-        persisted = session_store.get(session_id=session_id) or {}
+    if effective_session_id and session_store and not reset_session:
+        persisted = session_store.get(session_id=effective_session_id) or {}
         persisted_state = persisted.get("rth")
-        seen_transcript_fps = set(persisted.get("seen_transcript_fps", []))
 
     rth = (
         RollingTranscriptHash.from_dict(persisted_state)
         if isinstance(persisted_state, dict)
         else RollingTranscriptHash()
     )
-    rth.update_text(transcript_tail)
-    transcript_fp = rth.snapshot().get("robust_hash_hex", "")
-    replay_detected_internal = transcript_fp in seen_transcript_fps and transcript_fp != "0" * 16
-    seen_transcript_fps.add(transcript_fp)
+    rth_assessment = rth.apply_window(transcript_tail)
 
     # Determine voice-specific boundary
     decision = decide(intent=intent, meta=meta or {})
@@ -112,8 +122,8 @@ def gate_audio(
         bias_score=(audit.get("commercial_bias_final") or {}).get("overall_bias_score", 0.0),
         battery_level=safe_meta.get("battery_level", 1.0),
         bluetooth_connected=bool(safe_meta.get("bluetooth_connected", True)),
-        replay_detected=bool(safe_meta.get("replay_detected", False) or replay_detected_internal),
-        tamper_detected=bool(safe_meta.get("tamper_detected", False)),
+        replay_detected=rth_assessment.replay_detected,
+        tamper_detected=rth_assessment.tamper_detected,
     )
 
     if not screenless_safety.get("execution_allowed", True):
@@ -125,13 +135,29 @@ def gate_audio(
             reasons=[*decision.reasons, *screenless_safety.get("reasons", [])],
         )
 
-    if replay_detected_internal:
+    if rth_assessment.replay_detected:
         decision = replace(
             decision,
             execution_allowed=False,
             requires_human_confirm=True,
             required_action="app_confirm",
             reasons=[*decision.reasons, "session_transcript_replay_detected"],
+        )
+    if rth_assessment.discontinuity_detected:
+        decision = replace(
+            decision,
+            execution_allowed=False,
+            requires_human_confirm=True,
+            required_action="app_confirm",
+            reasons=[*decision.reasons, "session_state_discontinuity_detected"],
+        )
+    if rth_assessment.tamper_detected:
+        decision = replace(
+            decision,
+            execution_allowed=False,
+            requires_human_confirm=True,
+            required_action="app_confirm",
+            reasons=[*decision.reasons, "session_rth_tamper_detected"],
         )
 
     # If requires human confirmation and not provided, block execution
@@ -143,16 +169,13 @@ def gate_audio(
         )
 
     # Attach boundary with RTH snapshot
-    audit = attach_boundary(audit, decision, rth_snapshot=rth.snapshot())
-    if session_id and session_store:
-        session_store.set(
-            session_id=session_id,
-            state={
-                "rth": rth.to_dict(),
-                "seen_transcript_fps": sorted(seen_transcript_fps),
-            },
-        )
-        audit["responsibility_boundary"]["session_id"] = session_id
+    rth_snapshot = rth.snapshot()
+    rth_snapshot["state_continuity"] = rth_assessment.state_continuity
+    rth_snapshot["discontinuity_detected"] = rth_assessment.discontinuity_detected
+    audit = attach_boundary(audit, decision, rth_snapshot=rth_snapshot)
+    if effective_session_id and session_store:
+        session_store.set(session_id=effective_session_id, state={"rth": rth.to_dict()})
+        audit["responsibility_boundary"]["session_id"] = effective_session_id
 
     return audit
 
