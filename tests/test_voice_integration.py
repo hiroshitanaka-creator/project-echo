@@ -478,12 +478,15 @@ def test_required_action_promoted_when_confirmation_required_upstream() -> None:
 
 
 def test_evidence_contains_ear_handshake_entry() -> None:
-    """Evidence must include an ear handshake entry for traceability."""
+    """Evidence must include a safe ear-handshake traceability token."""
     result = _run(intent="search", transcript="候補を見せて", metadata={})
     evidence_types = [e.get("type") for e in result["evidence"]]
     assert "ear_handshake" in evidence_types, (
         f"ear_handshake evidence missing; got types: {evidence_types}"
     )
+    ear = next(e for e in result["evidence"] if e.get("type") == "ear_handshake")
+    assert "session_key_fingerprint" in ear
+    assert "session_key_prefix" not in ear
 
 
 def test_evidence_contains_echo_mark_entry() -> None:
