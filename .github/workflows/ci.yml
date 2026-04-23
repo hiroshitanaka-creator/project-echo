@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+          pip install -e .[dev]
 
       - name: Ruff lint
         run: ruff check . --output-format=github
@@ -41,24 +41,15 @@ jobs:
       - name: Unit tests
         run: |
           pytest -q \
-            tests/test_alert_notify.py \
-            tests/test_ci_kpi.py \
-            tests/test_demo_c_example.py \
-            tests/test_device_cli.py \
-            tests/test_diversity.py \
-            tests/test_echo_mark.py \
-            tests/test_gift_rehearsal_history_index.py \
-            tests/test_gift_rehearsal_manifest.py \
-            tests/test_kpi_alert_check.py \
-            tests/test_monthly_gift_rehearsal_script.py \
-            tests/test_ops_summary.py \
-            tests/test_public_audit.py \
-            tests/test_rth.py \
-            tests/test_sentinel_v2.py \
-            tests/test_traceability_validator.py \
-            tests/test_voice_boundary.py \
-            tests/test_webhook_dispatch.py \
-            tests/test_weekly_audit_archive_script.py
+            tests \
+            --ignore=tests/benchmarks \
+            --ignore=tests/test_smoke.py \
+            --ignore=tests/test_examples_smoke.py \
+            --ignore=tests/test_invariants.py \
+            --ignore=tests/test_voice_integration.py \
+            --ignore=tests/test_voice_cli.py \
+            --ignore=tests/test_device_cli.py \
+            --ignore-glob='tests/test_prop_*.py'
 
   invariants:
     name: Invariants Gate (core principles)
@@ -77,7 +68,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+          pip install -e .[dev]
 
       - name: Run invariant tests
         id: invariants_run
@@ -142,7 +133,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+          pip install -e .[dev]
 
       - name: Property-based core tests
         run: pytest -q tests/test_prop_*.py --hypothesis-show-statistics
@@ -166,7 +157,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+          pip install -e .[dev]
 
       - name: Run quick KPI probe
         id: kpi_probe
@@ -176,10 +167,10 @@ jobs:
           echo "all_passed=${ALL_PASSED}" >> "$GITHUB_OUTPUT"
 
       - name: Device boundary quick check
-        run: pytest -q tests/test_device_cli.py
+        run: pytest -q tests/test_device_*.py
 
       - name: Voice integration check
-        run: pytest -q tests/test_voice_integration.py tests/test_voice_cli.py
+        run: pytest -q tests/test_voice_*.py
 
       - name: Publish KPI quick summary
         if: always()

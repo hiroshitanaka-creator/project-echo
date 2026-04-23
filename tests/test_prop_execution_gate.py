@@ -13,12 +13,17 @@ from __future__ import annotations
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
+from po_core.config import (
+    HIGH_BIAS_THRESHOLD,
+    MEDIUM_BIAS_THRESHOLD,
+    SIGNIFICANT_IMPROVEMENT_THRESHOLD,
+)
 from po_core.diversity import recommendation_boundary
 
-# Canonical thresholds (from threat_model.md)
-HIGH_BIAS = 0.6
-MEDIUM_BIAS = 0.4
-SIGNIFICANT_IMPROVEMENT = 0.2
+# Canonical thresholds (from centralized config.py)
+HIGH_BIAS = HIGH_BIAS_THRESHOLD
+MEDIUM_BIAS = MEDIUM_BIAS_THRESHOLD
+SIGNIFICANT_IMPROVEMENT = SIGNIFICANT_IMPROVEMENT_THRESHOLD
 
 
 @settings(max_examples=100, deadline=None)
