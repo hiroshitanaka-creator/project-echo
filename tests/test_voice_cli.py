@@ -40,8 +40,13 @@ def _env_with_signing_keys() -> dict[str, str]:
         "1f1e1d1c1b1a19181716151413121110"
         "0f0e0d0c0b0a09080706050403020100"
     )
-    env["PO_ECHO_ALLOW_TEST_DEVICE_SECRET"] = "1"
+    env["ECHO_TRUSTED_DEVICE_SECRETS"] = f"default={'ab' * 32}"
     return env
+
+
+def _skip_if_runtime_py_lt_311(proc: subprocess.CompletedProcess[str]) -> None:
+    if "cannot import name 'StrEnum'" in proc.stderr:
+        pytest.skip("CLI runtime interpreter is Python <3.11 in this environment")
 
 
 def test_voice_cli_fails_for_missing_required_input(tmp_path: Path) -> None:
@@ -56,6 +61,7 @@ def test_voice_cli_fails_for_missing_required_input(tmp_path: Path) -> None:
         capture_output=True,
         env=_base_env(),
     )
+    _skip_if_runtime_py_lt_311(proc)
 
     assert proc.returncode != 0
     assert "transcript" in proc.stderr.lower()
@@ -94,6 +100,7 @@ def test_voice_cli_fails_when_signing_key_missing(tmp_path: Path) -> None:
         capture_output=True,
         env=env,
     )
+    _skip_if_runtime_py_lt_311(proc)
 
     assert proc.returncode == 1
     assert "ECHO_MARK_PRIVATE_KEY not set" in proc.stderr
@@ -119,16 +126,15 @@ def test_voice_cli_fails_on_dangerous_or_unconfirmed_action(tmp_path: Path) -> N
             "--out",
             str(out),
             "--require-execution-allowed",
-            "--device-id",
-            "device-1",
             "--device-secret",
-            "11" * 32,
+            "ab" * 32,
         ],
         cwd=ROOT,
         text=True,
         capture_output=True,
         env=_env_with_signing_keys(),
     )
+    _skip_if_runtime_py_lt_311(proc)
 
     assert proc.returncode == 3
     assert "dangerous_or_unconfirmed_action_blocked" in proc.stderr
@@ -143,6 +149,7 @@ def test_regression_voice_show_schema_works_without_dummy_runtime_args(tmp_path:
         capture_output=True,
         env=_base_env(),
     )
+    _skip_if_runtime_py_lt_311(proc)
 
     assert proc.returncode == 0
     payload = json.loads(proc.stdout)
@@ -161,6 +168,7 @@ def test_voice_cli_runtime_path_still_requires_core_arguments(tmp_path: Path) ->
         capture_output=True,
         env=_base_env(),
     )
+    _skip_if_runtime_py_lt_311(proc)
 
     assert proc.returncode == 1
     assert "required unless --show-schema" in proc.stderr
@@ -187,16 +195,15 @@ def test_voice_cli_succeeds_for_safe_search_flow(tmp_path: Path) -> None:
             "--out",
             str(out),
             "--simulate-ok",
-            "--device-id",
-            "device-1",
             "--device-secret",
-            "11" * 32,
+            "ab" * 32,
         ],
         cwd=ROOT,
         text=True,
         capture_output=True,
         env=_env_with_signing_keys(),
     )
+    _skip_if_runtime_py_lt_311(proc)
 
     if proc.returncode != 0 and "PyNaCl not installed" in proc.stderr:
         # Why: subprocess側の実行Pythonに依存が無い環境では、成功系検証を安全にスキップする。

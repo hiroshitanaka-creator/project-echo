@@ -35,13 +35,13 @@ pytestmark = pytest.mark.skipif(
     reason="PyNaCl not installed; voice integration tests require Ed25519 support",
 )
 
+from po_echo.execution_gate import InMemorySessionStore, gate_audio  # noqa: E402
 from po_echo.ear_handshake import (  # noqa: E402
-    EarHandshakeService,
+    EarHandshakeAuthenticator,
     InMemoryChallengeStore,
-    InMemoryDeviceRegistry,
-    build_device_response,
+    InMemoryDeviceTrustStore,
+    sign_challenge_response,
 )
-from po_echo.execution_gate import gate_audio  # noqa: E402
 from po_echo.voice_orchestration import VoiceFlowError, VoiceFlowInput, run_voice_flow  # noqa: E402
 
 # ---------------------------------------------------------------------------
@@ -86,7 +86,7 @@ _OUTPUT_SCHEMA_KEYS = (
 
 
 def _make_payload(**kwargs: object) -> VoiceFlowInput:
-    defaults: dict = {
+    defaults: dict[str, object] = {
         "intent": "search",
         "transcript": "候補を比較したい",
         "metadata": {},
@@ -94,23 +94,40 @@ def _make_payload(**kwargs: object) -> VoiceFlowInput:
         "challenge_id": "placeholder",
         "response_hex": "placeholder",
         "simulate_ok": True,
+        "device_id": "device-main",
     }
     defaults.update(kwargs)
     return VoiceFlowInput(**defaults)  # type: ignore[arg-type]
 
 
 def _run(**kwargs: object) -> dict:
+    trust_store = kwargs.pop("trust_store", None) or InMemoryDeviceTrustStore()
+    challenge_store = kwargs.pop("challenge_store", None) or InMemoryChallengeStore()
+    session_store = kwargs.pop("session_store", None)
     audit = kwargs.pop("audit", _AUDIT_BASE)
     payload_kwargs = {k: v for k, v in kwargs.items() if k in VoiceFlowInput.__dataclass_fields__}
     run_kwargs = {k: v for k, v in kwargs.items() if k not in VoiceFlowInput.__dataclass_fields__}
     payload = _make_payload(**payload_kwargs)
-    device_secret = bytes.fromhex("11" * 32)
-    registry = InMemoryDeviceRegistry()
-    registry.register_device(device_id="device-1", key_id="v1", device_secret=device_secret)
-    handshake = EarHandshakeService(device_registry=registry, challenge_store=InMemoryChallengeStore())
-    challenge = handshake.issue_challenge(device_id="device-1")
+
+    device_secret = bytes.fromhex(
+        payload.device_secret_hex or "11" * 32
+    )
+    trust_store.register_device(device_id=payload.device_id, device_secret=device_secret, key_id="v1")
+    auth = EarHandshakeAuthenticator(trust_store=trust_store, challenge_store=challenge_store)
+    challenge = auth.issue_challenge(device_id=payload.device_id)
+    response_sig = sign_challenge_response(device_secret=device_secret, challenge=challenge)
     payload = VoiceFlowInput(
-        **{**payload.__dict__, "device_id": "device-1", "challenge_id": str(challenge["challenge_id"]), "response_hex": build_device_response(device_secret=device_secret, challenge=challenge)}
+        intent=payload.intent,
+        transcript=payload.transcript,
+        metadata=payload.metadata,
+        simulate_ok=payload.simulate_ok,
+        run_id=payload.run_id,
+        key_id=payload.key_id,
+        device_id=payload.device_id,
+        challenge=challenge,
+        challenge_response_sig_hex=response_sig,
+        session_id=payload.session_id,
+        device_secret_hex=payload.device_secret_hex,
     )
     return run_voice_flow(
         audit=audit,  # type: ignore[arg-type]
@@ -118,6 +135,9 @@ def _run(**kwargs: object) -> dict:
         handshake=handshake,
         hmac_secret=_HMAC_SECRET,
         ed25519_private_key=_ED25519_KEY,
+        trust_store=trust_store,
+        challenge_store=challenge_store,
+        session_store=session_store,
         **run_kwargs,  # type: ignore[arg-type]
     )
 
@@ -250,20 +270,32 @@ def test_require_execution_allowed_raises_on_blocked() -> None:
         simulate_ok=False,
     )
     with pytest.raises(VoiceFlowError, match="dangerous_or_unconfirmed_action_blocked"):
-        run_voice_flow(
+        _run(
             audit=_AUDIT_BASE,
-            payload=payload,
-            handshake=handshake,
-            hmac_secret=_HMAC_SECRET,
-            ed25519_private_key=_ED25519_KEY,
+            intent=payload.intent,
+            transcript=payload.transcript,
+            metadata=payload.metadata,
+            simulate_ok=payload.simulate_ok,
             require_execution_allowed=True,
         )
 
 
-def test_malformed_handshake_response_fails_closed() -> None:
-    """Ear-handshake must fail closed for malformed response payload."""
-    payload, handshake = _auth_context(intent="search", transcript="候補を見せて", metadata={}, simulate_ok=True)
-    payload = VoiceFlowInput(**{**payload.__dict__, "response_hex": "not-hex"})
+def test_unknown_device_is_rejected() -> None:
+    trust_store = InMemoryDeviceTrustStore()
+    challenge_store = InMemoryChallengeStore()
+    fake_challenge = {
+        "challenge_id": "deadbeef",
+        "device_id": "unknown",
+        "nonce": "00" * 16,
+        "ts": 1,
+        "expires_at": 2,
+        "key_id": "v1",
+    }
+    payload = _make_payload(
+        device_id="unknown",
+        challenge=fake_challenge,
+        challenge_response_sig_hex="00" * 32,
+    )
     with pytest.raises(VoiceFlowError, match="ear handshake verification failed"):
         run_voice_flow(
             audit=_AUDIT_BASE,
@@ -271,6 +303,8 @@ def test_malformed_handshake_response_fails_closed() -> None:
             handshake=handshake,
             hmac_secret=_HMAC_SECRET,
             ed25519_private_key=_ED25519_KEY,
+            trust_store=trust_store,
+            challenge_store=challenge_store,
         )
 
 
@@ -334,12 +368,12 @@ def test_blocked_upstream_boundary_stays_blocked_in_voice_flow() -> None:
     }
     payload, handshake = _auth_context(intent="search", transcript="候補を探して", metadata={}, simulate_ok=True)
 
-    result = run_voice_flow(
+    result = _run(
         audit=blocked_audit,
-        payload=payload,
-        handshake=handshake,
-        hmac_secret=_HMAC_SECRET,
-        ed25519_private_key=_ED25519_KEY,
+        intent=payload.intent,
+        transcript=payload.transcript,
+        metadata=payload.metadata,
+        simulate_ok=payload.simulate_ok,
     )
     rb = result["responsibility_boundary"]
     assert rb["execution_allowed"] is False
@@ -402,13 +436,15 @@ def test_voice_path_echo_mark_payload_keeps_nonzero_upstream_signals() -> None:
             "price_buckets_final": 3,
         },
     }
-    payload, handshake = _auth_context(intent="search", transcript="候補を見せて", metadata={}, simulate_ok=True)
-    result = run_voice_flow(
+    payload = _make_payload(
+        intent="search", transcript="候補を見せて", metadata={}, simulate_ok=True
+    )
+    result = _run(
         audit=audit,
-        payload=payload,
-        handshake=handshake,
-        hmac_secret=_HMAC_SECRET,
-        ed25519_private_key=_ED25519_KEY,
+        intent=payload.intent,
+        transcript=payload.transcript,
+        metadata=payload.metadata,
+        simulate_ok=payload.simulate_ok,
     )
     signals = result["echo_mark"]["payload"]["signals"]
     assert signals["bias_improvement"] == pytest.approx(0.32)
@@ -461,3 +497,82 @@ def test_evidence_contains_echo_mark_entry() -> None:
     result = _run(intent="search", transcript="候補を見せて", metadata={})
     evidence_types = [e.get("type") for e in result["evidence"]]
     assert "echo_mark" in evidence_types, f"echo_mark evidence missing; got types: {evidence_types}"
+
+
+def test_ear_handshake_replay_challenge_rejected() -> None:
+    trust_store = InMemoryDeviceTrustStore()
+    challenge_store = InMemoryChallengeStore()
+    device_secret = bytes.fromhex("22" * 32)
+    trust_store.register_device(device_id="d1", device_secret=device_secret)
+    auth = EarHandshakeAuthenticator(trust_store=trust_store, challenge_store=challenge_store)
+
+    challenge = auth.issue_challenge(device_id="d1")
+    sig = sign_challenge_response(device_secret=device_secret, challenge=challenge)
+    assert auth.verify_response(device_id="d1", challenge=challenge, response_sig_hex=sig) is True
+    assert auth.verify_response(device_id="d1", challenge=challenge, response_sig_hex=sig) is False
+
+
+def test_ear_handshake_expired_challenge_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
+    trust_store = InMemoryDeviceTrustStore()
+    challenge_store = InMemoryChallengeStore()
+    device_secret = bytes.fromhex("33" * 32)
+    trust_store.register_device(device_id="d2", device_secret=device_secret)
+    auth = EarHandshakeAuthenticator(
+        trust_store=trust_store,
+        challenge_store=challenge_store,
+        challenge_ttl_seconds=1,
+    )
+
+    with monkeypatch.context() as m:
+        m.setattr("po_echo.ear_handshake.time.time", lambda: 1000.0)
+        challenge = auth.issue_challenge(device_id="d2")
+        sig = sign_challenge_response(device_secret=device_secret, challenge=challenge)
+    with monkeypatch.context() as m:
+        m.setattr("po_echo.ear_handshake.time.time", lambda: 1003.0)
+        assert auth.verify_response(device_id="d2", challenge=challenge, response_sig_hex=sig) is False
+
+
+def test_session_continuity_persists_rth_in_same_session() -> None:
+    session_store = InMemorySessionStore()
+    first = _run(
+        transcript="土曜夜に予約",
+        metadata={},
+        session_id="session-a",
+        session_store=session_store,
+    )
+    second = _run(
+        transcript="予算一万円以下",
+        metadata={},
+        session_id="session-a",
+        session_store=session_store,
+    )
+    first_hash = first["responsibility_boundary"]["rth_snapshot"]["hash_hex"]
+    second_hash = second["responsibility_boundary"]["rth_snapshot"]["hash_hex"]
+    assert first_hash != second_hash
+    assert second["responsibility_boundary"]["session_id"] == "session-a"
+
+
+def test_new_session_starts_clean_rth_state() -> None:
+    session_store = InMemorySessionStore()
+    a = _run(transcript="同じ入力", metadata={}, session_id="s-1", session_store=session_store)
+    b = _run(transcript="同じ入力", metadata={}, session_id="s-2", session_store=session_store)
+    assert (
+        a["responsibility_boundary"]["rth_snapshot"]["hash_hex"]
+        == b["responsibility_boundary"]["rth_snapshot"]["hash_hex"]
+    )
+
+
+def test_duplicate_transcript_in_same_session_is_detected() -> None:
+    session_store = InMemorySessionStore()
+    _run(transcript="同じ入力", metadata={}, session_id="dup", session_store=session_store)
+    second = _run(transcript="同じ入力", metadata={}, session_id="dup", session_store=session_store)
+    rb = second["responsibility_boundary"]
+    assert rb["execution_allowed"] is False
+    assert "session_transcript_replay_detected" in rb["reasons"]
+
+
+def test_rth_evidence_exposes_snapshot_only_not_raw_text() -> None:
+    result = _run(transcript="機密の文言", metadata={}, session_id="safe-ev")
+    snapshot = result["responsibility_boundary"]["rth_snapshot"]
+    assert "hash_hex" in snapshot
+    assert "last_text" not in snapshot

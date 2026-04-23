@@ -350,6 +350,23 @@ class RollingTranscriptHash:
         d["h_prev"] = self.state.h_prev.hex()
         return d
 
+    @classmethod
+    def from_dict(cls, state_dict: dict) -> RollingTranscriptHash:
+        """Restore RTH instance from serialized state."""
+        window_ms = int(state_dict.get("window_ms", 5000))
+        rth = cls(window_ms=window_ms)
+        rth.state.algo = str(state_dict.get("algo", rth.state.algo))
+        rth.state.window_ms = window_ms
+        rth.state.h_prev = bytes.fromhex(str(state_dict.get("h_prev", "")))
+        rth.state.t0_ms = int(state_dict.get("t0_ms", rth.state.t0_ms))
+        rth.state.t_ms = int(state_dict.get("t_ms", rth.state.t_ms))
+        rth.state.last_text = str(state_dict.get("last_text", ""))
+        rth.state.robust_hash_hex = str(state_dict.get("robust_hash_hex", "0" * 16))
+        seen = state_dict.get("seen_chain_hash_to_feat_fp")
+        if isinstance(seen, dict):
+            rth.state.seen_chain_hash_to_feat_fp = seen
+        return rth
+
 
 def compute_rth(transcript: str) -> dict:
     """

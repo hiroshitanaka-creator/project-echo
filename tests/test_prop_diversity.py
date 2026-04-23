@@ -17,12 +17,12 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 from hypothesis.strategies import composite
 
+from po_core.config import DEFAULT_MMR_BETA, HIGH_BIAS_FILTER_THRESHOLD, MIN_EFFECTIVE_UTILITY
 from po_core.diversity import Rec, diversify_with_mmr
 
 # Constants for clean candidate detection (must match diversify_with_mmr)
-BETA = 0.8
-MIN_EFFECTIVE_UTILITY = 0.1
-HIGH_BIAS_THRESHOLD = 0.7
+BETA = DEFAULT_MMR_BETA
+HIGH_BIAS_THRESHOLD = HIGH_BIAS_FILTER_THRESHOLD
 
 
 def is_clean(r: Rec) -> bool:
