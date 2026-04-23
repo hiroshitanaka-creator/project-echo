@@ -205,7 +205,7 @@ python assets/flying_pig_anim.py
 `src/po_echo` の Voice Boundary / Ear Handshake / RTH を薄いオーケストレーション層で束ね、CLIから**候補セット＋証拠＋責任境界**を返します。
 
 固定JSON schema:
-- Input: `{"intent": string, "transcript": string, "metadata": object}`
+- Input: `{"intent": string, "transcript": string, "metadata": object, "device_id": string, "challenge_id": string, "response_hex": string}`
 - Output: `{"candidate_set": array, "evidence": array, "responsibility_boundary": object, "voice_text": string, "echo_mark": object}`
 
 ```bash

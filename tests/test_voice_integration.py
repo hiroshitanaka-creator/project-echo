@@ -90,6 +90,9 @@ def _make_payload(**kwargs: object) -> VoiceFlowInput:
         "intent": "search",
         "transcript": "候補を比較したい",
         "metadata": {},
+        "device_id": "device-1",
+        "challenge_id": "placeholder",
+        "response_hex": "placeholder",
         "simulate_ok": True,
         "device_id": "device-main",
     }
@@ -129,6 +132,7 @@ def _run(**kwargs: object) -> dict:
     return run_voice_flow(
         audit=audit,  # type: ignore[arg-type]
         payload=payload,
+        handshake=handshake,
         hmac_secret=_HMAC_SECRET,
         ed25519_private_key=_ED25519_KEY,
         trust_store=trust_store,
@@ -136,6 +140,24 @@ def _run(**kwargs: object) -> dict:
         session_store=session_store,
         **run_kwargs,  # type: ignore[arg-type]
     )
+
+
+def _auth_context(**payload_kwargs: object) -> tuple[VoiceFlowInput, EarHandshakeService]:
+    payload = _make_payload(**payload_kwargs)
+    device_secret = bytes.fromhex("11" * 32)
+    registry = InMemoryDeviceRegistry()
+    registry.register_device(device_id="device-1", key_id="v1", device_secret=device_secret)
+    handshake = EarHandshakeService(device_registry=registry, challenge_store=InMemoryChallengeStore())
+    challenge = handshake.issue_challenge(device_id="device-1")
+    authed_payload = VoiceFlowInput(
+        **{
+            **payload.__dict__,
+            "device_id": "device-1",
+            "challenge_id": str(challenge["challenge_id"]),
+            "response_hex": build_device_response(device_secret=device_secret, challenge=challenge),
+        }
+    )
+    return authed_payload, handshake
 
 
 # ---------------------------------------------------------------------------
@@ -241,7 +263,7 @@ def test_high_risk_payment_blocks_execution_without_simulate_ok() -> None:
 
 def test_require_execution_allowed_raises_on_blocked() -> None:
     """require_execution_allowed=True must raise VoiceFlowError on high-risk intent."""
-    payload = _make_payload(
+    payload, handshake = _auth_context(
         intent="payment",
         transcript="5万円で支払って",
         metadata={"amount": 50000},
@@ -278,6 +300,7 @@ def test_unknown_device_is_rejected() -> None:
         run_voice_flow(
             audit=_AUDIT_BASE,
             payload=payload,
+            handshake=handshake,
             hmac_secret=_HMAC_SECRET,
             ed25519_private_key=_ED25519_KEY,
             trust_store=trust_store,
@@ -343,9 +366,7 @@ def test_blocked_upstream_boundary_stays_blocked_in_voice_flow() -> None:
             "price_buckets_final": 1,
         },
     }
-    payload = _make_payload(
-        intent="search", transcript="候補を探して", metadata={}, simulate_ok=True
-    )
+    payload, handshake = _auth_context(intent="search", transcript="候補を探して", metadata={}, simulate_ok=True)
 
     result = _run(
         audit=blocked_audit,

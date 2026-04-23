@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import copy
-import hashlib
-import hmac
-from unittest.mock import patch
 
 from hypothesis import assume, given, settings
 from hypothesis import strategies as st
+import pytest
 
 from po_core.diversity import Rec, diversify_with_mmr
 from po_echo.ear_handshake import (
@@ -120,35 +118,41 @@ def test_voice_boundary_amount_medium_window_maps_to_medium_risk(amount: float) 
 @settings(max_examples=100, deadline=None)
 @given(st.binary(min_size=32, max_size=32))
 def test_ear_handshake_rejects_tampered_signature(master_key: bytes) -> None:
-    device = new_device(master_key=master_key)
-    challenge = issue_challenge(device)
-    assert verify_response(device, challenge) is True
+    registry = InMemoryDeviceRegistry()
+    registry.register_device(device_id="dev-1", key_id="v1", device_secret=master_key)
+    handshake = EarHandshakeService(device_registry=registry, challenge_store=InMemoryChallengeStore())
+    challenge = handshake.issue_challenge(device_id="dev-1")
+    response = build_device_response(device_secret=master_key, challenge=challenge)
+    handshake.verify_response(device_id="dev-1", challenge_id=str(challenge["challenge_id"]), response_hex=response)
 
-    tampered = copy.deepcopy(challenge)
-    tampered["sig_hex"] = (tampered["sig_hex"][:-1] + ("0" if tampered["sig_hex"][-1] != "0" else "1"))
-    assert verify_response(device, tampered) is False
+    tampered = response[:-1] + ("0" if response[-1] != "0" else "1")
+    with pytest.raises(EarHandshakeError):
+        handshake.verify_response(
+            device_id="dev-1",
+            challenge_id=str(challenge["challenge_id"]),
+            response_hex=tampered,
+        )
 
 
 @settings(max_examples=100, deadline=None)
 @given(st.binary(min_size=32, max_size=32), st.integers(min_value=62, max_value=10_000_000))
 def test_ear_handshake_timestamp_expiry_boundary(master_key: bytes, now_s: int) -> None:
     """Why: replay防御の責務境界を固定し、期限切れchallengeの通過を防ぐ。"""
-    device = new_device(master_key=master_key)
-    challenge = issue_challenge(device)
+    registry = InMemoryDeviceRegistry()
+    registry.register_device(device_id="dev-1", key_id="v1", device_secret=master_key)
+    current = {"t": now_s}
 
-    live_challenge = copy.deepcopy(challenge)
-    live_challenge["ts"] = now_s
-    msg_live = bytes.fromhex(live_challenge["nonce"]) + now_s.to_bytes(8, "big")
-    live_challenge["sig_hex"] = hmac.new(device["device_secret"], msg_live, hashlib.sha256).digest().hex()
-
-    stale_challenge = copy.deepcopy(live_challenge)
-    stale_challenge["ts"] = now_s - 61
-    msg_stale = bytes.fromhex(stale_challenge["nonce"]) + stale_challenge["ts"].to_bytes(8, "big")
-    stale_challenge["sig_hex"] = hmac.new(device["device_secret"], msg_stale, hashlib.sha256).digest().hex()
-
-    with patch("po_echo.ear_handshake.time.time", return_value=float(now_s)):
-        assert verify_response(device, live_challenge) is True
-        assert verify_response(device, stale_challenge) is False
+    handshake = EarHandshakeService(
+        device_registry=registry,
+        challenge_store=InMemoryChallengeStore(),
+        challenge_ttl_seconds=60,
+        time_fn=lambda: current["t"],
+    )
+    challenge = handshake.issue_challenge(device_id="dev-1")
+    response = build_device_response(device_secret=master_key, challenge=challenge)
+    current["t"] = now_s + 61
+    with pytest.raises(EarHandshakeError):
+        handshake.verify_response(device_id="dev-1", challenge_id=str(challenge["challenge_id"]), response_hex=response)
 
 
 @settings(max_examples=100, deadline=None)
@@ -157,19 +161,21 @@ def test_ear_handshake_session_key_changes_when_nonce_changes(
     master_key: bytes, replacement_nonce: bytes
 ) -> None:
     """Why: セッション鍵がchallenge固有であることを保証し、再利用リスクを減らす。"""
-    device = new_device(master_key=master_key)
-    challenge = issue_challenge(device)
+    assume(replacement_nonce != b"\x00" * 16)
+    registry = InMemoryDeviceRegistry()
+    registry.register_device(device_id="dev-1", key_id="v1", device_secret=master_key)
+    handshake = EarHandshakeService(device_registry=registry, challenge_store=InMemoryChallengeStore())
+    ch1 = handshake.issue_challenge(device_id="dev-1")
+    ch2 = copy.deepcopy(ch1)
+    ch2["challenge_id"] = "different"
+    ch2["nonce"] = replacement_nonce.hex()
 
-    altered = copy.deepcopy(challenge)
-    altered["nonce"] = replacement_nonce.hex()
-    assume(altered["nonce"] != challenge["nonce"])
+    key1 = build_device_response(device_secret=master_key, challenge=ch1)
+    key2 = build_device_response(device_secret=master_key, challenge=ch2)
 
-    base_key = derive_session_key(device, challenge)
-    altered_key = derive_session_key(device, altered)
-
-    assert len(base_key) == 64
-    assert len(altered_key) == 64
-    assert base_key != altered_key
+    assert len(key1) == 64
+    assert len(key2) == 64
+    assert key1 != key2
 
 
 @settings(max_examples=80, deadline=None)
