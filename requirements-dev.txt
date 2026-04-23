@@ -1,6 +1,6 @@
-# Development dependencies (pinned for reproducibility)
+# Development dependencies (CI baseline; mixed pin/min constraints)
 -r requirements.txt
-pytest==9.0.2
+pytest>=9.0.3
 ruff==0.14.14
 hypothesis==6.151.4
 mypy==1.19.1
