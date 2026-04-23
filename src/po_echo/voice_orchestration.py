@@ -12,7 +12,12 @@ from po_echo.ear_handshake import (
     sign_challenge_response,
 )
 from po_echo.echo_mark import make_echo_mark_dual
-from po_echo.execution_gate import InMemorySessionStore, SessionStore, gate_audio
+from po_echo.execution_gate import (
+    InMemorySessionStore,
+    SessionStore,
+    VoiceSessionContext,
+    gate_audio,
+)
 from po_echo.voice_boundary import make_echo_verified_voice_text
 
 VOICE_INPUT_SCHEMA: dict[str, Any] = {
@@ -86,9 +91,6 @@ class VoiceFlowError(RuntimeError):
 
 DEFAULT_DEVICE_TRUST_STORE = InMemoryDeviceTrustStore()
 DEFAULT_CHALLENGE_STORE = InMemoryChallengeStore()
-DEFAULT_SESSION_STORE = InMemorySessionStore()
-
-
 def inventory_voice_stack() -> list[dict[str, str]]:
     return [
         {"component": "voice_boundary", "module": "po_echo.voice_boundary", "role": "risk+responsibility boundary"},
@@ -138,7 +140,7 @@ def run_voice_flow(
 
     effective_trust_store = trust_store or DEFAULT_DEVICE_TRUST_STORE
     effective_challenge_store = challenge_store or DEFAULT_CHALLENGE_STORE
-    effective_session_store = session_store or DEFAULT_SESSION_STORE
+    effective_session_store = session_store or InMemorySessionStore()
     authenticator = EarHandshakeAuthenticator(
         trust_store=effective_trust_store,
         challenge_store=effective_challenge_store,
@@ -178,7 +180,7 @@ def run_voice_flow(
         meta=payload.metadata,
         transcript_tail=payload.transcript,
         simulate_user_ok=payload.simulate_ok,
-        session_id=effective_session_id,
+        session_context=VoiceSessionContext(session_id=effective_session_id),
         session_store=effective_session_store,
     )
 
