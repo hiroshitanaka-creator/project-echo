@@ -9,6 +9,6 @@ callers continue to work, but new code should import directly from
 from __future__ import annotations
 
 from po_core import *  # noqa: F401,F403
-from po_core.policy_v1 import POLICY, override_policy  # noqa: F401
+from .policy_v1 import POLICY, override_policy  # noqa: F401
 
 __all__ = ["POLICY", "override_policy"]
