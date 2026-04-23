@@ -134,7 +134,8 @@ def test_bias_dominates_diversity():
 **Statement**: Echo Mark badges are cryptographically signed and independently verifiable.
 
 **Technical enforcement**:
-- All audit results can generate Echo Mark with HMAC-SHA256 signature
+- Echo Mark generation is fail-closed: signing key materialが解決できない場合は生成失敗（未署名badgeは返さない）
+- All audit results can generate Echo Mark with HMAC-SHA256 signature when signing keys are configured
 - Signature covers: label, bias signals, reasons, timestamp
 - Verification uses constant-time comparison to prevent timing attacks
 - Failed verification → exit code 2 (hard failure)

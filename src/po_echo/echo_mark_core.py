@@ -189,6 +189,10 @@ def _build_short_view(
     return short
 
 
+class EchoMarkSigningError(RuntimeError):
+    """Raised when Echo Mark signing material cannot be resolved."""
+
+
 def make_echo_mark_dual(
     audit: dict[str, Any],
     hmac_secret: str,
@@ -228,7 +232,12 @@ def make_echo_mark(
     key_id: str | None = None,
     audience: str | None = None,
 ) -> dict[str, Any]:
-    """Create Echo Mark v3 badge with graceful key fallback behavior."""
+    """Create a signed Echo Mark v3 badge.
+
+    Security invariant:
+    - Returns a badge only when at least one signature can be produced.
+    - Raises ``EchoMarkSigningError`` when no signing key material is available.
+    """
     active_key_id = key_id or get_active_key_id()
     payload = build_payload(audit, run_id=run_id, key_id=active_key_id, audience=audience)
     payload_hash = sha256_hex(canonical_json(payload))
@@ -246,19 +255,26 @@ def make_echo_mark(
         "short": _build_short_view(payload, key_id=active_key_id),
     }
 
-    if hmac_secret:
+    has_hmac = bool(hmac_secret)
+    has_ed25519 = bool(ed_private_key and ed_public_key)
+
+    if not has_hmac and not has_ed25519:
+        raise EchoMarkSigningError(
+            f"missing_signing_keys: key_id={active_key_id!r}; requires HMAC secret and/or Ed25519 private key"
+        )
+
+    if has_hmac:
         badge["signature_hmac"] = hmac_sha256_hex(hmac_secret, payload_hash)
 
-    if ed_private_key and ed_public_key:
+    if has_ed25519:
         badge["signature"] = _ed25519_sign(payload_hash, ed_private_key)
         badge["public_key"] = ed_public_key
-        badge["verification_method"] = "Ed25519+HMAC" if hmac_secret else "Ed25519"
+        badge["verification_method"] = "Ed25519+HMAC" if has_hmac else "Ed25519"
         badge["short"]["verification_method"] = badge["verification_method"]
         return badge
 
-    badge["verification_method"] = "HMAC" if hmac_secret else "UNSIGNED"
-    if not hmac_secret:
-        badge["error"] = "missing_signing_keys"
+    badge["verification_method"] = "HMAC"
+    badge["short"]["verification_method"] = "HMAC"
     return badge
 
 
@@ -296,9 +312,10 @@ def sign_ed25519(payload_hash: str, private_key_hex: str) -> str:
     return _ed25519_sign(payload_hash, private_key_hex)
 
 
-def generate_echo_mark(
-    payload: dict[str, Any], device: str = "", extra_text: str = ""
-) -> dict[str, Any]:
-    """Compatibility wrapper used by screenless no-secret paths."""
-    _ = (device, extra_text)
-    return make_echo_mark(audit=payload)
+def generate_echo_mark(payload: dict[str, Any], *, secret: str | None = None) -> dict[str, Any]:
+    """Compatibility wrapper for legacy call-sites that still build from ``payload``.
+
+    This helper is production-safe: it delegates to ``make_echo_mark`` and preserves
+    fail-closed signing requirements.
+    """
+    return make_echo_mark(audit=payload, secret=secret)
