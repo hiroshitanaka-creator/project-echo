@@ -11,6 +11,32 @@ import os
 import sys
 from pathlib import Path
 
+def _require_demo_signing_keys() -> tuple[str, str]:
+    """Fail fast if required signing keys are not configured.
+
+    Why: demo-web startup must never fall back to hard-coded plaintext keys.
+    """
+    hmac_secret = os.getenv("ECHO_MARK_SECRET", "").strip()
+    ed_private = os.getenv("ECHO_MARK_PRIVATE_KEY", "").strip()
+
+    missing: list[str] = []
+    if not hmac_secret:
+        missing.append("ECHO_MARK_SECRET")
+    if not ed_private:
+        missing.append("ECHO_MARK_PRIVATE_KEY")
+
+    if missing:
+        names = ", ".join(missing)
+        raise RuntimeError(
+            f"Missing required environment variable(s): {names}. "
+            "Set them before starting tools/demo_web.py (see .env.example)."
+        )
+
+    return hmac_secret, ed_private
+
+
+DEMO_HMAC_SECRET, DEMO_ED_PRIVATE = _require_demo_signing_keys()
+
 # Resolve src/ the same way demo_shopping.py does
 _src_path = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(_src_path))
@@ -19,18 +45,8 @@ import gradio as gr
 
 from po_echo.voice_orchestration import VoiceFlowError, VoiceFlowInput, run_voice_flow
 
-DEMO_HMAC_SECRET = os.getenv("ECHO_MARK_SECRET", "demo-secret-key-16chars")
-DEMO_ED_PRIVATE = os.getenv(
-    "ECHO_MARK_PRIVATE_KEY",
-    "1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100",
-)
-
 _ALLOW_REMOTE_DEMO = os.getenv("ECHO_DEMO_ALLOW_REMOTE", "0") == "1"
 
-_USING_DEMO_KEYS = (
-    DEMO_HMAC_SECRET == "demo-secret-key-16chars"
-    or DEMO_ED_PRIVATE == "1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100"
-)
 
 
 # ---------------------------------------------------------------------------
@@ -106,14 +122,6 @@ def pig_panel(label: str) -> str:
 # Gradio UI
 # ---------------------------------------------------------------------------
 
-_DEMO_KEY_WARNING = (
-    "> ⚠️ **Demo keys in use.** Set `ECHO_MARK_SECRET` and `ECHO_MARK_PRIVATE_KEY` "
-    "environment variables for production signatures."
-    if _USING_DEMO_KEYS
-    else ""
-)
-
-
 def build_ui() -> gr.Blocks:
     with gr.Blocks(title="Project Echo — Web Demo") as demo:
         gr.Markdown(f"""
@@ -122,7 +130,6 @@ def build_ui() -> gr.Blocks:
 
 > 候補セット + 証拠 + 責任境界 — AIはおすすめしない。
 
-{_DEMO_KEY_WARNING}
         """)
 
         with gr.Row():
