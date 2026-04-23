@@ -12,9 +12,13 @@ from hypothesis import strategies as st
 
 from po_core.diversity import Rec, diversify_with_mmr
 from po_echo.ear_handshake import (
+    EarHandshakeAuthenticator,
+    InMemoryChallengeStore,
+    InMemoryDeviceTrustStore,
     derive_session_key,
     issue_challenge,
     new_device,
+    sign_challenge_response,
     verify_response,
 )
 from po_echo.rth import compute_rth
@@ -166,6 +170,20 @@ def test_ear_handshake_session_key_changes_when_nonce_changes(
     assert len(base_key) == 64
     assert len(altered_key) == 64
     assert base_key != altered_key
+
+
+@settings(max_examples=80, deadline=None)
+@given(st.binary(min_size=32, max_size=32))
+def test_trusted_store_required_for_authentication(device_secret: bytes) -> None:
+    trust_store = InMemoryDeviceTrustStore()
+    challenge_store = InMemoryChallengeStore()
+    auth = EarHandshakeAuthenticator(trust_store=trust_store, challenge_store=challenge_store)
+
+    trust_store.register_device(device_id="trusted", device_secret=device_secret)
+    challenge = auth.issue_challenge(device_id="trusted")
+    sig = sign_challenge_response(device_secret=device_secret, challenge=challenge)
+    assert auth.verify_response(device_id="trusted", challenge=challenge, response_sig_hex=sig) is True
+    assert auth.verify_response(device_id="unknown", challenge=challenge, response_sig_hex=sig) is False
 
 
 @settings(max_examples=120, deadline=None)

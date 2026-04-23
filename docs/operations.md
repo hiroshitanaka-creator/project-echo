@@ -80,6 +80,7 @@ pip install -e .
 export ECHO_MARK_SECRET="demo-secret-key-16chars"
 export ECHO_MARK_PRIVATE_KEY="1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100"
 export ECHO_MARK_KEYS="v1=$ECHO_MARK_SECRET"
+export ECHO_TRUSTED_DEVICE_SECRETS="default=abababababababababababababababababababababababababababababababab"
 
 # 2. Run the shopping demo
 make demo-shopping
@@ -93,6 +94,7 @@ po-cosmic voice \
   --transcript "候補を見せて" \
   --meta '{}' \
   --simulate-ok \
+  --device-secret "abababababababababababababababababababababababababababababababab" \
   --in runs/high_bias_affiliate.audit.json \
   --out runs/voice_out.json
 ```

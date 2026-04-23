@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -39,6 +40,7 @@ from po_echo.echo_mark import (
     verify_mark,
 )
 from po_echo.execution_gate import gate_audio
+from po_echo.ear_handshake import InMemoryChallengeStore, InMemoryDeviceTrustStore
 from po_echo.voice_orchestration import (
     VOICE_INPUT_SCHEMA,
     VOICE_OUTPUT_SCHEMA,
@@ -820,6 +822,26 @@ def cmd_voice(args: argparse.Namespace) -> None:
         device_secret_hex=args.device_secret,
     )
 
+    trusted_devices_raw = os.getenv("ECHO_TRUSTED_DEVICE_SECRETS", "").strip()
+    trust_store = InMemoryDeviceTrustStore()
+    challenge_store = InMemoryChallengeStore()
+    if not trusted_devices_raw:
+        print(
+            "Error: ECHO_TRUSTED_DEVICE_SECRETS is required (format: device_id=64hex[,device2=64hex])",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+    try:
+        for pair in trusted_devices_raw.split(","):
+            device_id, secret_hex = pair.split("=", 1)
+            trust_store.register_device(
+                device_id=device_id.strip(),
+                device_secret=bytes.fromhex(secret_hex.strip()),
+            )
+    except (ValueError, TypeError) as e:
+        print(f"Error: invalid ECHO_TRUSTED_DEVICE_SECRETS value: {e}", file=sys.stderr)
+        raise SystemExit(1) from None
+
     try:
         result = run_voice_flow(
             audit=audit,
@@ -827,6 +849,8 @@ def cmd_voice(args: argparse.Namespace) -> None:
             hmac_secret=secret,
             ed25519_private_key=private_key,
             require_execution_allowed=args.require_execution_allowed,
+            trust_store=trust_store,
+            challenge_store=challenge_store,
         )
     except VoiceFlowError as e:
         print(f"Error: {e}", file=sys.stderr)

@@ -1,26 +1,10 @@
-"""
-Ear-Handshake: OS-Independent Device Pairing
+"""Ear-Handshake: trusted device authentication with explicit trust boundary.
 
-Lightweight challenge-response authentication for ear-worn devices.
-
-Design goals:
-- OS-independent: No reliance on iOS/Android pairing APIs
-- Short-lived session keys: Derive ephemeral keys from challenge
-- Continuous authentication: Location, IMU, skin contact signals
-- Graceful degradation: High-risk actions downgrade to app confirmation
-
-Flow:
-1. Initial pairing: Phone displays QR/ultrasonic challenge
-2. Ear device responds with HMAC signature
-3. Phone verifies signature, issues session key
-4. Session key expires after N minutes (default: 5)
-5. Re-authentication: New challenge or downgrade risk level
-
-Use case:
-- User wears ear device (Sweetpea)
-- Device pairs with phone via challenge-response
-- Voice actions use session key for authentication
-- If session expires during high-risk action, force app confirmation
+Security model:
+- Device authenticity depends on a server-side trust store (registered device IDs).
+- Request-supplied secrets are never accepted as production trust anchors.
+- Challenge issuance and challenge verification are separated phases.
+- Challenges expire quickly and are single-use (replay rejected).
 """
 
 from __future__ import annotations
@@ -29,19 +13,93 @@ import hashlib
 import hmac
 import os
 import time
+from dataclasses import dataclass
+from typing import Protocol
 
 DEVICE_SECRET_LEN_BYTES = 32
+DEFAULT_CHALLENGE_TTL_SECONDS = 60
+
+
+class DeviceTrustStore(Protocol):
+    """Trust anchor abstraction for registered device identities."""
+
+    def get_device_secret(self, *, device_id: str) -> bytes | None:
+        """Return trusted secret for device_id, or None when unknown."""
+
+
+@dataclass(frozen=True)
+class TrustedDevice:
+    """Trusted device record."""
+
+    device_id: str
+    key_id: str
+    device_secret: bytes
+
+
+class InMemoryDeviceTrustStore:
+    """In-memory trust store used by tests and local single-process runs."""
+
+    def __init__(self) -> None:
+        self._by_device_id: dict[str, TrustedDevice] = {}
+
+    def register_device(self, *, device_id: str, device_secret: bytes, key_id: str = "v1") -> None:
+        _validate_device_secret(device_secret)
+        if not device_id:
+            raise ValueError("device_id is required")
+        self._by_device_id[device_id] = TrustedDevice(
+            device_id=device_id,
+            key_id=key_id,
+            device_secret=device_secret,
+        )
+
+    def get_device_secret(self, *, device_id: str) -> bytes | None:
+        rec = self._by_device_id.get(device_id)
+        return rec.device_secret if rec else None
+
+    def get_key_id(self, *, device_id: str) -> str:
+        rec = self._by_device_id.get(device_id)
+        return rec.key_id if rec else "v1"
+
+
+@dataclass(frozen=True)
+class IssuedChallenge:
+    """Challenge tracked server-side until used/expired."""
+
+    challenge_id: str
+    device_id: str
+    nonce_hex: str
+    ts: int
+    expires_at: int
+    used: bool = False
+
+
+class InMemoryChallengeStore:
+    """In-memory challenge lifecycle tracker."""
+
+    def __init__(self) -> None:
+        self._by_id: dict[str, IssuedChallenge] = {}
+
+    def save(self, challenge: IssuedChallenge) -> None:
+        self._by_id[challenge.challenge_id] = challenge
+
+    def get(self, *, challenge_id: str) -> IssuedChallenge | None:
+        return self._by_id.get(challenge_id)
+
+    def mark_used(self, *, challenge_id: str) -> None:
+        challenge = self._by_id.get(challenge_id)
+        if challenge is None:
+            return
+        self._by_id[challenge_id] = IssuedChallenge(
+            challenge_id=challenge.challenge_id,
+            device_id=challenge.device_id,
+            nonce_hex=challenge.nonce_hex,
+            ts=challenge.ts,
+            expires_at=challenge.expires_at,
+            used=True,
+        )
 
 
 def _validate_device_secret(master_key: bytes) -> None:
-    """Validate ear-device master key shape.
-
-    Security rationale:
-    - A fixed-width secret prevents accidental weak key material (empty/short)
-      from entering the handshake path.
-    - Fail-closed validation keeps malformed caller input from silently
-      downgrading authentication integrity.
-    """
     if not isinstance(master_key, bytes):
         raise TypeError("device master_key must be bytes")
     if len(master_key) != DEVICE_SECRET_LEN_BYTES:
@@ -51,40 +109,120 @@ def _validate_device_secret(master_key: bytes) -> None:
 
 
 def new_device(master_key: bytes | None = None) -> dict:
-    """
-    Create new device identity.
-
-    Args:
-        master_key: Device secret (32 bytes). If None, generates random secret.
-
-    Returns:
-        Device dict with key_id and device_secret
-    """
+    """Legacy helper for tests: create local device material."""
     if master_key is not None:
         _validate_device_secret(master_key)
 
     return {
         "key_id": "v1",
-        "device_secret": master_key or os.urandom(32),
+        "device_secret": master_key or os.urandom(DEVICE_SECRET_LEN_BYTES),
     }
 
 
+def sign_challenge_response(*, device_secret: bytes, challenge: dict) -> str:
+    """Sign challenge fields as the device response."""
+    _validate_device_secret(device_secret)
+    nonce = bytes.fromhex(str(challenge["nonce"]))
+    ts = int(challenge["ts"])
+    challenge_id = str(challenge["challenge_id"]).encode("utf-8")
+    msg = nonce + ts.to_bytes(8, "big") + challenge_id
+    return hmac.new(device_secret, msg, hashlib.sha256).hexdigest()
+
+
+class EarHandshakeAuthenticator:
+    """Canonical ear-handshake flow bound to trusted device registry."""
+
+    def __init__(
+        self,
+        *,
+        trust_store: DeviceTrustStore,
+        challenge_store: InMemoryChallengeStore,
+        challenge_ttl_seconds: int = DEFAULT_CHALLENGE_TTL_SECONDS,
+    ) -> None:
+        self._trust_store = trust_store
+        self._challenge_store = challenge_store
+        self._challenge_ttl_seconds = challenge_ttl_seconds
+
+    def issue_challenge(self, *, device_id: str) -> dict:
+        device_secret = self._trust_store.get_device_secret(device_id=device_id)
+        if device_secret is None:
+            raise ValueError("unknown_device")
+
+        now = int(time.time())
+        challenge = IssuedChallenge(
+            challenge_id=os.urandom(16).hex(),
+            device_id=device_id,
+            nonce_hex=os.urandom(16).hex(),
+            ts=now,
+            expires_at=now + self._challenge_ttl_seconds,
+        )
+        self._challenge_store.save(challenge)
+
+        key_id = "v1"
+        if isinstance(self._trust_store, InMemoryDeviceTrustStore):
+            key_id = self._trust_store.get_key_id(device_id=device_id)
+
+        return {
+            "challenge_id": challenge.challenge_id,
+            "device_id": challenge.device_id,
+            "nonce": challenge.nonce_hex,
+            "ts": challenge.ts,
+            "expires_at": challenge.expires_at,
+            "key_id": key_id,
+        }
+
+    def verify_response(self, *, device_id: str, challenge: dict, response_sig_hex: str) -> bool:
+        if not response_sig_hex or not isinstance(response_sig_hex, str):
+            return False
+
+        device_secret = self._trust_store.get_device_secret(device_id=device_id)
+        if device_secret is None:
+            return False
+
+        challenge_id = str(challenge.get("challenge_id", ""))
+        if not challenge_id:
+            return False
+
+        issued = self._challenge_store.get(challenge_id=challenge_id)
+        if issued is None:
+            return False
+
+        if issued.device_id != device_id:
+            return False
+
+        now = int(time.time())
+        if issued.used or now > issued.expires_at:
+            return False
+
+        # Challenge fields are verified against the server-tracked challenge, not
+        # against arbitrary request-supplied values.
+        if (
+            str(challenge.get("nonce", "")) != issued.nonce_hex
+            or int(challenge.get("ts", -1)) != issued.ts
+            or str(challenge.get("device_id", "")) != issued.device_id
+        ):
+            return False
+
+        expected_sig_hex = sign_challenge_response(device_secret=device_secret, challenge=challenge)
+        if not hmac.compare_digest(expected_sig_hex, response_sig_hex):
+            return False
+
+        self._challenge_store.mark_used(challenge_id=challenge_id)
+        return True
+
+    def derive_session_key(self, *, device_id: str, challenge: dict) -> str:
+        device_secret = self._trust_store.get_device_secret(device_id=device_id)
+        if device_secret is None:
+            raise ValueError("unknown_device")
+
+        nonce = bytes.fromhex(str(challenge["nonce"]))
+        challenge_id = str(challenge["challenge_id"]).encode("utf-8")
+        material = nonce + challenge_id + device_secret
+        return hmac.new(device_secret, material, hashlib.sha256).hexdigest()
+
+
 def issue_challenge(device: dict) -> dict:
-    """
-    Issue challenge for device authentication.
-
-    Args:
-        device: Device dict from new_device()
-
-    Returns:
-        Challenge dict with nonce, timestamp, and HMAC signature
-
-    Protocol:
-        1. Generate random nonce (16 bytes)
-        2. Get current timestamp
-        3. Compute HMAC-SHA256(device_secret, nonce || timestamp)
-        4. Return challenge with signature
-    """
+    """Legacy helper for local-only tests (not trusted-device auth)."""
     nonce = os.urandom(16)
     ts = int(time.time())
     msg = nonce + ts.to_bytes(8, "big")
@@ -98,57 +236,23 @@ def issue_challenge(device: dict) -> dict:
 
 
 def verify_response(device: dict, challenge: dict) -> bool:
-    """
-    Verify challenge response from device.
+    """Legacy helper for local-only tests (not trusted-device auth)."""
+    try:
+        nonce = bytes.fromhex(challenge["nonce"])
+        ts = int(challenge["ts"])
+    except (KeyError, TypeError, ValueError):
+        return False
 
-    Args:
-        device: Device dict with device_secret
-        challenge: Challenge dict from issue_challenge()
-
-    Returns:
-        True if signature is valid and timestamp is recent (< 60s old)
-
-    Security notes:
-        - Timestamp prevents replay attacks
-        - HMAC comparison is constant-time (timing-attack resistant)
-        - 60-second window allows for network latency
-    """
-    nonce = bytes.fromhex(challenge["nonce"])
-    ts = int(challenge["ts"])
-
-    # Check timestamp freshness (prevent replay)
     if abs(int(time.time()) - ts) > 60:
         return False
 
-    # Recompute signature
     msg = nonce + ts.to_bytes(8, "big")
     sig = hmac.new(device["device_secret"], msg, hashlib.sha256).digest().hex()
-
-    # Constant-time comparison
-    return hmac.compare_digest(sig, challenge["sig_hex"])
+    return hmac.compare_digest(sig, str(challenge.get("sig_hex", "")))
 
 
 def derive_session_key(device: dict, challenge: dict) -> str:
-    """
-    Derive ephemeral session key from challenge.
-
-    Args:
-        device: Device dict with device_secret
-        challenge: Challenge dict from issue_challenge()
-
-    Returns:
-        Session key (hex-encoded, 64 chars)
-
-    Session key properties:
-        - Unique per challenge (nonce-based)
-        - Short-lived (expires with challenge timestamp + TTL)
-        - Derived from device secret (no transmission)
-
-    Usage:
-        session_key = derive_session_key(device, challenge)
-        # Use session_key for next 5 minutes
-        # After expiry, re-authenticate with new challenge
-    """
+    """Legacy helper for local-only tests."""
     nonce = bytes.fromhex(challenge["nonce"])
     material = nonce + device["device_secret"]
     return hmac.new(device["device_secret"], material, hashlib.sha256).hexdigest()
