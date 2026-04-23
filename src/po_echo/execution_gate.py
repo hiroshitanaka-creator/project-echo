@@ -65,6 +65,7 @@ def gate_audio(
     session_id: str | None = None,
     session_store: SessionStore | None = None,
     session_context: VoiceSessionContext | None = None,
+    rth_state: dict[str, Any] | None = None,
 ) -> dict:
     """
     Apply execution gate for audio channel (voice-initiated actions).
@@ -102,7 +103,7 @@ def gate_audio(
     effective_session_id = session_context.session_id if session_context else session_id
     reset_session = bool(session_context and session_context.start_new_session)
 
-    persisted_state = None
+    persisted_state = rth_state
     if effective_session_id and session_store and not reset_session:
         persisted = session_store.get(session_id=effective_session_id) or {}
         persisted_state = persisted.get("rth")
@@ -174,8 +175,15 @@ def gate_audio(
     rth_snapshot["discontinuity_detected"] = rth_assessment.discontinuity_detected
     audit = attach_boundary(audit, decision, rth_snapshot=rth_snapshot)
     if effective_session_id and session_store:
-        session_store.set(session_id=effective_session_id, state={"rth": rth.to_dict()})
+        serialized_state = rth.to_dict()
+        session_store.set(session_id=effective_session_id, state={"rth": serialized_state})
         audit["responsibility_boundary"]["session_id"] = effective_session_id
+        # Return a minimal state-update token (safe snapshot only, not raw internal state).
+        audit["session_state_update"] = {
+            "session_id": effective_session_id,
+            "rth_update_count": rth_snapshot.get("update_count", 0),
+            "state_continuity": rth_snapshot.get("state_continuity", "unknown"),
+        }
 
     return audit
 

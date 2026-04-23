@@ -22,6 +22,7 @@ from po_core.config import (
     HIGH_BIAS_FILTER_THRESHOLD,
     HIGH_BIAS_THRESHOLD,
     MEDIUM_BIAS_THRESHOLD,
+    MIN_BIAS_FILTER_THRESHOLD,
     MIN_EFFECTIVE_UTILITY,
     MONOPOLY_CONCENTRATION_THRESHOLD,
     PRICE_HIGH_THRESHOLD,
@@ -525,7 +526,11 @@ def diversify_with_mmr(
 
     # If filtering removed too many candidates, lower threshold to 0.0 (no filtering)
     if len(filtered_candidates) < k:
-        filtered_candidates = [r for r in all_candidates if effective_utility(r) > 0.0]
+        filtered_candidates = [
+            r
+            for r in all_candidates
+            if effective_utility(r) > MIN_BIAS_FILTER_THRESHOLD
+        ]
         # If still not enough, use all (defensive fallback)
         if len(filtered_candidates) < k:
             filtered_candidates = all_candidates
