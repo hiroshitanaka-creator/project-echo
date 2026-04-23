@@ -156,6 +156,10 @@ def _resolve_public_key_for_badge(
         if key_id in public_keys:
             return public_keys[key_id], "active"
 
+    env_store = get_ed25519_public_store()
+    if key_id in env_store:
+        return env_store[key_id], "active"
+
     entry = find_registry_key_entry(key_id, registry_path=registry_path)
     if entry:
         status = str(entry.get("status", "active"))
@@ -168,10 +172,6 @@ def _resolve_public_key_for_badge(
     # Intentionally never fall back to badge["public_key"] – inline keys must
     # not serve as a trust anchor because doing so allows self-signed badges to
     # authenticate themselves without any external trust source.
-
-    env_store = get_ed25519_public_store()
-    if key_id in env_store:
-        return env_store[key_id], "active"
 
     return None, None
 

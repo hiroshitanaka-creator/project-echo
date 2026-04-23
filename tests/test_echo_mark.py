@@ -219,3 +219,36 @@ def test_verify_echo_mark_returns_internal_error_when_hasher_crashes(monkeypatch
     result = verify_echo_mark(badge, public_keys={KEY_A: key.verify_key.encode(HexEncoder).decode()})
     assert result["status"] == "INVALID"
     assert result["reason"] == "verification_internal_error:RuntimeError"
+
+
+def test_public_key_resolution_prefers_env_store_over_registry(monkeypatch, tmp_path):
+    """When env and registry both have key_id, env mapping is preferred."""
+    key_id = "default"
+    env_public_key = "a" * 64
+    registry_public_key = "b" * 64
+
+    keys_dir = tmp_path / ".keys"
+    keys_dir.mkdir(exist_ok=True)
+    import json
+
+    (keys_dir / "registry.json").write_text(
+        json.dumps(
+            {
+                "keys": [
+                    {
+                        "key_id": key_id,
+                        "public_key": registry_public_key,
+                        "status": "active",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("ECHO_MARK_ED25519_PUBLIC_KEYS", f"{key_id}={env_public_key}")
+
+    resolved, status = echo_mark_verify._resolve_public_key_for_badge({"payload": {"key_id": key_id}}, None)
+
+    assert resolved == env_public_key
+    assert status == "active"
