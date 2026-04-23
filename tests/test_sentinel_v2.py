@@ -56,11 +56,12 @@ def test_scan_directory_reports_unscannable_syntax_error(
     bad = tmp_path / "broken.py"
     bad.write_text("def broken(:\n", encoding="utf-8")
 
-    with pytest.raises(SystemExit) as exc_info:
-        scan_directory(str(tmp_path))
+    result = scan_directory(str(tmp_path))
 
     out = capsys.readouterr().out
-    assert exc_info.value.code == 0
+    assert result["violations"] == 0
+    assert result["unscannable_count"] == 1
+    assert result["status"] == 0
     assert "SyntaxError:" in out
     assert "in broken.py" in out
     assert "Unscannable files: 1" in out
@@ -73,15 +74,16 @@ def test_scan_directory_optimized_supports_exclude_glob(
     (tmp_path / "keep.py").write_text("x = 1\n", encoding="utf-8")
     (tmp_path / "skip_generated.py").write_text("def broken(:\n", encoding="utf-8")
 
-    with pytest.raises(SystemExit) as exc_info:
-        scan_directory_optimized(
-            str(tmp_path),
-            exclude_globs=("*/skip_*",),
-            max_workers=2,
-        )
+    result = scan_directory_optimized(
+        str(tmp_path),
+        exclude_globs=("*/skip_*",),
+        max_workers=2,
+    )
 
     out = capsys.readouterr().out
-    assert exc_info.value.code == 0
+    assert result["violations"] == 0
+    assert result["unscannable_count"] == 0
+    assert result["status"] == 0
     assert "Unscannable files: 1" not in out
 
 
@@ -94,13 +96,14 @@ def test_scan_directory_optimized_supports_changed_files_filter(
     bad.write_text("def broken(:\n", encoding="utf-8")
     ok.write_text("x = 1\n", encoding="utf-8")
 
-    with pytest.raises(SystemExit) as exc_info:
-        scan_directory_optimized(
-            str(tmp_path),
-            changed_files={ok.as_posix()},
-            max_workers=2,
-        )
+    result = scan_directory_optimized(
+        str(tmp_path),
+        changed_files={ok.as_posix()},
+        max_workers=2,
+    )
 
     out = capsys.readouterr().out
-    assert exc_info.value.code == 0
+    assert result["violations"] == 0
+    assert result["unscannable_count"] == 0
+    assert result["status"] == 0
     assert "SyntaxError in broken.py" not in out
