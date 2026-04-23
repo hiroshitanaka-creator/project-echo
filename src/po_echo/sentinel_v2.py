@@ -113,8 +113,8 @@ class Doberman(ast.NodeVisitor):
                 )
 
 
-def scan_directory(target_dir: str) -> None:
-    scan_directory_optimized(target_dir)
+def scan_directory(target_dir: str) -> dict[str, Any]:
+    return scan_directory_optimized(target_dir)
 
 
 def _matches_any_glob(path: Path, patterns: tuple[str, ...]) -> bool:
@@ -165,7 +165,7 @@ def scan_directory_optimized(
     exclude_globs: tuple[str, ...] = (),
     changed_files: set[str] | None = None,
     max_workers: int = 1,
-) -> None:
+) -> dict[str, Any]:
     print(f"🐕 Releasing the Doberman in: {target_dir}\n")
 
     candidates = _iter_python_files(
@@ -205,12 +205,18 @@ def scan_directory_optimized(
         print(f"🔥 Total Violations: {total_violations}")
         print(f"⚠️ Unscannable files: {unscannable_count}")
         print("❌ CI BLOCKED. Rewrite your code. Regain your will.")
-        sys.exit(1)
+        status = 1
     else:
         print(f"✅ Scanned {total_files} files. No vendor chains detected. You are free.")
         if unscannable_count > 0:
             print(f"⚠️ Unscannable files: {unscannable_count}")
-        sys.exit(0)
+        status = 0
+
+    return {
+        "violations": total_violations,
+        "unscannable_count": unscannable_count,
+        "status": status,
+    }
 
 
 def apply_semantic_diversity(
@@ -279,9 +285,10 @@ if __name__ == "__main__":
         raw = changed_path.read_text(encoding="utf-8") if changed_path.exists() else ""
         changed_set = {line.strip() for line in raw.splitlines() if line.strip()}
 
-    scan_directory_optimized(
+    result = scan_directory_optimized(
         args.target,
         exclude_globs=tuple(args.exclude_glob),
         changed_files=changed_set,
         max_workers=max(1, args.max_workers),
     )
+    sys.exit(result["status"])
