@@ -99,6 +99,24 @@ po-cosmic voice \
 
 ---
 
+
+## 3.5 Development environment setup policy (canonical path)
+
+Use the following two paths depending on purpose:
+
+1. **Canonical (CI / reproducible local checks):**
+   ```bash
+   pip install -r requirements-dev.txt
+   ```
+2. **Alternative (editable install for local app/package work):**
+   ```bash
+   pip install -e .[dev]
+   ```
+
+When the same tool dependency is defined in multiple places, **`requirements-dev.txt` takes precedence** for CI and release-gate checks.
+
+Current pytest policy is **minimum-version alignment** (`>=9.0.3`) in both `[dependency-groups].dev` and `requirements-dev.txt`.
+
 ## 4. Webhook Setup
 
 ### Slack
