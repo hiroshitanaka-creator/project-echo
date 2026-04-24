@@ -14,6 +14,7 @@ import hmac
 import os
 import time
 import uuid
+import warnings
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -310,12 +311,22 @@ def sign_challenge_response(*, device_secret: bytes, challenge: dict) -> str:
 
 # Legacy test-only helpers retained for compatibility (not used in production paths).
 def new_device(master_key: bytes | None = None) -> dict:
+    warnings.warn(
+        "new_device() is a legacy helper and must not be used in production; use EarHandshakeService.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     if master_key is not None:
         _validate_device_secret(master_key)
     return {"key_id": "v1", "device_secret": master_key or os.urandom(DEVICE_SECRET_LEN_BYTES)}
 
 
 def issue_challenge(device: dict) -> dict:
+    warnings.warn(
+        "issue_challenge(device) is a legacy helper and must not be used in production; use EarHandshakeService.issue_challenge().",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     challenge = {
         "challenge_id": uuid.uuid4().hex,
         "device_id": "legacy",
@@ -327,6 +338,11 @@ def issue_challenge(device: dict) -> dict:
 
 
 def verify_response(device: dict, challenge: dict) -> bool:
+    warnings.warn(
+        "verify_response(device, challenge) is a legacy helper and must not be used in production; use EarHandshakeService.verify_response().",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     try:
         expected = sign_challenge_response(device_secret=device["device_secret"], challenge=challenge)
     except (KeyError, ValueError, TypeError):
@@ -335,6 +351,11 @@ def verify_response(device: dict, challenge: dict) -> bool:
 
 
 def derive_session_key(device: dict, challenge: dict) -> str:
+    warnings.warn(
+        "derive_session_key(device, challenge) is a legacy helper and must not be used in production; use VerifiedSession.session_key from EarHandshakeService.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     nonce = bytes.fromhex(str(challenge["nonce"]))
     challenge_id = str(challenge.get("challenge_id", "legacy")).encode("utf-8")
     material = nonce + challenge_id + device["device_secret"]

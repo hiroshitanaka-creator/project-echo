@@ -252,3 +252,39 @@ def test_public_key_resolution_prefers_env_store_over_registry(monkeypatch, tmp_
 
     assert resolved == env_public_key
     assert status == "active"
+
+
+def test_public_key_resolution_explicit_map_disables_env_fallback(monkeypatch) -> None:
+    """Explicit public_keys must be treated as exclusive trust anchors."""
+    key_id = "default"
+    env_public_key = "a" * 64
+    monkeypatch.setenv("ECHO_MARK_ED25519_PUBLIC_KEYS", f"{key_id}={env_public_key}")
+
+    resolved, status = echo_mark_verify._resolve_public_key_for_badge(
+        {"payload": {"key_id": key_id}},
+        public_keys={},
+    )
+
+    assert resolved is None
+    assert status is None
+
+
+def test_verify_with_explicit_empty_public_keys_does_not_use_env(monkeypatch) -> None:
+    """Regression: public_keys={} must not succeed via env/registry fallback."""
+    key = SigningKey.generate()
+    key_id = "explicit_only"
+    badge = make_echo_mark_dual(
+        audit=_audit(),
+        hmac_secret=SECRET,
+        ed25519_private_key=key.encode(HexEncoder).decode(),
+        key_id=key_id,
+    )
+    # Remove HMAC fallback path to isolate Ed25519 trust-anchor behavior.
+    badge = dict(badge)
+    badge.pop("signature_hmac", None)
+
+    monkeypatch.setenv("ECHO_MARK_ED25519_PUBLIC_KEYS", f"{key_id}={key.verify_key.encode(HexEncoder).decode()}")
+    result = verify_echo_mark(badge, public_keys={})
+
+    assert result["status"] == "INVALID"
+    assert result["reason"] == "signature_invalid"

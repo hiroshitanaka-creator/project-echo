@@ -155,6 +155,7 @@ def _resolve_public_key_for_badge(
         # Caller supplied an explicit trust store: honour it exclusively.
         if key_id in public_keys:
             return public_keys[key_id], "active"
+        return None, None
 
     env_store = get_ed25519_public_store()
     if key_id in env_store:

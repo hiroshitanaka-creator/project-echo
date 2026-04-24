@@ -7,6 +7,8 @@ from po_echo.ear_handshake import (
     EarHandshakeService,
     InMemoryChallengeStore,
     InMemoryDeviceRegistry,
+    issue_challenge as legacy_issue_challenge,
+    new_device as legacy_new_device,
     build_device_response,
 )
 
@@ -84,3 +86,10 @@ def test_malformed_response_rejected() -> None:
     challenge = service.issue_challenge(device_id="device-1")
     with pytest.raises(EarHandshakeError, match="malformed_response"):
         service.verify_response(device_id="device-1", challenge_id=str(challenge["challenge_id"]), response_hex="zzz")
+
+
+def test_legacy_helpers_emit_deprecation_warning() -> None:
+    with pytest.deprecated_call():
+        device = legacy_new_device()
+    with pytest.deprecated_call():
+        legacy_issue_challenge(device)
