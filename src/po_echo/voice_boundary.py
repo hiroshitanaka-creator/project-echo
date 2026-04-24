@@ -140,7 +140,19 @@ def classify_risk(intent: str, meta: dict | None = None) -> Risk:
 
     # Fallback: classify by amount or other metadata
     meta = meta or {}
-    amt = _safe_float(meta.get("amount", 0), default=0.0, field_name="amount")
+    raw_amount = meta.get("amount")
+    amount_present = "amount" in meta and raw_amount is not None
+    if amount_present:
+        assert raw_amount is not None
+        try:
+            parsed_amount = float(raw_amount)
+        except (TypeError, ValueError):
+            # Fail-closed: malformed amount metadata must not be auto-low risk.
+            return "medium"
+        if not math.isfinite(parsed_amount):
+            return "high"
+    amt = _safe_float(raw_amount, default=0.0, field_name="amount")
+
     if amt >= 10000:  # High-value transaction
         return "high"
     if amt >= 1000:  # Medium-value transaction

@@ -182,6 +182,14 @@ def test_non_finite_bias_is_blocked_fail_closed() -> None:
         assert dec.required_action == "app_confirm"
 
 
+@pytest.mark.parametrize("amount", ["abc", "NaN", float("inf")])
+def test_malformed_amount_never_auto_executes(amount) -> None:
+    """Malformed amount metadata must not produce low-risk auto execution."""
+    for device in _ALL_DEVICES:
+        dec = decide_for_device(device, "generic", meta={"amount": amount}, bias_score=0.0)
+        assert not (dec.risk == "low" and dec.execution_allowed and not dec.requires_human_confirm)
+
+
 # --- to_audit_payload() property-based tests ---
 
 @settings(max_examples=200)

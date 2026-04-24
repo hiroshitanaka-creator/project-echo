@@ -12,6 +12,7 @@ from po_echo.rth import compute_rth
 from po_echo.voice_boundary import (
     HIGH_BIAS_BLOCK_THRESHOLD,
     LOW_BATTERY_THRESHOLD,
+    classify_risk,
     evaluate_screenless_safety,
     make_echo_verified_voice_text,
 )
@@ -206,3 +207,8 @@ def test_replay_and_payload_tamper_breaks_dual_signature_verification(tamper_tex
 
     blocked = verify_echo_mark_dual(tampered_badge, hmac_secret=HMAC_SECRET)
     assert blocked["status"] == "INVALID"
+
+
+def test_malformed_amount_metadata_is_not_low_risk() -> None:
+    for amount in ("abc", "NaN", float("inf")):
+        assert classify_risk("generic", {"amount": amount}) in {"medium", "high"}

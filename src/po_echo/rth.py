@@ -399,9 +399,11 @@ class RollingTranscriptHash:
         Export full state (for debugging/persistence).
 
         Returns:
-            State dict with all fields
+            State dict excluding raw transcript text.
         """
         d = asdict(self.state)
+        # Security/privacy invariant: never persist raw transcript text.
+        d.pop("last_text", None)
         d["h_prev"] = self.state.h_prev.hex()
         return d
 
@@ -415,7 +417,8 @@ class RollingTranscriptHash:
         rth.state.h_prev = bytes.fromhex(str(state_dict.get("h_prev", "")))
         rth.state.t0_ms = int(state_dict.get("t0_ms", rth.state.t0_ms))
         rth.state.t_ms = int(state_dict.get("t_ms", rth.state.t_ms))
-        rth.state.last_text = str(state_dict.get("last_text", ""))
+        # last_text is intentionally non-persistent; keep empty on restore.
+        rth.state.last_text = ""
         rth.state.robust_hash_hex = str(state_dict.get("robust_hash_hex", "0" * 16))
         rth.state.update_count = int(state_dict.get("update_count", 0))
         seen = state_dict.get("seen_chain_hash_to_feat_fp")

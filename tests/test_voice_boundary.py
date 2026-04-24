@@ -35,8 +35,15 @@ def test_safe_float_warning_is_emitted_for_invalid_amount(caplog) -> None:
     with caplog.at_level(logging.WARNING):
         risk = classify_risk("search", {"amount": "not-a-number"})
 
-    assert risk == "low"
+    assert risk in {"medium", "high"}
     assert any("voice_boundary_invalid_float field=amount" in m for m in caplog.messages)
+
+
+@pytest.mark.parametrize("amount", ["abc", "NaN", float("inf")])
+def test_malformed_amount_is_not_low_risk(amount) -> None:
+    """Malformed/non-finite amount metadata must not become low risk."""
+    risk = classify_risk("search", {"amount": amount})
+    assert risk in {"medium", "high"}
 
 
 @settings(max_examples=300)

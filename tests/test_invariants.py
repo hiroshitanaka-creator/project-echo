@@ -13,13 +13,20 @@ Violations of these invariants are critical bugs.
 
 from __future__ import annotations
 
+import datetime as dt
+from copy import deepcopy
+
 from po_core.diversity import (
     Rec,
     commercial_bias_score,
     diversify_with_mmr,
 )
 from po_echo.echo_mark import make_echo_mark, verify_mark
+from po_echo.echo_mark_core import canonical_json, sha256_hex
+from po_echo.echo_mark_verify import verify_echo_mark
+from po_echo.execution_gate import InMemorySessionStore, gate_audio
 from po_echo.rth import compute_rth  # noqa: F401
+from po_echo.voice_boundary import VoiceBoundaryDecision, attach_boundary, classify_risk
 
 
 # Invariant 1: AI Never Recommends
@@ -398,3 +405,82 @@ def test_regression_biased_input_92_percent():
         f"Regression test failed: 92% biased input auto-allowed (bias_final={result['commercial_bias_final']['overall_bias_score']:.2%})"
     )
 
+
+def test_invariant_persisted_rth_state_never_contains_raw_transcript() -> None:
+    session_store = InMemorySessionStore()
+    audit = {
+        "responsibility_boundary": {
+            "execution_allowed": True,
+            "requires_human_confirm": False,
+            "ai_recommends": False,
+            "liability_mode": "audit-only",
+            "schema_version": "1.0",
+            "reasons": ["inv"],
+            "signals": {},
+        },
+        "commercial_bias_final": {"overall_bias_score": 0.1},
+    }
+    gate_audio(
+        audit=deepcopy(audit),
+        intent="search",
+        meta={},
+        transcript_tail="秘匿 transcript",
+        simulate_user_ok=True,
+        session_id="inv-rth",
+        session_store=session_store,
+    )
+    persisted = session_store.get(session_id="inv-rth") or {}
+    assert "last_text" not in (persisted.get("rth") or {})
+
+
+def test_invariant_explicit_public_keys_disable_fallback(monkeypatch) -> None:
+    monkeypatch.setenv("ECHO_MARK_ED25519_PUBLIC_KEYS", "default=" + ("a" * 64))
+    payload = {
+        "schema_version": "echo_mark_v3",
+        "issued_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+        "nonce": "n1",
+        "key_id": "default",
+        "run_id": "inv",
+        "label": "ECHO_CHECK",
+        "signals": {},
+        "responsibility_boundary": {"execution_allowed": True, "requires_human_confirm": False},
+    }
+    badge = {
+        "payload": payload,
+        "payload_hash": sha256_hex(canonical_json(payload)),
+        "signature": "deadbeef",
+    }
+    result = verify_echo_mark(badge, public_keys={})
+    assert result["status"] == "INVALID"
+    assert result["reason"] == "signature_invalid"
+
+
+def test_invariant_malformed_amount_never_low_risk() -> None:
+    for amount in ("abc", "NaN", float("inf")):
+        assert classify_risk("generic", {"amount": amount}) in {"medium", "high"}
+
+
+def test_invariant_upstream_blocked_boundary_is_never_relaxed_by_voice_adapter() -> None:
+    upstream = {
+        "responsibility_boundary": {
+            "execution_allowed": False,
+            "requires_human_confirm": True,
+            "required_action": "app_confirm",
+            "ai_recommends": False,
+            "liability_mode": "audit-only",
+            "schema_version": "1.0",
+            "reasons": ["upstream_blocked"],
+            "signals": {},
+        }
+    }
+    decision = VoiceBoundaryDecision(
+        risk="low",
+        required_action="none",
+        execution_allowed=True,
+        requires_human_confirm=False,
+        reasons=["voice_layer"],
+    )
+    merged = attach_boundary(upstream, decision)
+    rb = merged["responsibility_boundary"]
+    assert rb["execution_allowed"] is False
+    assert rb["requires_human_confirm"] is True

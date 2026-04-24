@@ -616,6 +616,19 @@ def test_rth_evidence_exposes_snapshot_only_not_raw_text() -> None:
     assert "seen_chain_hash_to_feat_fp" not in snapshot
 
 
+def test_persisted_rth_state_excludes_raw_transcript_in_session_store() -> None:
+    session_store = InMemorySessionStore()
+    _run(
+        transcript="機密の文言を永続化してはいけない",
+        metadata={},
+        session_id="persist-safe",
+        session_store=session_store,
+    )
+    persisted = session_store.get(session_id="persist-safe") or {}
+    assert "rth" in persisted
+    assert "last_text" not in persisted["rth"]
+
+
 def test_explicit_new_session_context_resets_rth_state() -> None:
     session_store = InMemorySessionStore()
     first = gate_audio(

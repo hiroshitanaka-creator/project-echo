@@ -3,25 +3,54 @@ const { spawnSync } = require('child_process');
 
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
+    let settled = false;
     let raw = '';
-    req.on('data', (chunk) => {
+    const cleanup = () => {
+      req.off('data', onData);
+      req.off('end', onEnd);
+      req.off('error', onError);
+    };
+    const finishError = (message) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error(message));
+    };
+    const finishOk = (payload) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(payload);
+    };
+    const onData = (chunk) => {
+      if (settled) return;
       raw += chunk;
       if (raw.length > 1024 * 1024) {
-        reject(new Error('payload_too_large'));
+        // Stop reading additional body bytes once size cap is exceeded.
+        req.pause();
+        raw = '';
+        finishError('payload_too_large');
       }
-    });
-    req.on('end', () => {
+    };
+    const onEnd = () => {
+      if (settled) return;
       if (!raw) {
-        resolve({});
+        finishOk({});
         return;
       }
       try {
-        resolve(JSON.parse(raw));
+        finishOk(JSON.parse(raw));
       } catch (_err) {
-        reject(new Error('invalid_json'));
+        finishError('invalid_json');
       }
-    });
-    req.on('error', reject);
+    };
+    const onError = (_err) => {
+      if (settled) return;
+      finishError('invalid_request_stream');
+    };
+    req.on('data', onData);
+    req.on('end', onEnd);
+    req.on('error', onError);
   });
 }
 
@@ -48,6 +77,38 @@ function runPythonSchemaProbe() {
   });
 }
 
+const schemaDebugDetailEnabled = process.env.VOICE_SCHEMA_DEBUG_DETAIL === '1';
+let schemaCache = null;
+let schemaCacheError = null;
+
+function getSchemaCached() {
+  if (schemaCache) {
+    return schemaCache;
+  }
+  if (schemaCacheError) {
+    throw schemaCacheError;
+  }
+
+  const out = runPythonSchemaProbe();
+  if (out.status !== 0) {
+    const err = new Error('python_schema_probe_failed');
+    if (schemaDebugDetailEnabled) {
+      err.debugDetail = (out.stderr || '').trim();
+    }
+    schemaCacheError = err;
+    throw err;
+  }
+
+  try {
+    schemaCache = JSON.parse((out.stdout || '').trim());
+    return schemaCache;
+  } catch (_err) {
+    const err = new Error('python_schema_probe_invalid_json');
+    schemaCacheError = err;
+    throw err;
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   if (req.method === 'GET' && req.url === '/') {
     return json(res, 200, {
@@ -71,19 +132,17 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'GET' && req.url === '/api/voice/schema') {
-    const out = runPythonSchemaProbe();
-    if (out.status !== 0) {
-      return json(res, 503, {
-        error: 'python_schema_probe_failed',
-        detail: (out.stderr || '').trim(),
-      });
-    }
-
     try {
-      return json(res, 200, JSON.parse((out.stdout || '').trim()));
-    } catch (_err) {
+      return json(res, 200, getSchemaCached());
+    } catch (err) {
+      const response = {
+        error: 'schema_unavailable',
+      };
+      if (schemaDebugDetailEnabled && err && err.debugDetail) {
+        response.detail = err.debugDetail;
+      }
       return json(res, 503, {
-        error: 'python_schema_probe_invalid_json',
+        ...response,
       });
     }
   }
@@ -92,9 +151,15 @@ const server = http.createServer(async (req, res) => {
     try {
       await readJsonBody(req);
     } catch (err) {
+      if (err && err.message === 'payload_too_large') {
+        return json(res, 413, {
+          error: 'invalid_request',
+          reason: 'payload_too_large',
+        });
+      }
       return json(res, 400, {
         error: 'invalid_request',
-        reason: err.message,
+        reason: err && typeof err.message === 'string' ? err.message : 'invalid_request',
       });
     }
 
